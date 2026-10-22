@@ -1,11 +1,13 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useEffect, useState } from 'react'
+import { CATEGORY_GENRES } from '@/services/tmdb'
 import { PROFILE_COLORS, useProfilesStore } from '@/store/profiles'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
+import { TvTextField } from '@/ui/input/TvTextField'
 import styles from './ProfilePicker.module.css'
 
-const NAME_SUGGESTIONS = ['Bruna', 'Jonis', 'Casa', 'Kids', 'Família', 'Convidado']
+type CreateStep = 'name' | 'color' | 'prefs'
 
 interface ProfilePickerProps {
   mode?: 'setup' | 'switch'
@@ -20,19 +22,48 @@ export function ProfilePicker({ mode = 'switch', onDone }: ProfilePickerProps) {
   const removeProfile = useProfilesStore((s) => s.removeProfile)
 
   const [creating, setCreating] = useState(mode === 'setup' || profiles.length === 0)
+  const [step, setStep] = useState<CreateStep>('name')
   const [name, setName] = useState('')
   const [color, setColor] = useState<string>(PROFILE_COLORS[0])
+  const [prefs, setPrefs] = useState<number[]>([])
 
   useEffect(() => {
-    void setFocus(creating ? 'PROFILE_SUGGEST_0' : 'PROFILE_LIST')
-  }, [creating])
+    if (!creating) {
+      void setFocus('PROFILE_LIST')
+      return
+    }
+    if (step === 'name') void setFocus('PROFILE_NAME')
+    if (step === 'color') void setFocus(`PROFILE_COLOR_${PROFILE_COLORS[0].replace('#', '')}`)
+    if (step === 'prefs') void setFocus('PROFILE_PREF_0')
+  }, [creating, step])
+
+  const resetCreate = () => {
+    setCreating(true)
+    setStep('name')
+    setName('')
+    setColor(PROFILE_COLORS[0])
+    setPrefs([])
+  }
 
   const submitCreate = () => {
-    const profile = createProfile(name || 'Perfil', color)
+    const profile = createProfile(name || 'Perfil', {
+      color,
+      preferredGenreIds: prefs,
+    })
     setActiveProfile(profile.id)
-    setName('')
     setCreating(false)
+    setStep('name')
+    setName('')
+    setPrefs([])
     if (mode === 'setup') onDone()
+  }
+
+  const togglePref = (genreId: number) => {
+    setPrefs((prev) =>
+      prev.includes(genreId)
+        ? prev.filter((id) => id !== genreId)
+        : [...prev, genreId].slice(0, 6),
+    )
   }
 
   return (
@@ -46,83 +77,148 @@ export function ProfilePicker({ mode = 'switch', onDone }: ProfilePickerProps) {
           {mode === 'setup' ? 'Bem-vindo' : 'Perfis'}
         </p>
         <h2 className={styles.title}>
-          {creating ? 'Criar perfil' : 'Quem está assistindo?'}
+          {creating
+            ? step === 'name'
+              ? 'Como se chama?'
+              : step === 'color'
+                ? 'Escolha uma cor'
+                : 'O que você gosta?'
+            : 'Quem está assistindo?'}
         </h2>
         <p className={styles.hint}>
-          O histórico e as recomendações ficam ligados ao perfil ativo.
+          {creating
+            ? step === 'prefs'
+              ? 'Selecione até 6 categorias para personalizar o catálogo.'
+              : 'Use o teclado da TV no campo de texto (Enter para editar).'
+            : 'O histórico e as recomendações ficam ligados ao perfil ativo.'}
         </p>
 
         {creating ? (
           <div className={styles.create}>
-            <p className={styles.fieldLabel}>Escolha um nome</p>
-            <div className={styles.suggestions}>
-              {NAME_SUGGESTIONS.map((suggestion, index) => (
-                <Focusable
-                  key={suggestion}
-                  focusKey={`PROFILE_SUGGEST_${String(index)}`}
-                  className={cx(
-                    styles.suggest,
-                    name === suggestion && styles.suggestActive,
-                  )}
-                  onEnterPress={() => {
-                    setName(suggestion)
-                  }}
-                >
-                  {suggestion}
-                </Focusable>
-              ))}
-            </div>
+            {step === 'name' ? (
+              <>
+                <TvTextField
+                  focusKey="PROFILE_NAME"
+                  label="Nome do perfil"
+                  value={name}
+                  onChange={setName}
+                  placeholder="Digite o nome"
+                  maxLength={24}
+                  inputType="text"
+                />
+                <div className={styles.actions}>
+                  <Focusable
+                    focusKey="PROFILE_NEXT_COLOR"
+                    className={styles.btn}
+                    onEnterPress={() => {
+                      if (!name.trim()) setName('Perfil')
+                      setStep('color')
+                    }}
+                  >
+                    Continuar
+                  </Focusable>
+                </div>
+              </>
+            ) : null}
 
-            <label className={styles.inputWrap}>
-              <span className={styles.fieldLabel}>Ou digite</span>
-              <input
-                className={styles.input}
-                value={name}
-                maxLength={24}
-                placeholder="Nome do perfil"
-                onChange={(event) => {
-                  setName(event.target.value.slice(0, 24))
-                }}
-              />
-            </label>
+            {step === 'color' ? (
+              <>
+                <div className={styles.preview}>
+                  <span className={styles.previewAvatar} style={{ background: color }}>
+                    {(name || 'P').slice(0, 1).toUpperCase()}
+                  </span>
+                  <strong>{name || 'Perfil'}</strong>
+                </div>
+                <div className={styles.colors}>
+                  {PROFILE_COLORS.map((c) => (
+                    <Focusable
+                      key={c}
+                      focusKey={`PROFILE_COLOR_${c.replace('#', '')}`}
+                      className={cx(styles.swatch, color === c && styles.swatchActive)}
+                      style={{ background: c }}
+                      onEnterPress={() => {
+                        setColor(c)
+                      }}
+                    >
+                      <span className="sr-only">{c}</span>
+                    </Focusable>
+                  ))}
+                </div>
+                <div className={styles.actions}>
+                  <Focusable
+                    focusKey="PROFILE_BACK_NAME"
+                    className={cx(styles.btn, styles.btnGhost)}
+                    onEnterPress={() => {
+                      setStep('name')
+                    }}
+                  >
+                    Voltar
+                  </Focusable>
+                  <Focusable
+                    focusKey="PROFILE_NEXT_PREFS"
+                    className={styles.btn}
+                    onEnterPress={() => {
+                      setStep('prefs')
+                    }}
+                  >
+                    Continuar
+                  </Focusable>
+                </div>
+              </>
+            ) : null}
 
-            <p className={styles.fieldLabel}>Cor do avatar</p>
-            <div className={styles.colors}>
-              {PROFILE_COLORS.map((c) => (
-                <Focusable
-                  key={c}
-                  focusKey={`PROFILE_COLOR_${c.replace('#', '')}`}
-                  className={cx(styles.swatch, color === c && styles.swatchActive)}
-                  style={{ background: c }}
-                  onEnterPress={() => {
-                    setColor(c)
-                  }}
-                >
-                  <span className="sr-only">{c}</span>
-                </Focusable>
-              ))}
-            </div>
+            {step === 'prefs' ? (
+              <>
+                <div className={styles.prefGrid}>
+                  {CATEGORY_GENRES.map((genre, index) => (
+                    <Focusable
+                      key={genre.id}
+                      focusKey={`PROFILE_PREF_${String(index)}`}
+                      className={cx(
+                        styles.prefChip,
+                        prefs.includes(genre.id) && styles.prefChipActive,
+                      )}
+                      onEnterPress={() => {
+                        togglePref(genre.id)
+                      }}
+                    >
+                      {genre.label}
+                    </Focusable>
+                  ))}
+                </div>
+                <div className={styles.actions}>
+                  <Focusable
+                    focusKey="PROFILE_BACK_COLOR"
+                    className={cx(styles.btn, styles.btnGhost)}
+                    onEnterPress={() => {
+                      setStep('color')
+                    }}
+                  >
+                    Voltar
+                  </Focusable>
+                  <Focusable
+                    focusKey="PROFILE_SAVE"
+                    className={styles.btn}
+                    onEnterPress={submitCreate}
+                  >
+                    Criar perfil
+                    {prefs.length > 0 ? ` (${String(prefs.length)})` : ''}
+                  </Focusable>
+                </div>
+              </>
+            ) : null}
 
-            <div className={styles.actions}>
+            {mode === 'switch' && profiles.length > 0 && step === 'name' ? (
               <Focusable
-                focusKey="PROFILE_SAVE"
-                className={styles.btn}
-                onEnterPress={submitCreate}
+                focusKey="PROFILE_CANCEL_CREATE"
+                className={cx(styles.btn, styles.btnGhost)}
+                onEnterPress={() => {
+                  setCreating(false)
+                }}
               >
-                Salvar perfil
+                Cancelar
               </Focusable>
-              {mode === 'switch' && profiles.length > 0 ? (
-                <Focusable
-                  focusKey="PROFILE_CANCEL_CREATE"
-                  className={cx(styles.btn, styles.btnGhost)}
-                  onEnterPress={() => {
-                    setCreating(false)
-                  }}
-                >
-                  Voltar
-                </Focusable>
-              ) : null}
-            </div>
+            ) : null}
           </div>
         ) : (
           <>
@@ -151,6 +247,11 @@ export function ProfilePicker({ mode = 'switch', onDone }: ProfilePickerProps) {
                     {profile.name.slice(0, 1).toUpperCase()}
                   </span>
                   <span className={styles.cardName}>{profile.name}</span>
+                  {(profile.preferredGenreIds?.length ?? 0) > 0 ? (
+                    <span className={styles.cardMeta}>
+                      {String(profile.preferredGenreIds.length)} gostos
+                    </span>
+                  ) : null}
                 </Focusable>
               ))}
             </Focusable>
@@ -159,10 +260,7 @@ export function ProfilePicker({ mode = 'switch', onDone }: ProfilePickerProps) {
               <Focusable
                 focusKey="PROFILE_NEW"
                 className={styles.btn}
-                onEnterPress={() => {
-                  setCreating(true)
-                  setName('')
-                }}
+                onEnterPress={resetCreate}
               >
                 Novo perfil
               </Focusable>

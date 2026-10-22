@@ -7,19 +7,30 @@ import {
   getRelatedTitles,
   getTrending,
 } from '@/services/tmdb'
-import { Row } from '@/ui/Row/Row'
+import { CatalogGrid } from '@/ui/CatalogGrid/CatalogGrid'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import styles from './CategoriesScreen.module.css'
 
 type Mode = 'isolated' | 'mixed' | 'similar'
+type Phase = 'browse' | 'results'
 
 interface CategoriesScreenProps {
   onOpenItem: (item: CatalogItem) => void
 }
 
+function uniqueItems(items: CatalogItem[]): CatalogItem[] {
+  const map = new Map<string, CatalogItem>()
+  for (const item of items) {
+    const key = `${item.mediaType}:${String(item.tmdbId)}`
+    if (!map.has(key) && item.posterPath) map.set(key, item)
+  }
+  return [...map.values()]
+}
+
 export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
   const [mode, setMode] = useState<Mode>('isolated')
+  const [phase, setPhase] = useState<Phase>('browse')
   const [selected, setSelected] = useState<number[]>([])
   const [seed, setSeed] = useState<CatalogItem | null>(null)
   const [seeds, setSeeds] = useState<CatalogItem[]>([])
@@ -28,16 +39,16 @@ export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
   const [error, setError] = useState<string>()
 
   useEffect(() => {
-    void setFocus('CAT_MODE_isolated')
-  }, [])
+    void setFocus(phase === 'browse' ? 'CAT_MODE_isolated' : 'CAT_BACK')
+  }, [phase])
 
   useEffect(() => {
-    if (mode !== 'similar') return
+    if (mode !== 'similar' || phase !== 'browse') return
     let cancelled = false
     void (async () => {
       try {
         const trending = await getTrending('all', 'week')
-        if (!cancelled) setSeeds(trending.slice(0, 12))
+        if (!cancelled) setSeeds(uniqueItems(trending).slice(0, 36))
       } catch {
         if (!cancelled) setSeeds([])
       }
@@ -45,29 +56,20 @@ export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
     return () => {
       cancelled = true
     }
-  }, [mode])
-
-  const toggleGenre = (id: number) => {
-    if (mode === 'isolated') {
-      setSelected([id])
-      void runIsolated(id)
-      return
-    }
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id].slice(0, 4),
-    )
-  }
+  }, [mode, phase])
 
   const runIsolated = async (genreId: number) => {
     setLoading(true)
     setError(undefined)
     setSeed(null)
+    setPhase('results')
     try {
       const [movies, series] = await Promise.all([
-        discoverByGenres([genreId], 'movie', { match: 'and' }),
-        discoverByGenres([genreId], 'tv', { match: 'and' }),
+        discoverByGenres([genreId], 'movie', { match: 'and', pages: 3 }),
+        discoverByGenres([genreId], 'tv', { match: 'and', pages: 3 }),
       ])
-      setResults([...movies, ...series].slice(0, 24))
+      setResults(uniqueItems([...movies, ...series]).slice(0, 72))
+      void setFocus('CAT_BACK')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao filtrar')
       setResults([])
@@ -81,12 +83,14 @@ export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
     setLoading(true)
     setError(undefined)
     setSeed(null)
+    setPhase('results')
     try {
       const [movies, series] = await Promise.all([
-        discoverByGenres(selected, 'movie', { match: 'or' }),
-        discoverByGenres(selected, 'tv', { match: 'or' }),
+        discoverByGenres(selected, 'movie', { match: 'or', pages: 3 }),
+        discoverByGenres(selected, 'tv', { match: 'or', pages: 3 }),
       ])
-      setResults([...movies, ...series].slice(0, 24))
+      setResults(uniqueItems([...movies, ...series]).slice(0, 72))
+      void setFocus('CAT_BACK')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao filtrar')
       setResults([])
@@ -97,11 +101,14 @@ export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
 
   const runSimilar = async (item: CatalogItem) => {
     setSeed(item)
+    setSelected([])
     setLoading(true)
     setError(undefined)
+    setPhase('results')
     try {
       const related = await getRelatedTitles(item.mediaType, item.tmdbId)
-      setResults(related.slice(0, 18))
+      setResults(uniqueItems(related).slice(0, 48))
+      void setFocus('CAT_BACK')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao buscar semelhantes')
       setResults([])
@@ -116,11 +123,32 @@ export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
     setResults([])
     setSeed(null)
     setError(undefined)
+    setPhase('browse')
   }
+
+  const backToBrowse = () => {
+    setPhase('browse')
+    setResults([])
+    setSeed(null)
+    setError(undefined)
+    if (mode === 'isolated') setSelected([])
+  }
+
+  const selectedLabels = CATEGORY_GENRES.filter((g) =>
+    selected.includes(g.id),
+  )
+    .map((g) => g.label)
+    .join(' · ')
+
+  const resultsTitle = seed
+    ? `Semelhantes a ${seed.title}`
+    : mode === 'mixed'
+      ? `Misto · ${selectedLabels || 'categorias'}`
+      : selectedLabels || 'Resultado'
 
   return (
     <Focusable focusKey="VIEW_categories" className={styles.screen} saveLastFocusedChild>
-      <header className={styles.header}>
+      <header className={cx(styles.header, phase === 'results' && styles.headerCompact)}>
         <div>
           <p className={styles.kicker}>Explorar</p>
           <h1 className={styles.title}>Categorias</h1>
@@ -147,76 +175,147 @@ export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
         </div>
       </header>
 
-      <p className={styles.hint}>
-        {mode === 'isolated'
-          ? 'Escolha uma categoria para ver títulos só desse gênero.'
-          : mode === 'mixed'
-            ? 'Selecione até 4 categorias e aplique o filtro misto (qualquer gênero).'
-            : 'Escolha um título base para encontrar semelhantes.'}
-      </p>
+      {phase === 'browse' ? (
+        <>
+          <p className={styles.hint}>
+            {mode === 'isolated'
+              ? 'Toque em uma categoria do mosaico para abrir o catálogo.'
+              : mode === 'mixed'
+                ? 'Selecione até 4 categorias e aplique o filtro misto.'
+                : 'Escolha um título base no mosaico para achar semelhantes.'}
+          </p>
 
-      {mode !== 'similar' ? (
-        <div className={styles.genreGrid}>
-          {CATEGORY_GENRES.map((genre) => (
+          {mode === 'similar' ? (
+            <div className={styles.browsePane}>
+              <CatalogGrid
+                id="cat-seeds"
+                items={seeds}
+                onSelect={(item) => {
+                  void runSimilar(item)
+                }}
+              />
+            </div>
+          ) : (
+            <div className={styles.mosaic}>
+              {CATEGORY_GENRES.map((genre, index) => {
+                const accents = [
+                  styles.accent0,
+                  styles.accent1,
+                  styles.accent2,
+                  styles.accent3,
+                  styles.accent4,
+                  styles.accent5,
+                ]
+                return (
+                  <Focusable
+                    key={genre.id}
+                    focusKey={`CAT_GENRE_${String(genre.id)}`}
+                    className={cx(
+                      styles.tile,
+                      accents[index % accents.length],
+                      selected.includes(genre.id) && styles.tileActive,
+                    )}
+                    onEnterPress={() => {
+                      if (mode === 'isolated') {
+                        setSelected([genre.id])
+                        void runIsolated(genre.id)
+                        return
+                      }
+                      setSelected((prev) =>
+                        prev.includes(genre.id)
+                          ? prev.filter((g) => g !== genre.id)
+                          : [...prev, genre.id].slice(0, 4),
+                      )
+                    }}
+                  >
+                    <span className={styles.tileLabel}>{genre.label}</span>
+                  </Focusable>
+                )
+              })}
+            </div>
+          )}
+
+          {mode === 'mixed' ? (
             <Focusable
-              key={genre.id}
-              focusKey={`CAT_GENRE_${String(genre.id)}`}
+              focusKey="CAT_APPLY_MIXED"
               className={cx(
-                styles.genreChip,
-                selected.includes(genre.id) && styles.genreActive,
+                styles.applyBtn,
+                selected.length === 0 && styles.applyDisabled,
               )}
               onEnterPress={() => {
-                toggleGenre(genre.id)
+                void runMixed()
               }}
             >
-              {genre.label}
+              Ver catálogo misto
+              {selected.length > 0 ? ` (${String(selected.length)})` : ''}
             </Focusable>
-          ))}
-        </div>
+          ) : null}
+        </>
       ) : (
-        <div className={styles.seedRow}>
-          <Row
-            id="cat-seeds"
-            title="Escolha um título base"
-            items={seeds}
-            onSelect={(item) => {
-              void runSimilar(item)
-            }}
-          />
-        </div>
+        <>
+          <div className={styles.resultsBar}>
+            <Focusable
+              focusKey="CAT_BACK"
+              className={styles.backBtn}
+              onEnterPress={backToBrowse}
+            >
+              ← Categorias
+            </Focusable>
+            <p className={styles.resultsLabel}>{resultsTitle}</p>
+            {mode === 'mixed' && selected.length > 0 ? (
+              <Focusable
+                focusKey="CAT_APPLY_AGAIN"
+                className={styles.applyBtn}
+                onEnterPress={() => {
+                  void runMixed()
+                }}
+              >
+                Atualizar
+              </Focusable>
+            ) : null}
+          </div>
+
+          {mode === 'mixed' ? (
+            <div className={styles.miniMosaic}>
+              {CATEGORY_GENRES.map((genre) => (
+                <Focusable
+                  key={genre.id}
+                  focusKey={`CAT_MINI_${String(genre.id)}`}
+                  className={cx(
+                    styles.miniChip,
+                    selected.includes(genre.id) && styles.miniChipActive,
+                  )}
+                  onEnterPress={() => {
+                    setSelected((prev) =>
+                      prev.includes(genre.id)
+                        ? prev.filter((g) => g !== genre.id)
+                        : [...prev, genre.id].slice(0, 4),
+                    )
+                  }}
+                >
+                  {genre.label}
+                </Focusable>
+              ))}
+            </div>
+          ) : null}
+
+          <div className={styles.resultsPane}>
+            {loading ? <p className="empty-state">Carregando catálogo…</p> : null}
+            {error ? <p className="error-state">{error}</p> : null}
+            {!loading && results.length > 0 ? (
+              <CatalogGrid
+                id="cat-results"
+                title="Catálogo"
+                items={results}
+                onSelect={onOpenItem}
+              />
+            ) : null}
+            {!loading && !error && results.length === 0 ? (
+              <p className="empty-state">Nenhum título encontrado.</p>
+            ) : null}
+          </div>
+        </>
       )}
-
-      {mode === 'mixed' ? (
-        <Focusable
-          focusKey="CAT_APPLY_MIXED"
-          className={cx(styles.applyBtn, selected.length === 0 && styles.applyDisabled)}
-          onEnterPress={() => {
-            void runMixed()
-          }}
-        >
-          Aplicar filtro misto
-          {selected.length > 0 ? ` (${String(selected.length)})` : ''}
-        </Focusable>
-      ) : null}
-
-      <div className={styles.results}>
-        {loading ? <p className="empty-state">Buscando títulos…</p> : null}
-        {error ? <p className="error-state">{error}</p> : null}
-        {!loading && results.length > 0 ? (
-          <Row
-            id="cat-results"
-            title={
-              seed
-                ? `Semelhantes a ${seed.title}`
-                : mode === 'mixed'
-                  ? 'Resultado misto'
-                  : 'Resultado'
-            }
-            items={results}
-            onSelect={onOpenItem}
-          />
-        ) : null}
-      </div>
     </Focusable>
   )
 }

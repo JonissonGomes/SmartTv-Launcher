@@ -96,6 +96,7 @@ const EMPTY_RAIL: RailInsights = { topRated: [], trending: [], genres: [] }
 export function useHomeFeed(
   history: WatchEntry[],
   ownedPlatforms: Platform[],
+  preferredGenreIds: number[] = [],
 ): HomeFeedState {
   const [state, setState] = useState<HomeFeedState>({
     loading: true,
@@ -104,6 +105,7 @@ export function useHomeFeed(
   })
   const historyKey = historySignature(history)
   const platformsKey = ownedPlatforms.slice().sort().join(',')
+  const prefsKey = preferredGenreIds.slice(0, 6).join(',')
 
   useEffect(() => {
     let cancelled = false
@@ -126,7 +128,10 @@ export function useHomeFeed(
         }
 
         const recent = getRecentDistinctEntries(history, 5)
-        const tasteGenres = topGenreIds(buildGenreScores(recent), 3)
+        const historyGenres = topGenreIds(buildGenreScores(recent), 3)
+        const tasteGenres = [
+          ...new Set([...preferredGenreIds.slice(0, 4), ...historyGenres]),
+        ].slice(0, 4)
         const owned = PLATFORM_ORDER.filter((p) => ownedPlatforms.includes(p))
 
         const [
@@ -200,6 +205,16 @@ export function useHomeFeed(
 
         const rows: ContentRow[] = []
         pushRow(rows, 'continue', 'Continuar assistindo', continueItems)
+
+        if (preferredGenreIds.length > 0 && personalizedDiscover.length > 0) {
+          pushRow(
+            rows,
+            'profile-prefs',
+            'Para o seu perfil',
+            personalizedDiscover,
+            18,
+          )
+        }
 
         const ranked = rankRecommendations(
           [
@@ -349,8 +364,7 @@ export function useHomeFeed(
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyKey, platformsKey])
+  }, [history, historyKey, ownedPlatforms, platformsKey, preferredGenreIds, prefsKey])
 
   return state
 }

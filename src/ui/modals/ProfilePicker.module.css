@@ -48,47 +48,50 @@
 .create {
   display: flex;
   flex-direction: column;
+  gap: var(--space-4);
+}
+
+.preview {
+  display: flex;
+  align-items: center;
   gap: var(--space-3);
 }
 
-.fieldLabel {
-  margin: 0;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
+.previewAvatar {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
 }
 
-.suggestions {
+.prefGrid {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+  max-height: 14rem;
+  overflow-y: auto;
+  scrollbar-width: none;
 }
 
-.suggest {
+.prefGrid::-webkit-scrollbar {
+  display: none;
+}
+
+.prefChip {
   padding: 0.55rem 0.9rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   font-weight: 600;
+  font-size: 0.9rem;
 }
 
-.suggestActive {
+.prefChipActive {
   background: var(--color-accent-soft);
   color: var(--color-accent);
-}
-
-.inputWrap {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.input {
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
 }
 
 .colors {
@@ -142,6 +145,11 @@
 .cardName {
   font-weight: 600;
   text-align: center;
+}
+
+.cardMeta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
 }
 
 .actions {

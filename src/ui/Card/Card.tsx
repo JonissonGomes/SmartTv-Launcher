@@ -1,5 +1,6 @@
 import type { CatalogItem } from '@/domain/types'
 import { imageUrl } from '@/services/tmdb'
+import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import styles from './Card.module.css'
 
@@ -7,16 +8,23 @@ interface CardProps {
   item: CatalogItem
   focusKey: string
   onSelect: (item: CatalogItem) => void
+  /** grid = preenche célula do mosaico */
+  layout?: 'row' | 'grid'
 }
 
-export function Card({ item, focusKey, onSelect }: CardProps) {
+export function Card({
+  item,
+  focusKey,
+  onSelect,
+  layout = 'row',
+}: CardProps) {
   const poster = imageUrl(item.posterPath, 'w342')
   const rating = item.voteAverage > 0 ? item.voteAverage.toFixed(1) : null
 
   return (
     <Focusable
       focusKey={focusKey}
-      className={styles.card}
+      className={cx(styles.card, layout === 'grid' && styles.cardGrid)}
       onEnterPress={() => {
         onSelect(item)
       }}
@@ -25,19 +33,18 @@ export function Card({ item, focusKey, onSelect }: CardProps) {
         <img
           className={styles.poster}
           src={poster}
-          alt=""
+          alt={item.title}
           width={192}
           height={280}
           loading="lazy"
           decoding="async"
         />
       ) : (
-        <div className={styles.placeholder}>{item.title}</div>
+        <div className={styles.placeholder} title={item.title}>
+          {item.title}
+        </div>
       )}
       {rating ? <span className={styles.rating}>{rating}</span> : null}
-      <div className={styles.meta}>
-        <p className={styles.title}>{item.title}</p>
-      </div>
     </Focusable>
   )
 }

@@ -21,6 +21,8 @@ export interface UserProfile {
   name: string
   /** Cor do avatar (hex). */
   color: string
+  /** Gêneros TMDB preferidos (personalizam o catálogo). */
+  preferredGenreIds: number[]
   createdAt: string
 }
 

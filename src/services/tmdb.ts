@@ -348,22 +348,34 @@ export async function discoverByGenres(
     excludeAnimation?: boolean
     /** 'and' = todos os gêneros; 'or' = qualquer um */
     match?: 'and' | 'or'
+    /** Páginas TMDB (20 itens cada). Default 1. */
+    pages?: number
   } = {},
 ): Promise<CatalogItem[]> {
   if (genreIds.length === 0) return []
   const sep = options.match === 'or' ? '|' : ','
-  const data = await tmdbFetch<TmdbPagedResult<TmdbSearchItem>>(
-    `/discover/${mediaType}`,
-    {
-      with_genres: genreIds.slice(0, 4).join(sep),
-      sort_by: 'popularity.desc',
-      watch_region: 'BR',
-      region: 'BR',
-      include_adult: 'false',
-      ...(options.excludeAnimation ? { without_genres: '16' } : {}),
-    },
+  const pageCount = Math.min(Math.max(options.pages ?? 1, 1), 5)
+  const baseQuery = {
+    with_genres: genreIds.slice(0, 4).join(sep),
+    sort_by: 'popularity.desc',
+    watch_region: 'BR',
+    region: 'BR',
+    include_adult: 'false',
+    ...(options.excludeAnimation ? { without_genres: '16' } : {}),
+  }
+
+  const pages = await Promise.all(
+    Array.from({ length: pageCount }, (_, index) =>
+      tmdbFetch<TmdbPagedResult<TmdbSearchItem>>(`/discover/${mediaType}`, {
+        ...baseQuery,
+        page: String(index + 1),
+      }),
+    ),
   )
-  return data.results.map((r) => toCatalogItem(r, mediaType))
+
+  return pages.flatMap((data) =>
+    data.results.map((r) => toCatalogItem(r, mediaType)),
+  )
 }
 
 export async function discoverPopular(

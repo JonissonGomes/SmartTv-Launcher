@@ -87,6 +87,9 @@ export default function App() {
   const profiles = useProfilesStore((s) => s.profiles)
   const profilesHydrated = useProfilesStore((s) => s.hydrated)
   const activeProfileId = useProfilesStore((s) => s.activeProfileId)
+  const activeProfile =
+    profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
+  const preferredGenreIds = activeProfile?.preferredGenreIds ?? []
   const [pending, setPending] = useState<PendingLaunch | null>(null)
   const [details, setDetails] = useState<CatalogItem | null>(null)
   const [showProfiles, setShowProfiles] = useState(false)
@@ -104,7 +107,7 @@ export default function App() {
     [activeProfileId, entries],
   )
 
-  const feed = useHomeFeed(profileEntries, ownedPlatforms)
+  const feed = useHomeFeed(profileEntries, ownedPlatforms, preferredGenreIds)
 
   const continuing = useMemo(
     () =>
