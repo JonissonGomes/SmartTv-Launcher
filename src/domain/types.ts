@@ -15,6 +15,7 @@ export type AppView =
   | 'platform'
   | 'categories'
   | 'surprise'
+  | 'games'
 
 export interface UserProfile {
   id: string

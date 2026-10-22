@@ -1,0 +1,187 @@
+.screen {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4);
+  flex-shrink: 0;
+}
+
+.kicker {
+  margin: 0 0 var(--space-1);
+  color: var(--color-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.room {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.lobby {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  gap: var(--space-5);
+  overflow: hidden;
+}
+
+.gamesList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.gamesList::-webkit-scrollbar {
+  display: none;
+}
+
+.gameCard {
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  border: 1px solid transparent;
+}
+
+.gameCard h2 {
+  margin: 0 0 var(--space-2);
+  font-size: 1.35rem;
+}
+
+.gameCard p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.gameCardActive {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.invite {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface) 92%, var(--color-tint));
+  border: 1px solid var(--color-border);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.invite::-webkit-scrollbar {
+  display: none;
+}
+
+.qr {
+  width: 11rem;
+  height: 11rem;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  align-self: center;
+}
+
+.invite h2 {
+  margin: 0;
+}
+
+.invite p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+}
+
+.url {
+  word-break: break-all;
+  font-size: 0.78rem !important;
+}
+
+.players {
+  font-weight: 700;
+  color: var(--color-text) !important;
+}
+
+.playerList {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+
+.startBtn,
+.backBtn,
+.localBtn {
+  padding: 0.8rem 1.2rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+}
+
+.startDisabled {
+  opacity: 0.45;
+}
+
+.localBtn {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--color-text);
+}
+
+.play {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.playBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.playBar h2 {
+  margin: 0;
+  flex: 1;
+}
+
+.stage {
+  flex: 1;
+  min-height: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #000;
+}
+
+.stage :global(.game-canvas) {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-width: 1100px) {
+  .lobby {
+    grid-template-columns: 1fr;
+  }
+}

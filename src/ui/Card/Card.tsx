@@ -8,7 +8,7 @@ interface CardProps {
   item: CatalogItem
   focusKey: string
   onSelect: (item: CatalogItem) => void
-  /** grid = preenche célula do mosaico */
+  /** grid = mosaico 16:9; row = pôster vertical nas fileiras */
   layout?: 'row' | 'grid'
 }
 
@@ -18,7 +18,10 @@ export function Card({
   onSelect,
   layout = 'row',
 }: CardProps) {
-  const poster = imageUrl(item.posterPath, 'w342')
+  const src =
+    layout === 'grid'
+      ? imageUrl(item.backdropPath ?? item.posterPath, 'w780')
+      : imageUrl(item.posterPath, 'w342')
   const rating = item.voteAverage > 0 ? item.voteAverage.toFixed(1) : null
 
   return (
@@ -29,13 +32,13 @@ export function Card({
         onSelect(item)
       }}
     >
-      {poster ? (
+      {src ? (
         <img
           className={styles.poster}
-          src={poster}
+          src={src}
           alt={item.title}
-          width={192}
-          height={280}
+          width={layout === 'grid' ? 320 : 192}
+          height={layout === 'grid' ? 180 : 280}
           loading="lazy"
           decoding="async"
         />

@@ -10,7 +10,7 @@
     color var(--transition-fast);
   border-radius: var(--radius-md);
   outline: 2px solid transparent;
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 .focused {

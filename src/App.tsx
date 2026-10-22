@@ -22,6 +22,8 @@ import {
 import { ProfilePicker } from '@/ui/modals/ProfilePicker'
 import { TitleDetails } from '@/ui/modals/TitleDetails'
 import { CategoriesScreen } from '@/ui/screens/CategoriesScreen'
+import { ControllerScreen } from '@/ui/screens/ControllerScreen'
+import { GamesScreen } from '@/ui/screens/GamesScreen'
 import { HistoryScreen } from '@/ui/screens/HistoryScreen'
 import { HomeScreen } from '@/ui/screens/HomeScreen'
 import { PlatformScreen } from '@/ui/screens/PlatformScreen'
@@ -29,6 +31,17 @@ import { SearchScreen } from '@/ui/screens/SearchScreen'
 import { SettingsScreen } from '@/ui/screens/SettingsScreen'
 import { SurpriseScreen } from '@/ui/screens/SurpriseScreen'
 import { ThemeRoot } from '@/ui/theme/ThemeRoot'
+
+function readControllerRoom(): string | null {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('controller') !== '1') return null
+    const room = params.get('room')?.trim().toUpperCase()
+    return room && room.length >= 3 ? room : null
+  } catch {
+    return null
+  }
+}
 
 init({
   debug: false,
@@ -77,6 +90,7 @@ function entryToCatalog(entry: WatchEntry): CatalogItem {
 }
 
 export default function App() {
+  const controllerRoom = readControllerRoom()
   const view = useSettingsStore((s) => s.view)
   const setView = useSettingsStore((s) => s.setView)
   const setActiveTheme = useSettingsStore((s) => s.setActiveTheme)
@@ -297,6 +311,14 @@ export default function App() {
     }
   }, [profileEntries])
 
+  if (controllerRoom) {
+    return (
+      <ThemeRoot>
+        <ControllerScreen roomId={controllerRoom} />
+      </ThemeRoot>
+    )
+  }
+
   return (
     <ThemeRoot>
       <Shell
@@ -330,6 +352,7 @@ export default function App() {
         {view === 'surprise' ? (
           <SurpriseScreen onOpenItem={openDetails} onWatch={watchFromDetails} />
         ) : null}
+        {view === 'games' ? <GamesScreen /> : null}
         {view === 'history' ? (
           <HistoryScreen onContinueId={continueById} />
         ) : null}

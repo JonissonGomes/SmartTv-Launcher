@@ -45,14 +45,15 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-width: 0;
-  max-width: 16rem;
-  padding: 0.55rem 1rem;
-  border-radius: 999px;
+  width: min(28rem, 42vw);
+  min-width: 14rem;
+  max-width: 32rem;
+  padding: 0.6rem 1.15rem;
+  border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -63,10 +64,4 @@
   font-size: 1.05rem;
   color: var(--color-text-muted);
   flex-shrink: 0;
-}
-
-@media (max-width: 1280px) {
-  .search {
-    max-width: 10rem;
-  }
 }

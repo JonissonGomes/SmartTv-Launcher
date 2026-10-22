@@ -14,6 +14,9 @@
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
+  /* Folga para outline/scale de foco não cortar o arredondamento */
+  margin: -0.35rem 0;
+  padding: 0.35rem 0;
 }
 
 .viewport::-webkit-scrollbar {
@@ -23,6 +26,6 @@
 .scroller {
   display: flex;
   gap: var(--space-4);
-  padding: var(--space-2) var(--space-1);
+  padding: 0.55rem 0.35rem;
   width: max-content;
 }

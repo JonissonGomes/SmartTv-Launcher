@@ -2,6 +2,7 @@ import { copyFileSync, cpSync, existsSync, mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
+import { gameRelayPlugin } from './server/gameRelay'
 import { jevProxyPlugin } from './server/jevProxy'
 
 function copyWebOsAssets() {
@@ -25,7 +26,7 @@ function copyWebOsAssets() {
 }
 
 export default defineConfig({
-  plugins: [react(), copyWebOsAssets(), jevProxyPlugin()],
+  plugins: [react(), copyWebOsAssets(), jevProxyPlugin(), gameRelayPlugin()],
   base: './',
   resolve: {
     alias: {

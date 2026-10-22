@@ -1,0 +1,91 @@
+.reaction,
+.quiz {
+  width: 100%;
+  height: 100%;
+  min-height: 22rem;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.reactionHint {
+  margin: 0;
+  font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+  font-weight: 800;
+  color: #fff;
+}
+
+.scoreRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+.scoreChip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 5.5rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 2px solid;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.scoreChip span {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.quiz {
+  background: color-mix(in srgb, var(--color-surface) 90%, var(--color-tint));
+  border: 1px solid var(--color-border);
+  align-items: stretch;
+  text-align: left;
+}
+
+.quizProgress {
+  margin: 0;
+  color: var(--color-accent);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.quizQ {
+  margin: 0;
+  font-size: clamp(1.3rem, 2.4vw, 1.9rem);
+}
+
+.quizOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.quizOpt {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.quizOpt strong {
+  color: var(--color-accent);
+}
+
+.quizFeedback {
+  margin: 0;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-align: center;
+}
