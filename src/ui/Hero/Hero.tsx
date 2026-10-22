@@ -51,7 +51,7 @@ export function Hero({ entry, onContinue, onMarkFinished }: HeroProps) {
               onContinue(entry)
             }}
           >
-            ▶ Assistir
+            Continuar
           </Focusable>
           <Focusable
             focusKey="HERO_DONE"

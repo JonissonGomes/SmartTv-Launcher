@@ -35,9 +35,6 @@ export function Card({ item, focusKey, onSelect }: CardProps) {
         <div className={styles.placeholder}>{item.title}</div>
       )}
       {rating ? <span className={styles.rating}>{rating}</span> : null}
-      <span className={styles.play} aria-hidden>
-        ▶
-      </span>
       <div className={styles.meta}>
         <p className={styles.title}>{item.title}</p>
       </div>

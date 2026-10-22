@@ -1,16 +1,27 @@
 .rail {
+  position: relative;
+  z-index: 3;
+  height: 100%;
+  min-width: 0;
+  width: var(--rail-width);
+  overflow: hidden;
+  border-left: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-tint));
+}
+
+.railInner {
   height: 100%;
   padding: var(--space-5) var(--space-4) var(--space-5) var(--space-3);
-  border-left: 1px solid var(--color-border);
-  background: linear-gradient(
-    180deg,
-    rgba(18, 21, 28, 0.72) 0%,
-    rgba(12, 14, 20, 0.55) 100%
-  );
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.railInner::-webkit-scrollbar {
+  display: none;
 }
 
 .profile {
@@ -18,6 +29,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
+  flex-shrink: 0;
 }
 
 .avatar {
@@ -57,21 +69,17 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  overflow-y: auto;
-  scrollbar-width: none;
 }
 
-.list::-webkit-scrollbar {
-  display: none;
-}
-
-.continueCard {
+.continueCard,
+.miniCard {
   display: grid;
-  grid-template-columns: 4.5rem 1fr;
+  grid-template-columns: 4.5rem minmax(0, 1fr);
   gap: var(--space-3);
   padding: var(--space-2);
   border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.04);
+  min-width: 0;
 }
 
 .thumb {
@@ -80,6 +88,10 @@
   border-radius: var(--radius-sm);
   object-fit: cover;
   background: var(--color-surface-2);
+}
+
+.continueMeta {
+  min-width: 0;
 }
 
 .continueMeta h3 {
@@ -91,7 +103,7 @@
 }
 
 .continueMeta p {
-  margin: 0 0 var(--space-2);
+  margin: 0;
   color: var(--color-text-muted);
   font-size: 0.75rem;
 }
@@ -101,34 +113,13 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
-  margin-bottom: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 .progress > span {
   display: block;
   height: 100%;
   background: var(--color-accent);
-}
-
-.watchBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.35rem 0.7rem;
-  border-radius: 999px;
-  background: var(--color-accent);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.miniCard {
-  display: grid;
-  grid-template-columns: 4.5rem 1fr;
-  gap: var(--space-3);
-  padding: var(--space-2);
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .genreGrid {

@@ -10,6 +10,7 @@
 
 .viewport {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;

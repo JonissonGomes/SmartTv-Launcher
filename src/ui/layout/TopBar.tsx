@@ -39,9 +39,11 @@ export function TopBar() {
           <Focusable
             key={tab.id}
             focusKey={`TOP_TAB_${tab.id}`}
+            variant="plain"
             className={cx(
               styles.tab,
-              (activeTab === tab.id || (tab.view === view && tab.id !== 'movies' && tab.id !== 'series')) &&
+              (activeTab === tab.id ||
+                (tab.view === view && tab.id !== 'movies' && tab.id !== 'series')) &&
                 styles.tabActive,
             )}
             onEnterPress={() => {

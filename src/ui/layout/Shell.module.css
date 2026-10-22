@@ -4,6 +4,7 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .shellNoRail {
@@ -11,9 +12,12 @@
 }
 
 .main {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  max-width: 100%;
   height: 100%;
   overflow: hidden;
   padding-left: var(--space-2);
@@ -22,6 +26,7 @@
 .content {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
-  padding: 0 var(--space-5) var(--space-5) var(--space-4);
+  padding: 0 var(--space-4) var(--space-5);
 }

@@ -2,6 +2,7 @@ import { copyFileSync, cpSync, existsSync, mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
+import { jevProxyPlugin } from './server/jevProxy'
 
 function copyWebOsAssets() {
   return {
@@ -24,7 +25,7 @@ function copyWebOsAssets() {
 }
 
 export default defineConfig({
-  plugins: [react(), copyWebOsAssets()],
+  plugins: [react(), copyWebOsAssets(), jevProxyPlugin()],
   base: './',
   resolve: {
     alias: {

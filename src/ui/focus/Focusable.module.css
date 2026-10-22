@@ -5,7 +5,8 @@
     transform var(--transition-med),
     box-shadow var(--transition-med),
     opacity var(--transition-fast),
-    background-color var(--transition-fast);
+    background-color var(--transition-fast),
+    color var(--transition-fast);
   border-radius: var(--radius-md);
   outline: 2px solid transparent;
   outline-offset: 3px;
@@ -14,7 +15,22 @@
 .focused {
   transform: translateZ(0) scale(var(--focus-scale));
   outline-color: var(--color-focus);
-  box-shadow: 0 0 0 2px var(--color-accent-soft), 0 8px 28px var(--color-glow);
+  box-shadow: 0 0 0 2px var(--color-accent-soft);
   will-change: transform;
   z-index: 2;
+}
+
+/* Tabs / textos do topo: sem cápsula arredondada */
+.plain {
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.plain.focused {
+  transform: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: var(--color-accent);
 }

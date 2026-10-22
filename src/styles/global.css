@@ -32,8 +32,11 @@ body {
   width: 100%;
   height: 100%;
   background:
-    radial-gradient(90% 70% at 70% -10%, var(--color-tint), transparent 55%),
-    radial-gradient(60% 50% at 0% 100%, var(--color-tint), transparent 50%),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-tint) 70%, transparent) 0%,
+      transparent 42%
+    ),
     var(--color-bg);
   transition: background var(--transition-med);
 }

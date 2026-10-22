@@ -13,8 +13,15 @@ Launcher para LG webOS (QNED82ASG / Simulator 26) com histórico local, recomend
 cp .env.example .env
 # Preferível: VITE_TMDB_TOKEN=seu_read_access_token (Bearer)
 # Fallback:   VITE_TMDB_API_KEY=sua_api_key
+# Opcional (só no PC, npm run dev): TYPESAFE_API_KEY=...  (Jev / TypeSafe)
 npm install
 ```
+
+### Jev (TypeSafe)
+
+Curadoria tipada de destaques/fileiras via `@typesafe-ai/sdk`.
+A chave `TYPESAFE_API_KEY` fica **só no servidor Vite** (`/api/jev/curate`).
+No Simulator/TV empacotado, o app usa ranking local equivalente.
 
 ## Comandos
 

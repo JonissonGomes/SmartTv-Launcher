@@ -8,6 +8,11 @@ import {
 } from '@/domain/recommend'
 import type { CatalogItem, ContentRow, Platform, WatchEntry } from '@/domain/types'
 import {
+  applyCurateToRows,
+  curateWithJev,
+  pickFeaturedCandidate,
+} from '@/services/jevCurate'
+import {
   discoverByGenres,
   discoverPopular,
   getNowPlaying,
@@ -217,6 +222,16 @@ export function useHomeFeed(
           )
         }
 
+        // Sessões por streaming em destaque (antes das fileiras genéricas)
+        owned.forEach((platform, index) => {
+          pushRow(
+            rows,
+            `provider-${platform}`,
+            `${platformLabel(platform)}`,
+            providerLists[index] ?? [],
+          )
+        })
+
         pushRow(
           rows,
           'trending-day',
@@ -254,20 +269,23 @@ export function useHomeFeed(
           ],
         )
 
-        owned.forEach((platform, index) => {
-          pushRow(
-            rows,
-            `provider-${platform}`,
-            `No ${platformLabel(platform)}`,
-            providerLists[index] ?? [],
-          )
-        })
+        const candidatePool = uniqueById([
+          ...ranked,
+          ...trendingDay,
+          ...trendingMovies,
+          ...popularMovies,
+          ...topRatedMovies,
+        ]).filter((i) => i.posterPath)
+
+        const curate = await curateWithJev(history, candidatePool, rows)
+        const orderedRows = applyCurateToRows(rows, curate.primaryRowId)
+        const jevFeatured = pickFeaturedCandidate(candidatePool, curate.featuredId)
 
         const featured =
           continueItems[0] ??
+          jevFeatured ??
           liveActionMovies.find((i) => i.backdropPath) ??
-          trendingMovies.find((i) => i.backdropPath) ??
-          popularMovies.find((i) => i.backdropPath)
+          trendingMovies.find((i) => i.backdropPath)
 
         const pool = [
           ...actionMovies,
@@ -286,24 +304,31 @@ export function useHomeFeed(
           }
         })
 
+        const railTrending = uniqueById([
+          ...(jevFeatured ? [jevFeatured] : []),
+          ...trendingDay.filter((i) => !isMostlyAnimation(i)),
+        ])
+          .filter((i) => i.posterPath)
+          .slice(0, 4)
+
         const rail: RailInsights = {
           topRated: uniqueById(topRatedMovies)
             .filter((i) => i.posterPath)
             .slice(0, 4),
-          trending: uniqueById(trendingDay.filter((i) => !isMostlyAnimation(i)))
-            .filter((i) => i.posterPath)
-            .slice(0, 4),
+          trending: railTrending,
           genres: genreTiles.filter((g) => g.posterPath),
         }
 
         if (!cancelled) {
           setState({
             loading: false,
-            rows,
+            rows: orderedRows,
             featured,
             rail,
             error:
-              rows.length === 0 ? 'Nenhum título retornado pela TMDB.' : undefined,
+              orderedRows.length === 0
+                ? 'Nenhum título retornado pela TMDB.'
+                : undefined,
           })
         }
       } catch (err) {

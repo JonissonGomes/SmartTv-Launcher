@@ -4,6 +4,7 @@ import {
   type UseFocusableConfig,
 } from '@noriginmedia/norigin-spatial-navigation'
 import type { CSSProperties, ReactNode, RefObject } from 'react'
+import { cx } from '@/ui/cx'
 import styles from './Focusable.module.css'
 
 interface FocusableProps extends UseFocusableConfig {
@@ -11,6 +12,8 @@ interface FocusableProps extends UseFocusableConfig {
   className?: string
   style?: CSSProperties
   as?: 'div' | 'button' | 'li'
+  /** Sem cápsula/escala — ideal para tabs de texto */
+  variant?: 'default' | 'plain'
 }
 
 export function Focusable({
@@ -18,17 +21,17 @@ export function Focusable({
   className,
   style,
   as: Tag = 'div',
+  variant = 'default',
   ...config
 }: FocusableProps) {
   const { ref, focused, focusKey } = useFocusable(config)
 
-  const classes = [
+  const classes = cx(
     styles.root,
-    focused ? styles.focused : '',
-    className ?? '',
-  ]
-    .filter(Boolean)
-    .join(' ')
+    focused && styles.focused,
+    variant === 'plain' && styles.plain,
+    className,
+  )
 
   return (
     <FocusContext.Provider value={focusKey}>
