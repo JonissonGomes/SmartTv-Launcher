@@ -2,52 +2,22 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   overflow: hidden;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-shrink: 0;
-}
-
-.kicker {
-  margin: 0 0 var(--space-1);
-  color: var(--color-accent);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.title {
-  margin: 0;
-  font-size: 2rem;
-}
-
-.againBtn {
-  padding: 0.8rem 1.3rem;
-  border-radius: 999px;
-  background: var(--color-accent);
-  color: #fff;
-  font-weight: 700;
-  white-space: nowrap;
 }
 
 .hero {
   position: relative;
-  flex: 0 0 auto;
-  height: clamp(14rem, 32vh, 20rem);
+  flex: 0 0 75%;
+  height: 75%;
+  min-height: 0;
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--color-surface);
 }
 
 .art {
-  opacity: 0.78;
+  opacity: 0.82;
 }
 
 .overlay {
@@ -56,9 +26,22 @@
   background: linear-gradient(
     90deg,
     rgba(8, 10, 14, 0.92) 0%,
-    rgba(8, 10, 14, 0.4) 55%,
-    rgba(8, 10, 14, 0.15) 100%
+    rgba(8, 10, 14, 0.42) 52%,
+    rgba(8, 10, 14, 0.18) 100%
   );
+}
+
+.againBtn {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 2;
+  padding: 0.8rem 1.3rem;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .heroBody {
@@ -68,15 +51,24 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: var(--space-5);
-  max-width: 40rem;
-  gap: var(--space-2);
+  padding: var(--space-6);
+  max-width: 44rem;
+  gap: var(--space-3);
+}
+
+.kicker {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .badge {
   margin: 0;
   color: var(--color-accent);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -84,18 +76,20 @@
 
 .pickTitle {
   margin: 0;
-  font-size: 2rem;
-  line-height: 1.1;
+  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  line-height: 1.05;
 }
 
 .overview {
   margin: 0;
   color: var(--color-text-muted);
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.4;
+  line-height: 1.45;
+  max-width: 38rem;
+  font-size: 1.05rem;
 }
 
 .actions {
@@ -105,7 +99,7 @@
 }
 
 .btn {
-  padding: 0.75rem 1.25rem;
+  padding: 0.85rem 1.35rem;
   border-radius: 999px;
   background: var(--color-accent);
   color: #fff;

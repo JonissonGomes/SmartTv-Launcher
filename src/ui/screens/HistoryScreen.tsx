@@ -1,4 +1,6 @@
+import { useMemo } from 'react'
 import { useHistoryStore } from '@/store/history'
+import { useProfilesStore } from '@/store/profiles'
 import { Focusable } from '@/ui/focus/Focusable'
 import styles from './HistoryScreen.module.css'
 
@@ -11,10 +13,23 @@ export function HistoryScreen({ onContinueId }: HistoryScreenProps) {
   const markFinished = useHistoryStore((s) => s.markFinished)
   const removeEntry = useHistoryStore((s) => s.removeEntry)
   const updateEntry = useHistoryStore((s) => s.updateEntry)
+  const activeProfileId = useProfilesStore((s) => s.activeProfileId)
 
-  const sorted = [...entries].sort(
-    (a, b) =>
-      new Date(b.lastWatchedAt).getTime() - new Date(a.lastWatchedAt).getTime(),
+  const sorted = useMemo(
+    () =>
+      [...entries]
+        .filter(
+          (e) =>
+            !activeProfileId ||
+            !e.profileId ||
+            e.profileId === activeProfileId,
+        )
+        .sort(
+          (a, b) =>
+            new Date(b.lastWatchedAt).getTime() -
+            new Date(a.lastWatchedAt).getTime(),
+        ),
+    [activeProfileId, entries],
   )
 
   return (

@@ -89,6 +89,7 @@ export function watchEntryFromLaunch(input: {
   title: string
   platform: Platform
   mediaType: WatchEntry['mediaType']
+  profileId?: string
   tmdbId?: number
   genreIds?: number[]
   season?: number
@@ -102,6 +103,7 @@ export function watchEntryFromLaunch(input: {
     title: input.title,
     platform: input.platform,
     mediaType: input.mediaType,
+    profileId: input.profileId,
     tmdbId: input.tmdbId,
     genreIds: input.genreIds ?? [],
     season: input.season,

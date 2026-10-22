@@ -6,6 +6,7 @@ import { useEffect, type RefObject } from 'react'
 import type { CatalogItem, WatchEntry } from '@/domain/types'
 import type { RailInsights } from '@/hooks/useHomeFeed'
 import { imageUrl } from '@/services/tmdb'
+import { useProfilesStore } from '@/store/profiles'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import styles from './RightRail.module.css'
@@ -37,6 +38,11 @@ export function RightRail({
   onOpenItem,
   onExpandedChange,
 }: RightRailProps) {
+  const profiles = useProfilesStore((s) => s.profiles)
+  const activeProfileId = useProfilesStore((s) => s.activeProfileId)
+  const activeProfile =
+    profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
+
   const { ref, focused, hasFocusedChild, focusKey } = useFocusable({
     focusKey: 'RIGHT_RAIL',
     trackChildren: true,
@@ -63,10 +69,21 @@ export function RightRail({
         <div className={styles.railInner}>
           <div className={styles.profile}>
             <div className={styles.profileMeta}>
-              <strong>Jonis</strong>
-              <span>Perfil local</span>
+              <strong>{activeProfile?.name ?? 'Perfil'}</strong>
+              <span>Perfil ativo</span>
             </div>
-            <div className={styles.avatar}>J</div>
+            <div
+              className={styles.avatar}
+              style={
+                activeProfile
+                  ? { background: activeProfile.color, color: '#fff' }
+                  : undefined
+              }
+            >
+              {activeProfile
+                ? activeProfile.name.slice(0, 1).toUpperCase()
+                : '?'}
+            </div>
           </div>
 
           {continuing.length > 0 ? (

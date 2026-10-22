@@ -13,6 +13,7 @@ interface ShellProps {
   continuing: WatchEntry[]
   rail: RailInsights
   onOpenItem: (item: CatalogItem) => void
+  onOpenProfiles?: () => void
   showRail?: boolean
 }
 
@@ -21,6 +22,7 @@ export function Shell({
   continuing,
   rail,
   onOpenItem,
+  onOpenProfiles,
   showRail = true,
 }: ShellProps) {
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
@@ -35,7 +37,10 @@ export function Shell({
         showRail && railExpanded && styles.shellRailExpanded,
       )}
     >
-      <Sidebar onExpandedChange={setSidebarExpanded} />
+      <Sidebar
+        onExpandedChange={setSidebarExpanded}
+        onOpenProfiles={onOpenProfiles}
+      />
       <Focusable focusKey="MAIN" className={styles.main} saveLastFocusedChild>
         <TopBar />
         <div className={styles.content}>{children}</div>

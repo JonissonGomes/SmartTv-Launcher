@@ -1,10 +1,16 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useEffect, useState } from 'react'
 import { APP_CONFIGS } from '@/config/apps'
+import {
+  PLATFORM_SECTIONS,
+  type PlatformSection,
+} from '@/config/platformCatalog'
 import type { CatalogItem, ContentRow, Platform } from '@/domain/types'
 import {
+  discoverByGenres,
   discoverPopular,
   getTrending,
+  searchMulti,
   TMDB_PROVIDER_IDS,
 } from '@/services/tmdb'
 import { launchApp } from '@/services/webos'
@@ -18,13 +24,79 @@ interface PlatformScreenProps {
   onOpenItem: (item: CatalogItem) => void
 }
 
+async function loadSection(
+  platform: Platform,
+  section: PlatformSection,
+  providerId?: number,
+): Promise<CatalogItem[]> {
+  if (section.kind === 'open_app') return []
+
+  if (section.kind === 'search' && section.query) {
+    const results = await searchMulti(section.query)
+    return results
+      .filter((item) => !section.mediaType || item.mediaType === section.mediaType)
+      .slice(0, 12)
+      .map((item) =>
+        item.platforms.includes(platform)
+          ? item
+          : { ...item, platforms: [...item.platforms, platform] },
+      )
+  }
+
+  if (platform === 'youtube' && section.id === 'yt-trend') {
+    const trending = await getTrending('all', 'week')
+    return trending.slice(0, 12).map((item) => ({
+      ...item,
+      platforms: ['youtube' as const],
+    }))
+  }
+
+  const mediaType = section.mediaType ?? 'movie'
+
+  if (section.genreIds?.length) {
+    const items = await discoverByGenres(section.genreIds, mediaType, {
+      match: 'and',
+    })
+    return tagProvider(items, platform, providerId)
+  }
+
+  if (!providerId && platform !== 'youtube') return []
+
+  const items = await discoverPopular(mediaType, {
+    withWatchProvider: providerId,
+    sortBy: section.sortBy,
+  })
+  return tagProvider(items, platform, providerId)
+}
+
+function tagProvider(
+  items: CatalogItem[],
+  platform: Platform,
+  providerId?: number,
+): CatalogItem[] {
+  if (!providerId) {
+    return items.map((item) =>
+      item.platforms.includes(platform)
+        ? item
+        : { ...item, platforms: [...item.platforms, platform] },
+    )
+  }
+  return items.map((item) =>
+    item.platforms.includes(platform)
+      ? item
+      : { ...item, platforms: [...item.platforms, platform] },
+  )
+}
+
 export function PlatformScreen({ platform, onOpenItem }: PlatformScreenProps) {
   const setActiveTheme = useSettingsStore((s) => s.setActiveTheme)
   const [rows, setRows] = useState<ContentRow[]>([])
+  const [shortcuts, setShortcuts] = useState<PlatformSection[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>()
   const config = APP_CONFIGS[platform]
   const providerId = TMDB_PROVIDER_IDS[platform]
+  const sections = PLATFORM_SECTIONS[platform]
 
   useEffect(() => {
     void setFocus('PLATFORM_OPEN')
@@ -34,53 +106,34 @@ export function PlatformScreen({ platform, onOpenItem }: PlatformScreenProps) {
     let cancelled = false
     setLoading(true)
     setError(undefined)
+    setShortcuts(sections.filter((s) => s.kind === 'open_app'))
 
     void (async () => {
       try {
-        if (platform === 'youtube') {
-          const trending = await getTrending('all', 'week')
-          if (cancelled) return
-          setRows([
-            {
-              id: 'yt-trend',
-              title: 'Em alta (para assistir no YouTube)',
-              items: trending.slice(0, 12).map((item) => ({
-                ...item,
-                platforms: ['youtube'],
-              })),
-            },
-          ])
-          return
-        }
-
-        if (!providerId) {
-          setRows([])
-          setError('Catálogo indisponível para este streaming.')
-          return
-        }
-
-        const [movies, series, top] = await Promise.all([
-          discoverPopular('movie', { withWatchProvider: providerId }),
-          discoverPopular('tv', { withWatchProvider: providerId }),
-          discoverPopular('movie', {
-            withWatchProvider: providerId,
-            sortBy: 'vote_average.desc',
+        const contentSections = sections.filter((s) => s.kind !== 'open_app')
+        const loaded = await Promise.all(
+          contentSections.map(async (section) => {
+            const items = await loadSection(platform, section, providerId)
+            return { section, items }
           }),
-        ])
+        )
 
         if (cancelled) return
 
-        const next: ContentRow[] = []
-        if (movies.length)
-          next.push({ id: 'plat-movies', title: 'Filmes em destaque', items: movies })
-        if (series.length)
-          next.push({ id: 'plat-series', title: 'Séries em destaque', items: series })
-        if (top.length)
-          next.push({ id: 'plat-top', title: 'Bem avaliados', items: top })
-        setRows(next)
+        setRows(
+          loaded
+            .filter((entry) => entry.items.length > 0)
+            .map((entry) => ({
+              id: entry.section.id,
+              title: entry.section.label,
+              items: entry.items,
+            })),
+        )
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Falha ao carregar catálogo')
+          setError(
+            err instanceof Error ? err.message : 'Falha ao carregar catálogo',
+          )
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -90,7 +143,12 @@ export function PlatformScreen({ platform, onOpenItem }: PlatformScreenProps) {
     return () => {
       cancelled = true
     }
-  }, [platform, providerId])
+  }, [platform, providerId, sections])
+
+  const openStreaming = () => {
+    setActiveTheme(platform)
+    void launchApp(platform)
+  }
 
   return (
     <Focusable focusKey="VIEW_platform" className={styles.screen} saveLastFocusedChild>
@@ -102,19 +160,32 @@ export function PlatformScreen({ platform, onOpenItem }: PlatformScreenProps) {
         <Focusable
           focusKey="PLATFORM_OPEN"
           className={styles.openBtn}
-          onEnterPress={() => {
-            setActiveTheme(platform)
-            void launchApp(platform)
-          }}
+          onEnterPress={openStreaming}
         >
           Abrir {config.label}
         </Focusable>
       </header>
 
+      {shortcuts.length > 0 ? (
+        <div className={styles.shortcuts}>
+          {shortcuts.map((section) => (
+            <Focusable
+              key={section.id}
+              focusKey={`PLATFORM_SHORT_${section.id}`}
+              className={styles.shortcut}
+              onEnterPress={openStreaming}
+            >
+              <strong>{section.label}</strong>
+              <span>{section.appHint ?? `Abrir no ${config.label}`}</span>
+            </Focusable>
+          ))}
+        </div>
+      ) : null}
+
       <div className={styles.body}>
         {loading ? <p className="empty-state">Carregando catálogo…</p> : null}
         {error ? <p className="error-state">{error}</p> : null}
-        {!loading && !error && rows.length === 0 ? (
+        {!loading && !error && rows.length === 0 && shortcuts.length === 0 ? (
           <p className="empty-state">Nenhum título encontrado neste streaming.</p>
         ) : null}
         {rows.map((row) => (

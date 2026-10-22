@@ -43,7 +43,8 @@ export function SurpriseScreen({ onOpenItem, onWatch }: SurpriseScreenProps) {
           setPool(source)
         }
 
-        const next = pickRandom(source.filter((i) => i.tmdbId !== pick?.tmdbId)) ??
+        const next =
+          pickRandom(source.filter((i) => i.tmdbId !== pick?.tmdbId)) ??
           pickRandom(source)
         if (!next) {
           setError('Não foi possível surpreender agora.')
@@ -71,7 +72,6 @@ export function SurpriseScreen({ onOpenItem, onWatch }: SurpriseScreenProps) {
 
   useEffect(() => {
     void surprise()
-    // montagem inicial
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -79,22 +79,6 @@ export function SurpriseScreen({ onOpenItem, onWatch }: SurpriseScreenProps) {
 
   return (
     <Focusable focusKey="VIEW_surprise" className={styles.screen} saveLastFocusedChild>
-      <header className={styles.header}>
-        <div>
-          <p className={styles.kicker}>Descoberta</p>
-          <h1 className={styles.title}>Surpreenda</h1>
-        </div>
-        <Focusable
-          focusKey="SURPRISE_AGAIN"
-          className={styles.againBtn}
-          onEnterPress={() => {
-            void surprise(pool)
-          }}
-        >
-          Surpreender novamente
-        </Focusable>
-      </header>
-
       {loading && !pick ? <p className="empty-state">Sorteando um título…</p> : null}
       {error ? <p className="error-state">{error}</p> : null}
 
@@ -107,7 +91,17 @@ export function SurpriseScreen({ onOpenItem, onWatch }: SurpriseScreenProps) {
             youtubeKey={trailerKey}
           />
           <div className={styles.overlay} />
+          <Focusable
+            focusKey="SURPRISE_AGAIN"
+            className={styles.againBtn}
+            onEnterPress={() => {
+              void surprise(pool)
+            }}
+          >
+            Surpreender novamente
+          </Focusable>
           <div className={styles.heroBody}>
+            <p className={styles.kicker}>Descoberta · Surpreenda-me</p>
             <p className={styles.badge}>Sorteio do momento</p>
             <h2 className={styles.pickTitle}>{pick.title}</h2>
             <p className={styles.overview}>

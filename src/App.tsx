@@ -12,12 +12,14 @@ import {
   useHistoryStore,
   watchEntryFromLaunch,
 } from '@/store/history'
+import { useProfilesStore } from '@/store/profiles'
 import { useSettingsStore } from '@/store/settings'
 import { Shell } from '@/ui/layout/Shell'
 import {
   EpisodePrompt,
   type EpisodeSelection,
 } from '@/ui/modals/EpisodePrompt'
+import { ProfilePicker } from '@/ui/modals/ProfilePicker'
 import { TitleDetails } from '@/ui/modals/TitleDetails'
 import { CategoriesScreen } from '@/ui/screens/CategoriesScreen'
 import { HistoryScreen } from '@/ui/screens/HistoryScreen'
@@ -82,14 +84,31 @@ export default function App() {
   const ownedPlatforms = useSettingsStore((s) => s.ownedPlatforms)
   const addEntry = useHistoryStore((s) => s.addEntry)
   const entries = useHistoryStore((s) => s.entries)
+  const profiles = useProfilesStore((s) => s.profiles)
+  const profilesHydrated = useProfilesStore((s) => s.hydrated)
+  const activeProfileId = useProfilesStore((s) => s.activeProfileId)
   const [pending, setPending] = useState<PendingLaunch | null>(null)
   const [details, setDetails] = useState<CatalogItem | null>(null)
+  const [showProfiles, setShowProfiles] = useState(false)
 
-  const feed = useHomeFeed(entries, ownedPlatforms)
+  const needsProfileSetup = profilesHydrated && profiles.length === 0
+
+  const profileEntries = useMemo(
+    () =>
+      entries.filter(
+        (e) =>
+          !activeProfileId ||
+          !e.profileId ||
+          e.profileId === activeProfileId,
+      ),
+    [activeProfileId, entries],
+  )
+
+  const feed = useHomeFeed(profileEntries, ownedPlatforms)
 
   const continuing = useMemo(
     () =>
-      [...entries]
+      [...profileEntries]
         .filter((e) => !e.finished)
         .sort(
           (a, b) =>
@@ -97,18 +116,29 @@ export default function App() {
             new Date(a.lastWatchedAt).getTime(),
         )
         .slice(0, 5),
-    [entries],
+    [profileEntries],
   )
 
   const hasHero = continuing.length > 0
 
   useEffect(() => {
+    if (needsProfileSetup) setShowProfiles(true)
+  }, [needsProfileSetup])
+
+  useEffect(() => {
+    if (needsProfileSetup || showProfiles) return
     focusHome(hasHero)
-  }, [hasHero])
+  }, [hasHero, needsProfileSetup, showProfiles])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.keyCode !== 461 && event.key !== 'Escape') return
+
+      if (showProfiles && !needsProfileSetup) {
+        setShowProfiles(false)
+        event.preventDefault()
+        return
+      }
 
       if (details) {
         setDetails(null)
@@ -134,13 +164,14 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [details, hasHero, pending, setView, view])
+  }, [details, hasHero, needsProfileSetup, pending, setView, showProfiles, view])
 
   const commitLaunch = useCallback(
     async (data: PendingLaunch, episode?: EpisodeSelection) => {
       addEntry(
         watchEntryFromLaunch({
           ...data,
+          profileId: useProfilesStore.getState().activeProfileId ?? undefined,
           season: episode?.season ?? data.season,
           episode: episode?.episode ?? data.episode,
         }),
@@ -235,7 +266,7 @@ export default function App() {
   )
 
   useEffect(() => {
-    const orphans = entries.filter((e) => !e.tmdbId).slice(0, 3)
+    const orphans = profileEntries.filter((e) => !e.tmdbId).slice(0, 3)
     if (orphans.length === 0) return
 
     let cancelled = false
@@ -261,7 +292,7 @@ export default function App() {
     return () => {
       cancelled = true
     }
-  }, [entries])
+  }, [profileEntries])
 
   return (
     <ThemeRoot>
@@ -269,6 +300,9 @@ export default function App() {
         continuing={continuing}
         rail={feed.rail}
         onOpenItem={openDetails}
+        onOpenProfiles={() => {
+          setShowProfiles(true)
+        }}
         showRail={view === 'home' || view === 'history'}
       >
         {view === 'home' ? (
@@ -322,6 +356,16 @@ export default function App() {
           }}
           onSkip={() => {
             void commitLaunch(pending)
+          }}
+        />
+      ) : null}
+
+      {showProfiles || needsProfileSetup ? (
+        <ProfilePicker
+          mode={needsProfileSetup ? 'setup' : 'switch'}
+          onDone={() => {
+            setShowProfiles(false)
+            focusHome(hasHero)
           }}
         />
       ) : null}

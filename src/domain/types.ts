@@ -16,8 +16,18 @@ export type AppView =
   | 'categories'
   | 'surprise'
 
+export interface UserProfile {
+  id: string
+  name: string
+  /** Cor do avatar (hex). */
+  color: string
+  createdAt: string
+}
+
 export interface WatchEntry {
   id: string
+  /** Perfil dono do histórico (personalização). */
+  profileId?: string
   tmdbId?: number
   mediaType: MediaType
   title: string

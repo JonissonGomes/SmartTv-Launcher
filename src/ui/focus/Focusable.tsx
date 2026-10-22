@@ -12,8 +12,8 @@ interface FocusableProps extends UseFocusableConfig {
   className?: string
   style?: CSSProperties
   as?: 'div' | 'button' | 'li'
-  /** Sem cápsula/escala — ideal para tabs de texto */
-  variant?: 'default' | 'plain'
+  /** plain = tabs; nav = sidebar sem blur/scale */
+  variant?: 'default' | 'plain' | 'nav'
 }
 
 export function Focusable({
@@ -30,6 +30,7 @@ export function Focusable({
     styles.root,
     focused && styles.focused,
     variant === 'plain' && styles.plain,
+    variant === 'nav' && styles.nav,
     className,
   )
 

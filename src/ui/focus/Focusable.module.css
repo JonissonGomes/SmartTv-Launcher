@@ -35,3 +35,19 @@
   box-shadow: none !important;
   color: var(--color-accent);
 }
+
+/* Sidebar / nav: foco nítido, sem scale nem glow/blur */
+.nav {
+  outline: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+  border-radius: var(--radius-sm);
+}
+
+.nav.focused {
+  transform: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+}

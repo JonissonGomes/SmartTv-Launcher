@@ -23,10 +23,11 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  min-height: 2.75rem;
+  min-height: 3.25rem;
   margin-bottom: var(--space-4);
   color: var(--color-text);
-  padding: 0 var(--space-2);
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
 }
 
 .brandMark {
@@ -35,8 +36,10 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: 1.15rem;
   flex-shrink: 0;
 }
 
@@ -99,7 +102,7 @@
 }
 
 .itemActive {
-  background: var(--color-accent-soft);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--color-text);
 }
 
