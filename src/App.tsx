@@ -21,6 +21,7 @@ import { HistoryScreen } from '@/ui/screens/HistoryScreen'
 import { HomeScreen } from '@/ui/screens/HomeScreen'
 import { SearchScreen } from '@/ui/screens/SearchScreen'
 import { SettingsScreen } from '@/ui/screens/SettingsScreen'
+import { ThemeRoot } from '@/ui/theme/ThemeRoot'
 
 init({
   debug: false,
@@ -53,6 +54,7 @@ interface PendingLaunch {
 export default function App() {
   const view = useSettingsStore((s) => s.view)
   const setView = useSettingsStore((s) => s.setView)
+  const setActiveTheme = useSettingsStore((s) => s.setActiveTheme)
   const addEntry = useHistoryStore((s) => s.addEntry)
   const entries = useHistoryStore((s) => s.entries)
   const [pending, setPending] = useState<PendingLaunch | null>(null)
@@ -100,34 +102,40 @@ export default function App() {
     [addEntry],
   )
 
-  const openCatalogItem = useCallback((item: CatalogItem) => {
-    const platform: Platform =
-      item.platforms[0] ??
-      useSettingsStore.getState().ownedPlatforms[0] ??
-      'netflix'
+  const openCatalogItem = useCallback(
+    (item: CatalogItem) => {
+      const platform: Platform =
+        item.platforms[0] ??
+        useSettingsStore.getState().ownedPlatforms[0] ??
+        'netflix'
 
-    const payload: PendingLaunch = {
-      title: item.title,
-      platform,
-      mediaType: item.mediaType,
-      tmdbId: item.tmdbId,
-      genreIds: item.genreIds,
-      posterPath: item.posterPath ?? undefined,
-      backdropPath: item.backdropPath ?? undefined,
-      overview: item.overview,
-      voteAverage: item.voteAverage,
-    }
+      setActiveTheme(platform)
 
-    if (item.mediaType === 'tv') {
-      setPending(payload)
-      return
-    }
+      const payload: PendingLaunch = {
+        title: item.title,
+        platform,
+        mediaType: item.mediaType,
+        tmdbId: item.tmdbId,
+        genreIds: item.genreIds,
+        posterPath: item.posterPath ?? undefined,
+        backdropPath: item.backdropPath ?? undefined,
+        overview: item.overview,
+        voteAverage: item.voteAverage,
+      }
 
-    void commitLaunch(payload)
-  }, [commitLaunch])
+      if (item.mediaType === 'tv') {
+        setPending(payload)
+        return
+      }
+
+      void commitLaunch(payload)
+    },
+    [commitLaunch, setActiveTheme],
+  )
 
   const continueEntry = useCallback(
     (entry: WatchEntry) => {
+      setActiveTheme(entry.platform)
       const payload: PendingLaunch = {
         title: entry.title,
         platform: entry.platform,
@@ -149,7 +157,7 @@ export default function App() {
 
       void commitLaunch(payload)
     },
-    [commitLaunch],
+    [commitLaunch, setActiveTheme],
   )
 
   const continueById = useCallback(
@@ -191,32 +199,37 @@ export default function App() {
   }, [entries])
 
   return (
-    <Shell>
-      {view === 'home' ? (
-        <HomeScreen
-          onOpenItem={openCatalogItem}
-          onContinueEntry={continueEntry}
-        />
-      ) : null}
-      {view === 'history' ? (
-        <HistoryScreen onContinueId={continueById} />
-      ) : null}
-      {view === 'search' ? <SearchScreen onSelect={openCatalogItem} /> : null}
-      {view === 'settings' ? <SettingsScreen /> : null}
+    <ThemeRoot>
+      <Shell
+        onContinueEntry={continueEntry}
+        showRail={view === 'home' || view === 'history'}
+      >
+        {view === 'home' ? (
+          <HomeScreen
+            onOpenItem={openCatalogItem}
+            onContinueEntry={continueEntry}
+          />
+        ) : null}
+        {view === 'history' ? (
+          <HistoryScreen onContinueId={continueById} />
+        ) : null}
+        {view === 'search' ? <SearchScreen onSelect={openCatalogItem} /> : null}
+        {view === 'settings' ? <SettingsScreen /> : null}
 
-      {pending ? (
-        <EpisodePrompt
-          title={pending.title}
-          initialSeason={pending.season ?? 1}
-          initialEpisode={pending.episode ?? 1}
-          onConfirm={(selection) => {
-            void commitLaunch(pending, selection)
-          }}
-          onSkip={() => {
-            void commitLaunch(pending)
-          }}
-        />
-      ) : null}
-    </Shell>
+        {pending ? (
+          <EpisodePrompt
+            title={pending.title}
+            initialSeason={pending.season ?? 1}
+            initialEpisode={pending.episode ?? 1}
+            onConfirm={(selection) => {
+              void commitLaunch(pending, selection)
+            }}
+            onSkip={() => {
+              void commitLaunch(pending)
+            }}
+          />
+        ) : null}
+      </Shell>
+    </ThemeRoot>
   )
 }

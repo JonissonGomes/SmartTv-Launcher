@@ -7,8 +7,11 @@ import { idbStorage } from '@/store/idbStorage'
 interface SettingsState {
   view: AppView
   ownedPlatforms: Platform[]
+  /** Tema visual ativo (acento/transparência). */
+  activeTheme: Platform | null
   reducedMotion: boolean
   setView: (view: AppView) => void
+  setActiveTheme: (platform: Platform | null) => void
   togglePlatform: (platform: Platform) => void
   setReducedMotion: (value: boolean) => void
 }
@@ -18,9 +21,12 @@ export const useSettingsStore = create<SettingsState>()(
     (set, get) => ({
       view: 'home',
       ownedPlatforms: [...PLATFORM_ORDER],
+      activeTheme: null,
       reducedMotion: false,
 
       setView: (view) => set({ view }),
+
+      setActiveTheme: (platform) => set({ activeTheme: platform }),
 
       togglePlatform: (platform) => {
         const current = get().ownedPlatforms
@@ -38,6 +44,7 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createJSONStorage(() => idbStorage),
       partialize: (state) => ({
         ownedPlatforms: state.ownedPlatforms,
+        activeTheme: state.activeTheme,
         reducedMotion: state.reducedMotion,
       }),
     },

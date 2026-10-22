@@ -1,4 +1,9 @@
-export type Platform = 'netflix' | 'hbomax' | 'globoplay' | 'youtube'
+export type Platform =
+  | 'netflix'
+  | 'disney'
+  | 'hbomax'
+  | 'globoplay'
+  | 'youtube'
 
 export type MediaType = 'movie' | 'tv'
 

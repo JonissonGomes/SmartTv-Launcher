@@ -43,13 +43,19 @@ export function PlatformIcon({
           <path d="M5 3h3.2l5.1 12.2V3H17v18h-3.3L8.5 8.5V21H5V3z" />
         </Svg>
       )
+    case 'disney':
+      return (
+        <Svg size={size} style={{ color: '#5B9BFF' }}>
+          <path d="M12 3c4.5 3.2 7 6.8 7 10.2A4.8 4.8 0 0 1 12 18a4.8 4.8 0 0 1-7-4.8C5 9.8 7.5 6.2 12 3zm0 4.2c-2.2 1.8-3.4 3.7-3.4 5.5A1.4 1.4 0 0 0 12 14.2a1.4 1.4 0 0 0 3.4-1.5c0-1.8-1.2-3.7-3.4-5.5z" />
+        </Svg>
+      )
     case 'hbomax':
       return (
-        <Svg size={size} style={{ color: '#B39BFF' }} viewBox="0 0 64 24">
+        <Svg size={size} style={{ color: '#C5CCD6' }} viewBox="0 0 64 24">
           <text
             x="2"
             y="18"
-            fontSize="16"
+            fontSize="15"
             fontWeight="800"
             fontFamily="Segoe UI, sans-serif"
           >
@@ -111,7 +117,7 @@ export function NavIcon({ view, size = 24 }: { view: AppView; size?: number }) {
 
 export function BrandIcon({ size = 28 }: { size?: number }) {
   return (
-    <Svg size={size} style={{ color: '#2dd4bf' }}>
+    <Svg size={size} style={{ color: 'currentColor' }}>
       <path d="M4 5h6l2 5 2-5h6v14h-4V11l-2.5 6h-3L8 11v8H4V5z" />
     </Svg>
   )

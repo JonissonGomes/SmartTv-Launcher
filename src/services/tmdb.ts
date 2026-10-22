@@ -6,9 +6,10 @@ const IMAGE_BASE = 'https://image.tmdb.org/t/p'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
 const PROVIDER_MAP: Record<number, Platform> = {
   8: 'netflix',
+  337: 'disney',
   1899: 'hbomax',
+  384: 'hbomax',
   307: 'globoplay',
-  // YouTube não é provider TMDB clássico; mantemos vazio
 }
 
 interface CacheEntry<T> {

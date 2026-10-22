@@ -29,6 +29,10 @@ export function Hero({ entry, onContinue, onMarkFinished }: HeroProps) {
     entry.mediaType === 'tv' && (entry.season || entry.episode)
       ? `T${String(entry.season ?? 1)} E${String(entry.episode ?? 1)}`
       : null
+  const rating =
+    entry.voteAverage && entry.voteAverage > 0
+      ? entry.voteAverage.toFixed(1)
+      : null
 
   return (
     <Focusable focusKey="HERO" className={styles.hero} saveLastFocusedChild>
@@ -43,6 +47,7 @@ export function Hero({ entry, onContinue, onMarkFinished }: HeroProps) {
         />
       ) : null}
       <div className={styles.overlay} />
+      {rating ? <span className={styles.rating}>{rating}</span> : null}
       <div className={styles.body}>
         <p className={styles.kicker}>Continuar de onde parei</p>
         <h2 className={styles.title}>{entry.title}</h2>
@@ -59,7 +64,7 @@ export function Hero({ entry, onContinue, onMarkFinished }: HeroProps) {
               onContinue(entry)
             }}
           >
-            Continuar
+            ▶ Assistir
           </Focusable>
           <Focusable
             focusKey="HERO_DONE"
@@ -68,7 +73,7 @@ export function Hero({ entry, onContinue, onMarkFinished }: HeroProps) {
               onMarkFinished(entry)
             }}
           >
-            Marcar concluído
+            Concluído
           </Focusable>
         </div>
       </div>

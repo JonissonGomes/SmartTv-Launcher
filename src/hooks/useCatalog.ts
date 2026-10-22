@@ -201,6 +201,8 @@ function platformLabel(platform: Platform): string {
   switch (platform) {
     case 'netflix':
       return 'Netflix'
+    case 'disney':
+      return 'Disney+'
     case 'hbomax':
       return 'HBO Max'
     case 'globoplay':

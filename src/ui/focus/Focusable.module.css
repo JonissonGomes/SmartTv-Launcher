@@ -4,7 +4,8 @@
   transition:
     transform var(--transition-med),
     box-shadow var(--transition-med),
-    opacity var(--transition-fast);
+    opacity var(--transition-fast),
+    background-color var(--transition-fast);
   border-radius: var(--radius-md);
   outline: 2px solid transparent;
   outline-offset: 3px;
@@ -13,7 +14,7 @@
 .focused {
   transform: translateZ(0) scale(var(--focus-scale));
   outline-color: var(--color-focus);
-  box-shadow: 0 0 0 2px var(--color-accent-soft);
+  box-shadow: 0 0 0 2px var(--color-accent-soft), 0 8px 28px var(--color-glow);
   will-change: transform;
   z-index: 2;
 }
