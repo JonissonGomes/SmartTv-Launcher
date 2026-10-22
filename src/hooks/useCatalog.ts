@@ -35,11 +35,20 @@ function entryToCatalog(entry: WatchEntry): CatalogItem {
   }
 }
 
+function historySignature(history: WatchEntry[]): string {
+  return history
+    .slice(0, 30)
+    .map((e) => `${e.id}:${e.lastWatchedAt}:${e.finished ? 1 : 0}`)
+    .join('|')
+}
+
 export function useCatalog(
   history: WatchEntry[],
   ownedPlatforms: Platform[],
 ): CatalogState {
   const [state, setState] = useState<CatalogState>({ loading: true, rows: [] })
+  const historyKey = historySignature(history)
+  const platformsKey = ownedPlatforms.slice().sort().join(',')
 
   useEffect(() => {
     let cancelled = false
@@ -85,16 +94,18 @@ export function useCatalog(
         const genreScores = buildGenreScores(recent)
         const genres = topGenreIds(genreScores, 3)
 
-        const [discoveredMovies, discoveredTv, trending, ...recLists] =
-          await Promise.all([
-            discoverByGenres(genres, 'movie'),
-            discoverByGenres(genres, 'tv'),
-            getTrending('all'),
-            ...recent
-              .filter((e) => e.tmdbId)
-              .slice(0, 5)
-              .map((e) => getRecommendations(e.mediaType, e.tmdbId as number)),
-          ])
+        const trending = await getTrending('all')
+
+        const [discoveredMovies, discoveredTv, ...recLists] = await Promise.all([
+          genres.length > 0 ? discoverByGenres(genres, 'movie') : Promise.resolve([]),
+          genres.length > 0 ? discoverByGenres(genres, 'tv') : Promise.resolve([]),
+          ...recent
+            .filter((e) => e.tmdbId)
+            .slice(0, 3)
+            .map((e) =>
+              getRecommendations(e.mediaType, e.tmdbId as number).catch(() => []),
+            ),
+        ])
 
         const candidates = [
           ...discoveredMovies,
@@ -110,13 +121,15 @@ export function useCatalog(
           20,
         )
 
-        if (recent[0]) {
+        if (recent[0] && ranked.length > 0) {
           rows.push({
             id: 'because',
             title: `Porque você assistiu ${recent[0].title}`,
             items: ranked.slice(0, 12),
           })
-        } else {
+        }
+
+        if (trending.length > 0) {
           rows.push({
             id: 'trending',
             title: 'Em alta esta semana',
@@ -151,13 +164,22 @@ export function useCatalog(
         }
 
         if (!cancelled) {
-          setState({ loading: false, rows })
+          setState({
+            loading: false,
+            rows,
+            error:
+              rows.length === 0
+                ? 'Nenhum título retornado pela TMDB.'
+                : undefined,
+          })
         }
       } catch (err) {
+        console.error('[catalog]', err)
         if (!cancelled) {
           setState({
             loading: false,
-            error: err instanceof Error ? err.message : 'Falha ao carregar catálogo',
+            error:
+              err instanceof Error ? err.message : 'Falha ao carregar catálogo',
             rows: [],
           })
         }
@@ -168,7 +190,9 @@ export function useCatalog(
     return () => {
       cancelled = true
     }
-  }, [history, ownedPlatforms])
+    // history/ownedPlatforms via assinatura estável
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyKey, platformsKey])
 
   return state
 }

@@ -8,14 +8,20 @@
   font-weight: 600;
 }
 
+.viewport {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.viewport::-webkit-scrollbar {
+  display: none;
+}
+
 .scroller {
   display: flex;
   gap: var(--space-4);
-  overflow: hidden;
   padding: var(--space-2) var(--space-1);
-}
-
-.viewport {
-  overflow: hidden;
-  width: 100%;
+  width: max-content;
 }

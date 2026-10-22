@@ -1,17 +1,18 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { APP_CONFIGS, PLATFORM_ORDER } from '@/config/apps'
-import type { AppView, Platform } from '@/domain/types'
+import type { AppView } from '@/domain/types'
 import { launchApp } from '@/services/webos'
 import { useSettingsStore } from '@/store/settings'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
+import { BrandIcon, NavIcon, PlatformIcon } from '@/ui/icons/Icons'
 import styles from './Sidebar.module.css'
 
-const NAV_ITEMS: Array<{ view: AppView; label: string; short: string }> = [
-  { view: 'home', label: 'Início', short: 'Home' },
-  { view: 'history', label: 'Histórico', short: 'Hist' },
-  { view: 'search', label: 'Busca', short: 'Busca' },
-  { view: 'settings', label: 'Config', short: 'Cfg' },
+const NAV_ITEMS: Array<{ view: AppView; label: string }> = [
+  { view: 'home', label: 'Início' },
+  { view: 'history', label: 'Histórico' },
+  { view: 'search', label: 'Busca' },
+  { view: 'settings', label: 'Config' },
 ]
 
 export function Sidebar() {
@@ -25,7 +26,7 @@ export function Sidebar() {
       saveLastFocusedChild
     >
       <div className={styles.brand} aria-hidden>
-        ML
+        <BrandIcon />
       </div>
 
       {PLATFORM_ORDER.map((platform) => (
@@ -38,7 +39,8 @@ export function Sidebar() {
             void launchApp(platform)
           }}
         >
-          {shortLabel(platform)}
+          <PlatformIcon platform={platform} />
+          <span className={styles.srOnly}>{APP_CONFIGS[platform].label}</span>
         </Focusable>
       ))}
 
@@ -54,22 +56,10 @@ export function Sidebar() {
             void setFocus(item.view === 'home' ? 'HERO' : `VIEW_${item.view}`)
           }}
         >
-          {item.short}
+          <NavIcon view={item.view} />
+          <span className={styles.srOnly}>{item.label}</span>
         </Focusable>
       ))}
     </Focusable>
   )
-}
-
-function shortLabel(platform: Platform): string {
-  switch (platform) {
-    case 'netflix':
-      return 'N'
-    case 'hbomax':
-      return 'HBO'
-    case 'globoplay':
-      return 'G+'
-    case 'youtube':
-      return 'YT'
-  }
 }

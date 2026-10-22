@@ -75,10 +75,14 @@ async function readCache<T>(key: string): Promise<T | undefined> {
   const mem = memoryCache.get(key) as CacheEntry<T> | undefined
   if (mem && mem.expiresAt > Date.now()) return mem.data
 
-  const stored = await get<CacheEntry<T>>(key)
-  if (stored && stored.expiresAt > Date.now()) {
-    memoryCache.set(key, stored)
-    return stored.data
+  try {
+    const stored = await get<CacheEntry<T>>(key)
+    if (stored && stored.expiresAt > Date.now()) {
+      memoryCache.set(key, stored)
+      return stored.data
+    }
+  } catch (err) {
+    console.warn('[tmdb] cache read ignorado', err)
   }
   return undefined
 }
@@ -86,7 +90,12 @@ async function readCache<T>(key: string): Promise<T | undefined> {
 async function writeCache<T>(key: string, data: T): Promise<void> {
   const entry: CacheEntry<T> = { data, expiresAt: Date.now() + CACHE_TTL_MS }
   memoryCache.set(key, entry)
-  await set(key, entry)
+  try {
+    await set(key, entry)
+  } catch (err) {
+    // IndexedDB costuma falhar no Simulator com "Internal error."
+    console.warn('[tmdb] cache write ignorado', err)
+  }
 }
 
 async function tmdbFetch<T>(path: string, query: Record<string, string> = {}): Promise<T> {
@@ -120,12 +129,28 @@ async function tmdbFetch<T>(path: string, query: Record<string, string> = {}): P
     headers.Authorization = `Bearer ${token}`
   }
 
-  const res = await fetch(`${TMDB_BASE}${path}?${params.toString()}`, { headers })
-  if (!res.ok) {
-    throw new Error(`TMDB ${String(res.status)}: ${path}`)
+  let res: Response
+  try {
+    res = await fetch(`${TMDB_BASE}${path}?${params.toString()}`, { headers })
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : 'rede indisponível'
+    throw new Error(`Falha de rede TMDB (${path}): ${reason}`)
   }
 
-  const data = (await res.json()) as T
+  const payload: unknown = await res.json().catch(() => null)
+
+  if (!res.ok) {
+    const message =
+      payload &&
+      typeof payload === 'object' &&
+      'status_message' in payload &&
+      typeof (payload as { status_message: unknown }).status_message === 'string'
+        ? (payload as { status_message: string }).status_message
+        : `HTTP ${String(res.status)}`
+    throw new Error(`TMDB ${path}: ${message}`)
+  }
+
+  const data = payload as T
   await writeCache(cacheKey, data)
   return data
 }
@@ -172,14 +197,17 @@ export async function getWatchProviders(
 }
 
 async function withProviders(items: CatalogItem[]): Promise<CatalogItem[]> {
+  // Limita chamadas extras (watch/providers) para não estourar rate-limit na TV.
+  const slice = items.slice(0, 8)
+  const rest = items.slice(8)
   const enriched = await Promise.all(
-    items.slice(0, 20).map(async (item) => {
+    slice.map(async (item) => {
       if (item.platforms.length > 0) return item
       const platforms = await getWatchProviders(item.mediaType, item.tmdbId)
       return { ...item, platforms }
     }),
   )
-  return enriched
+  return [...enriched, ...rest]
 }
 
 export async function searchMulti(query: string): Promise<CatalogItem[]> {

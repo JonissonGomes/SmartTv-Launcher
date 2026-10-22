@@ -15,10 +15,15 @@ interface HomeScreenProps {
 
 export function HomeScreen({ onOpenItem, onContinueEntry }: HomeScreenProps) {
   const entries = useHistoryStore((s) => s.entries)
-  const hero = useHistoryStore((s) => s.getHeroEntry())
   const markFinished = useHistoryStore((s) => s.markFinished)
   const ownedPlatforms = useSettingsStore((s) => s.ownedPlatforms)
   const { loading, error, rows } = useCatalog(entries, ownedPlatforms)
+  const hero = entries
+    .filter((e) => !e.finished)
+    .sort(
+      (a, b) =>
+        new Date(b.lastWatchedAt).getTime() - new Date(a.lastWatchedAt).getTime(),
+    )[0]
 
   return (
     <Focusable focusKey="VIEW_home" className={styles.home} saveLastFocusedChild>
