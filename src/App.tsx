@@ -18,6 +18,7 @@ import {
   EpisodePrompt,
   type EpisodeSelection,
 } from '@/ui/modals/EpisodePrompt'
+import { TitleDetails } from '@/ui/modals/TitleDetails'
 import { HistoryScreen } from '@/ui/screens/HistoryScreen'
 import { HomeScreen } from '@/ui/screens/HomeScreen'
 import { SearchScreen } from '@/ui/screens/SearchScreen'
@@ -56,6 +57,20 @@ function focusHome(hasHero: boolean): void {
   void setFocus(hasHero ? 'HERO' : 'VIEW_home')
 }
 
+function entryToCatalog(entry: WatchEntry): CatalogItem {
+  return {
+    tmdbId: entry.tmdbId ?? 0,
+    mediaType: entry.mediaType,
+    title: entry.title,
+    overview: entry.overview ?? '',
+    posterPath: entry.posterPath ?? null,
+    backdropPath: entry.backdropPath ?? null,
+    genreIds: entry.genreIds,
+    voteAverage: entry.voteAverage ?? 0,
+    platforms: [entry.platform],
+  }
+}
+
 export default function App() {
   const view = useSettingsStore((s) => s.view)
   const setView = useSettingsStore((s) => s.setView)
@@ -64,6 +79,7 @@ export default function App() {
   const addEntry = useHistoryStore((s) => s.addEntry)
   const entries = useHistoryStore((s) => s.entries)
   const [pending, setPending] = useState<PendingLaunch | null>(null)
+  const [details, setDetails] = useState<CatalogItem | null>(null)
 
   const feed = useHomeFeed(entries, ownedPlatforms)
 
@@ -90,6 +106,13 @@ export default function App() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.keyCode !== 461 && event.key !== 'Escape') return
 
+      if (details) {
+        setDetails(null)
+        focusHome(hasHero)
+        event.preventDefault()
+        return
+      }
+
       if (pending) {
         setPending(null)
         event.preventDefault()
@@ -107,11 +130,11 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [hasHero, pending, setView, view])
+  }, [details, hasHero, pending, setView, view])
 
   const commitLaunch = useCallback(
     async (data: PendingLaunch, episode?: EpisodeSelection) => {
-      const entry = addEntry(
+      addEntry(
         watchEntryFromLaunch({
           ...data,
           season: episode?.season ?? data.season,
@@ -119,32 +142,41 @@ export default function App() {
         }),
       )
 
-      await launchPlatformTitle(data.platform, entry.title, entry.tmdbId)
+      await launchPlatformTitle(data.platform, data.title, data.tmdbId)
       setPending(null)
+      setDetails(null)
     },
     [addEntry],
   )
 
-  const openCatalogItem = useCallback(
+  const openDetails = useCallback(
     (item: CatalogItem) => {
       const platform: Platform =
         item.platforms[0] ??
         useSettingsStore.getState().ownedPlatforms[0] ??
         'netflix'
-
       setActiveTheme(platform)
+      setDetails(item)
+    },
+    [setActiveTheme],
+  )
 
+  const watchFromDetails = useCallback(
+    (item: CatalogItem, platform: Platform) => {
+      setActiveTheme(platform)
       const payload: PendingLaunch = {
         title: item.title,
         platform,
         mediaType: item.mediaType,
-        tmdbId: item.tmdbId,
+        tmdbId: item.tmdbId || undefined,
         genreIds: item.genreIds,
         posterPath: item.posterPath ?? undefined,
         backdropPath: item.backdropPath ?? undefined,
         overview: item.overview,
         voteAverage: item.voteAverage,
       }
+
+      setDetails(null)
 
       if (item.mediaType === 'tv') {
         setPending(payload)
@@ -181,6 +213,13 @@ export default function App() {
       void commitLaunch(payload)
     },
     [commitLaunch, setActiveTheme],
+  )
+
+  const moreInfoEntry = useCallback(
+    (entry: WatchEntry) => {
+      openDetails(entryToCatalog(entry))
+    },
+    [openDetails],
   )
 
   const continueById = useCallback(
@@ -226,7 +265,7 @@ export default function App() {
         continuing={continuing}
         rail={feed.rail}
         onContinueEntry={continueEntry}
-        onOpenItem={openCatalogItem}
+        onOpenItem={openDetails}
         showRail={view === 'home' || view === 'history'}
       >
         {view === 'home' ? (
@@ -234,15 +273,27 @@ export default function App() {
             rows={feed.rows}
             loading={feed.loading}
             error={feed.error}
-            onOpenItem={openCatalogItem}
+            onOpenItem={openDetails}
             onContinueEntry={continueEntry}
+            onMoreInfoEntry={moreInfoEntry}
           />
         ) : null}
         {view === 'history' ? (
           <HistoryScreen onContinueId={continueById} />
         ) : null}
-        {view === 'search' ? <SearchScreen onSelect={openCatalogItem} /> : null}
+        {view === 'search' ? <SearchScreen onSelect={openDetails} /> : null}
         {view === 'settings' ? <SettingsScreen /> : null}
+
+        {details ? (
+          <TitleDetails
+            item={details}
+            onWatch={watchFromDetails}
+            onClose={() => {
+              setDetails(null)
+              focusHome(hasHero)
+            }}
+          />
+        ) : null}
 
         {pending ? (
           <EpisodePrompt

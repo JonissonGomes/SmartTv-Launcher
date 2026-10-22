@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { CatalogItem, WatchEntry } from '@/domain/types'
 import type { RailInsights } from '@/hooks/useHomeFeed'
 import { cx } from '@/ui/cx'
@@ -25,9 +25,17 @@ export function Shell({
   onOpenItem,
   showRail = true,
 }: ShellProps) {
+  const [sidebarExpanded, setSidebarExpanded] = useState(false)
+
   return (
-    <div className={cx(styles.shell, !showRail && styles.shellNoRail)}>
-      <Sidebar />
+    <div
+      className={cx(
+        styles.shell,
+        !showRail && styles.shellNoRail,
+        sidebarExpanded && styles.shellSidebarExpanded,
+      )}
+    >
+      <Sidebar onExpandedChange={setSidebarExpanded} />
       <Focusable focusKey="MAIN" className={styles.main} saveLastFocusedChild>
         <TopBar />
         <div className={styles.content}>{children}</div>

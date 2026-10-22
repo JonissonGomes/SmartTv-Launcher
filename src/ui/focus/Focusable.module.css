@@ -17,7 +17,7 @@
   outline-color: var(--color-focus);
   box-shadow: 0 0 0 2px var(--color-accent-soft);
   will-change: transform;
-  z-index: 2;
+  z-index: 1;
 }
 
 /* Tabs / textos do topo: sem cápsula arredondada */

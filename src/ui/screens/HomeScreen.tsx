@@ -1,5 +1,4 @@
-import type { CatalogItem, WatchEntry } from '@/domain/types'
-import type { ContentRow } from '@/domain/types'
+import type { CatalogItem, ContentRow, WatchEntry } from '@/domain/types'
 import { useHistoryStore } from '@/store/history'
 import { Hero } from '@/ui/Hero/Hero'
 import { Row } from '@/ui/Row/Row'
@@ -13,6 +12,7 @@ interface HomeScreenProps {
   error?: string
   onOpenItem: (item: CatalogItem) => void
   onContinueEntry: (entry: WatchEntry) => void
+  onMoreInfoEntry: (entry: WatchEntry) => void
 }
 
 export function HomeScreen({
@@ -21,6 +21,7 @@ export function HomeScreen({
   error,
   onOpenItem,
   onContinueEntry,
+  onMoreInfoEntry,
 }: HomeScreenProps) {
   const markFinished = useHistoryStore((s) => s.markFinished)
   const entries = useHistoryStore((s) => s.entries)
@@ -39,6 +40,7 @@ export function HomeScreen({
         <Hero
           entry={hero}
           onContinue={onContinueEntry}
+          onMoreInfo={onMoreInfoEntry}
           onMarkFinished={(entry) => {
             markFinished(entry.id, true)
           }}

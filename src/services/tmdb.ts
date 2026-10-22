@@ -72,6 +72,48 @@ export function imageUrl(
   return `${IMAGE_BASE}/${size}${path}`
 }
 
+interface TmdbVideo {
+  key: string
+  site: string
+  type: string
+  official?: boolean
+  name?: string
+}
+
+export async function getTrailerYoutubeKey(
+  mediaType: MediaType,
+  tmdbId: number,
+): Promise<string | undefined> {
+  try {
+    const data = await tmdbFetch<{ results: TmdbVideo[] }>(
+      `/${mediaType}/${String(tmdbId)}/videos`,
+      { language: 'pt-BR' },
+    )
+    const videos = data.results.filter(
+      (v) => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'),
+    )
+    const preferred =
+      videos.find((v) => v.type === 'Trailer' && v.official) ??
+      videos.find((v) => v.type === 'Trailer') ??
+      videos[0]
+    return preferred?.key
+  } catch {
+    return undefined
+  }
+}
+
+export function youtubeEmbedUrl(key: string, autoplay = true): string {
+  const params = new URLSearchParams({
+    autoplay: autoplay ? '1' : '0',
+    mute: '1',
+    controls: '0',
+    rel: '0',
+    modestbranding: '1',
+    playsinline: '1',
+  })
+  return `https://www.youtube-nocookie.com/embed/${key}?${params.toString()}`
+}
+
 async function readCache<T>(key: string): Promise<T | undefined> {
   const mem = memoryCache.get(key) as CacheEntry<T> | undefined
   if (mem && mem.expiresAt > Date.now()) return mem.data

@@ -3,7 +3,7 @@ import {
   setFocus,
   useFocusable,
 } from '@noriginmedia/norigin-spatial-navigation'
-import type { RefObject } from 'react'
+import { useEffect, type RefObject } from 'react'
 import { APP_CONFIGS, PLATFORM_ORDER } from '@/config/apps'
 import type { AppView, Platform } from '@/domain/types'
 import { launchApp } from '@/services/webos'
@@ -12,6 +12,10 @@ import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import { BrandIcon, NavIcon, PlatformIcon } from '@/ui/icons/Icons'
 import styles from './Sidebar.module.css'
+
+interface SidebarProps {
+  onExpandedChange?: (expanded: boolean) => void
+}
 
 const MENU_ITEMS: Array<{ view: AppView; label: string }> = [
   { view: 'home', label: 'Início' },
@@ -23,7 +27,7 @@ const GENERAL_ITEMS: Array<{ view: AppView; label: string }> = [
   { view: 'settings', label: 'Configurações' },
 ]
 
-export function Sidebar() {
+export function Sidebar({ onExpandedChange }: SidebarProps) {
   const view = useSettingsStore((s) => s.view)
   const setView = useSettingsStore((s) => s.setView)
   const activeTheme = useSettingsStore((s) => s.activeTheme)
@@ -36,6 +40,10 @@ export function Sidebar() {
   })
 
   const expanded = focused || hasFocusedChild
+
+  useEffect(() => {
+    onExpandedChange?.(expanded)
+  }, [expanded, onExpandedChange])
 
   const openView = (next: AppView) => {
     setView(next)
