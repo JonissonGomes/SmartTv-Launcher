@@ -1,0 +1,66 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+}
+
+.panel {
+  width: min(36rem, 90vw);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.fields {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field label {
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.field input {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.btn {
+  padding: 0.8rem 1.2rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: #04120f;
+  font-weight: 700;
+}
+
+.btnGhost {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}

@@ -1,0 +1,45 @@
+{
+  "name": "smarttv-launcher",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "preview": "vite preview",
+    "sim": "powershell -ExecutionPolicy Bypass -File scripts/sim.ps1",
+    "deploy": "bash scripts/deploy.sh",
+    "package:ipk": "npm run build && ares-package dist"
+  },
+  "dependencies": {
+    "@noriginmedia/norigin-spatial-navigation": "^3.3.0",
+    "@tanstack/react-virtual": "^3.14.22",
+    "idb-keyval": "^6.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.16"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/node": "^22.20.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.7.0",
+    "@webos-tools/cli": "^3.2.6",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.44.0",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}

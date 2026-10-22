@@ -1,0 +1,48 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies / build
+node_modules
+dist
+dist-ssr
+*.local
+*.ipk
+*.tgz
+
+# Env / secrets (nunca commitar)
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.key
+
+# webOS CLI / device
+.ssh/
+*.pri
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Test / cache
+coverage
+.nyc_output
+*.tsbuildinfo
+.cache
+.vite
