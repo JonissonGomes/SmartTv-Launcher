@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import type { WatchEntry } from '@/domain/types'
+import type { CatalogItem, WatchEntry } from '@/domain/types'
+import type { RailInsights } from '@/hooks/useHomeFeed'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import { RightRail } from '@/ui/layout/RightRail'
@@ -9,11 +10,21 @@ import styles from './Shell.module.css'
 
 interface ShellProps {
   children: ReactNode
+  continuing: WatchEntry[]
+  rail: RailInsights
   onContinueEntry: (entry: WatchEntry) => void
+  onOpenItem: (item: CatalogItem) => void
   showRail?: boolean
 }
 
-export function Shell({ children, onContinueEntry, showRail = true }: ShellProps) {
+export function Shell({
+  children,
+  continuing,
+  rail,
+  onContinueEntry,
+  onOpenItem,
+  showRail = true,
+}: ShellProps) {
   return (
     <div className={cx(styles.shell, !showRail && styles.shellNoRail)}>
       <Sidebar />
@@ -21,7 +32,14 @@ export function Shell({ children, onContinueEntry, showRail = true }: ShellProps
         <TopBar />
         <div className={styles.content}>{children}</div>
       </Focusable>
-      {showRail ? <RightRail onContinue={onContinueEntry} /> : null}
+      {showRail ? (
+        <RightRail
+          continuing={continuing}
+          rail={rail}
+          onContinue={onContinueEntry}
+          onOpenItem={onOpenItem}
+        />
+      ) : null}
     </div>
   )
 }

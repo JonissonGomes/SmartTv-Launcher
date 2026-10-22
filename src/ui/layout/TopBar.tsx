@@ -48,7 +48,9 @@ export function TopBar() {
               setActiveTab(tab.id)
               if (tab.view) {
                 setView(tab.view)
-                void setFocus(tab.view === 'home' ? 'HERO' : `VIEW_${tab.view}`)
+                void setFocus(
+                  tab.view === 'home' ? 'VIEW_home' : `VIEW_${tab.view}`,
+                )
               }
             }}
           >

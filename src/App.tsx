@@ -3,8 +3,9 @@ import {
   setFocus,
   setKeyMap,
 } from '@noriginmedia/norigin-spatial-navigation'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CatalogItem, Platform, WatchEntry } from '@/domain/types'
+import { useHomeFeed } from '@/hooks/useHomeFeed'
 import { resolveByTitle } from '@/services/tmdb'
 import { launchPlatformTitle } from '@/services/webos'
 import {
@@ -51,17 +52,39 @@ interface PendingLaunch {
   episode?: number
 }
 
+function focusHome(hasHero: boolean): void {
+  void setFocus(hasHero ? 'HERO' : 'VIEW_home')
+}
+
 export default function App() {
   const view = useSettingsStore((s) => s.view)
   const setView = useSettingsStore((s) => s.setView)
   const setActiveTheme = useSettingsStore((s) => s.setActiveTheme)
+  const ownedPlatforms = useSettingsStore((s) => s.ownedPlatforms)
   const addEntry = useHistoryStore((s) => s.addEntry)
   const entries = useHistoryStore((s) => s.entries)
   const [pending, setPending] = useState<PendingLaunch | null>(null)
 
+  const feed = useHomeFeed(entries, ownedPlatforms)
+
+  const continuing = useMemo(
+    () =>
+      [...entries]
+        .filter((e) => !e.finished)
+        .sort(
+          (a, b) =>
+            new Date(b.lastWatchedAt).getTime() -
+            new Date(a.lastWatchedAt).getTime(),
+        )
+        .slice(0, 5),
+    [entries],
+  )
+
+  const hasHero = continuing.length > 0
+
   useEffect(() => {
-    void setFocus('HERO')
-  }, [])
+    focusHome(hasHero)
+  }, [hasHero])
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -75,7 +98,7 @@ export default function App() {
 
       if (view !== 'home') {
         setView('home')
-        void setFocus('HERO')
+        focusHome(hasHero)
         event.preventDefault()
       }
     }
@@ -84,7 +107,7 @@ export default function App() {
     return () => {
       window.removeEventListener('keydown', onKeyDown)
     }
-  }, [pending, setView, view])
+  }, [hasHero, pending, setView, view])
 
   const commitLaunch = useCallback(
     async (data: PendingLaunch, episode?: EpisodeSelection) => {
@@ -168,7 +191,6 @@ export default function App() {
     [continueEntry, entries],
   )
 
-  // Enriquecimento opcional de tmdbId após import CSV (best-effort)
   useEffect(() => {
     const orphans = entries.filter((e) => !e.tmdbId).slice(0, 3)
     if (orphans.length === 0) return
@@ -188,7 +210,7 @@ export default function App() {
             voteAverage: found.voteAverage,
           })
         } catch {
-          // silencioso: sem chave TMDB ou título não encontrado
+          // silencioso
         }
       }
     })()
@@ -201,11 +223,17 @@ export default function App() {
   return (
     <ThemeRoot>
       <Shell
+        continuing={continuing}
+        rail={feed.rail}
         onContinueEntry={continueEntry}
+        onOpenItem={openCatalogItem}
         showRail={view === 'home' || view === 'history'}
       >
         {view === 'home' ? (
           <HomeScreen
+            rows={feed.rows}
+            loading={feed.loading}
+            error={feed.error}
             onOpenItem={openCatalogItem}
             onContinueEntry={continueEntry}
           />

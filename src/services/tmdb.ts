@@ -197,18 +197,11 @@ export async function getWatchProviders(
   }
 }
 
-async function withProviders(items: CatalogItem[]): Promise<CatalogItem[]> {
-  // Limita chamadas extras (watch/providers) para não estourar rate-limit na TV.
-  const slice = items.slice(0, 8)
-  const rest = items.slice(8)
-  const enriched = await Promise.all(
-    slice.map(async (item) => {
-      if (item.platforms.length > 0) return item
-      const platforms = await getWatchProviders(item.mediaType, item.tmdbId)
-      return { ...item, platforms }
-    }),
-  )
-  return [...enriched, ...rest]
+export const TMDB_PROVIDER_IDS: Partial<Record<Platform, number>> = {
+  netflix: 8,
+  disney: 337,
+  hbomax: 1899,
+  globoplay: 307,
 }
 
 export async function searchMulti(query: string): Promise<CatalogItem[]> {
@@ -218,14 +211,12 @@ export async function searchMulti(query: string): Promise<CatalogItem[]> {
     region: 'BR',
   })
 
-  const items = data.results
+  return data.results
     .filter(
       (r): r is TmdbSearchItem & { media_type: MediaType } =>
         r.media_type === 'movie' || r.media_type === 'tv',
     )
     .map((r) => toCatalogItem(r, r.media_type))
-
-  return withProviders(items)
 }
 
 export async function resolveByTitle(
@@ -275,12 +266,13 @@ export async function getRecommendations(
   const data = await tmdbFetch<TmdbPagedResult<TmdbSearchItem>>(
     `/${mediaType}/${String(tmdbId)}/recommendations`,
   )
-  return withProviders(data.results.map((r) => toCatalogItem(r, mediaType)))
+  return data.results.map((r) => toCatalogItem(r, mediaType))
 }
 
 export async function discoverByGenres(
   genreIds: number[],
   mediaType: MediaType = 'movie',
+  options: { excludeAnimation?: boolean } = {},
 ): Promise<CatalogItem[]> {
   if (genreIds.length === 0) return []
   const data = await tmdbFetch<TmdbPagedResult<TmdbSearchItem>>(
@@ -290,26 +282,124 @@ export async function discoverByGenres(
       sort_by: 'popularity.desc',
       watch_region: 'BR',
       region: 'BR',
+      include_adult: 'false',
+      ...(options.excludeAnimation ? { without_genres: '16' } : {}),
     },
   )
-  return withProviders(data.results.map((r) => toCatalogItem(r, mediaType)))
+  return data.results.map((r) => toCatalogItem(r, mediaType))
 }
 
-export async function getTrending(mediaType: MediaType | 'all' = 'all'): Promise<CatalogItem[]> {
+export async function discoverPopular(
+  mediaType: MediaType,
+  options: {
+    withoutGenres?: number[]
+    withWatchProvider?: number
+    sortBy?: string
+  } = {},
+): Promise<CatalogItem[]> {
   const data = await tmdbFetch<TmdbPagedResult<TmdbSearchItem>>(
-    `/trending/${mediaType}/week`,
+    `/discover/${mediaType}`,
+    {
+      sort_by: options.sortBy ?? 'popularity.desc',
+      watch_region: 'BR',
+      region: 'BR',
+      include_adult: 'false',
+      ...(options.withoutGenres?.length
+        ? { without_genres: options.withoutGenres.join(',') }
+        : {}),
+      ...(options.withWatchProvider
+        ? {
+            with_watch_providers: String(options.withWatchProvider),
+            with_watch_monetization_types: 'flatrate',
+          }
+        : {}),
+    },
+  )
+  const items = data.results.map((r) => toCatalogItem(r, mediaType))
+  if (!options.withWatchProvider) return items
+
+  const platform = (
+    Object.entries(TMDB_PROVIDER_IDS) as Array<[Platform, number]>
+  ).find(([, id]) => id === options.withWatchProvider)?.[0]
+
+  if (!platform) return items
+  return items.map((item) =>
+    item.platforms.includes(platform)
+      ? item
+      : { ...item, platforms: [...item.platforms, platform] },
+  )
+}
+
+async function mapList(
+  path: string,
+  mediaType: MediaType,
+  query: Record<string, string> = {},
+): Promise<CatalogItem[]> {
+  const data = await tmdbFetch<TmdbPagedResult<TmdbSearchItem>>(path, {
+    region: 'BR',
+    include_adult: 'false',
+    ...query,
+  })
+  return data.results.map((r) => toCatalogItem(r, mediaType))
+}
+
+export function getPopularMovies(): Promise<CatalogItem[]> {
+  return mapList('/movie/popular', 'movie')
+}
+
+export function getPopularTv(): Promise<CatalogItem[]> {
+  return mapList('/tv/popular', 'tv')
+}
+
+export function getTopRatedMovies(): Promise<CatalogItem[]> {
+  return mapList('/movie/top_rated', 'movie')
+}
+
+export function getTopRatedTv(): Promise<CatalogItem[]> {
+  return mapList('/tv/top_rated', 'tv')
+}
+
+export function getNowPlaying(): Promise<CatalogItem[]> {
+  return mapList('/movie/now_playing', 'movie')
+}
+
+export function getUpcoming(): Promise<CatalogItem[]> {
+  return mapList('/movie/upcoming', 'movie')
+}
+
+export function getOnTheAir(): Promise<CatalogItem[]> {
+  return mapList('/tv/on_the_air', 'tv')
+}
+
+export async function getTrending(
+  mediaType: MediaType | 'all' = 'all',
+  window: 'day' | 'week' = 'week',
+): Promise<CatalogItem[]> {
+  const data = await tmdbFetch<TmdbPagedResult<TmdbSearchItem>>(
+    `/trending/${mediaType}/${window}`,
     { region: 'BR' },
   )
 
-  return withProviders(
-    data.results
-      .filter((r) => {
-        const type = r.media_type ?? mediaType
-        return type === 'movie' || type === 'tv'
-      })
-      .map((r) => {
-        const type = (r.media_type === 'tv' ? 'tv' : 'movie') as MediaType
-        return toCatalogItem(r, type)
-      }),
-  )
+  return data.results
+    .filter((r) => {
+      const type = r.media_type ?? mediaType
+      return type === 'movie' || type === 'tv'
+    })
+    .map((r) => {
+      const type = (r.media_type === 'tv' ? 'tv' : 'movie') as MediaType
+      return toCatalogItem(r, type)
+    })
 }
+
+export function isMostlyAnimation(item: CatalogItem): boolean {
+  return item.genreIds.includes(16) && item.genreIds.length <= 2
+}
+
+export const RAIL_GENRES: Array<{ id: number; label: string }> = [
+  { id: 28, label: 'Ação' },
+  { id: 35, label: 'Comédia' },
+  { id: 18, label: 'Drama' },
+  { id: 878, label: 'Ficção' },
+  { id: 27, label: 'Terror' },
+  { id: 10749, label: 'Romance' },
+]

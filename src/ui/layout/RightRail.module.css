@@ -122,8 +122,41 @@
   font-weight: 700;
 }
 
-.empty {
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  margin: 0;
+.miniCard {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.genreGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.genreTile {
+  position: relative;
+  height: 5.5rem;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-surface-2);
+}
+
+.genreImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+}
+
+.genreTile span {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: var(--space-2);
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
 }

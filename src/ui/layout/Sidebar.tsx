@@ -39,7 +39,7 @@ export function Sidebar() {
 
   const openView = (next: AppView) => {
     setView(next)
-    void setFocus(next === 'home' ? 'HERO' : `VIEW_${next}`)
+    void setFocus(`VIEW_${next === 'home' ? 'home' : next}`)
   }
 
   const openPlatform = (platform: Platform) => {
@@ -56,7 +56,7 @@ export function Sidebar() {
       >
         <div className={styles.brand}>
           <div className={styles.brandMark}>
-            <BrandIcon size={22} />
+            <BrandIcon size={30} />
           </div>
           <span className={styles.brandLabel}>Meu Launcher</span>
         </div>
@@ -73,7 +73,7 @@ export function Sidebar() {
               }}
             >
               <span className={styles.itemIcon}>
-                <NavIcon view={item.view} size={22} />
+                <NavIcon view={item.view} size={28} />
               </span>
               <span className={styles.itemLabel}>{item.label}</span>
             </Focusable>
@@ -98,7 +98,7 @@ export function Sidebar() {
               }}
             >
               <span className={styles.itemIcon}>
-                <PlatformIcon platform={platform} size={22} />
+                <PlatformIcon platform={platform} size={30} />
               </span>
               <span className={styles.itemLabel}>{APP_CONFIGS[platform].label}</span>
               <span
@@ -123,7 +123,7 @@ export function Sidebar() {
               }}
             >
               <span className={styles.itemIcon}>
-                <NavIcon view={item.view} size={22} />
+                <NavIcon view={item.view} size={28} />
               </span>
               <span className={styles.itemLabel}>{item.label}</span>
             </Focusable>

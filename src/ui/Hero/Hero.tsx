@@ -5,25 +5,12 @@ import { Focusable } from '@/ui/focus/Focusable'
 import styles from './Hero.module.css'
 
 interface HeroProps {
-  entry?: WatchEntry
+  entry: WatchEntry
   onContinue: (entry: WatchEntry) => void
   onMarkFinished: (entry: WatchEntry) => void
 }
 
 export function Hero({ entry, onContinue, onMarkFinished }: HeroProps) {
-  if (!entry) {
-    return (
-      <Focusable focusKey="HERO" className={styles.hero}>
-        <div className={styles.empty}>
-          <p>
-            Nada em andamento. Abra um título ou importe o CSV da Netflix em
-            Configurações.
-          </p>
-        </div>
-      </Focusable>
-    )
-  }
-
   const backdrop = imageUrl(entry.backdropPath ?? entry.posterPath, 'w780')
   const episodeLabel =
     entry.mediaType === 'tv' && (entry.season || entry.episode)

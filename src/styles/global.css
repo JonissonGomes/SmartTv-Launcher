@@ -7,7 +7,8 @@
 }
 
 html {
-  font-size: calc(100vw / 120);
+  /* Escala suave entre 1280 e 1920; evita UI estourada no Simulator */
+  font-size: clamp(12px, calc(100vw / 120), 16px);
   height: 100%;
 }
 

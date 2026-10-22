@@ -19,14 +19,14 @@
   --radius-sm: 12px;
   --radius-lg: 24px;
 
-  --sidebar-width-collapsed: 5.25rem;
-  --sidebar-width-expanded: 16.5rem;
+  --sidebar-width-collapsed: 5.75rem;
+  --sidebar-width-expanded: 17rem;
   --sidebar-width: var(--sidebar-width-collapsed);
-  --rail-width: 20rem;
+  --rail-width: clamp(16rem, 18vw, 21rem);
   --topbar-height: 4.25rem;
-  --hero-height: 22rem;
-  --card-width: 12rem;
-  --card-height: 17.5rem;
+  --hero-height: clamp(16rem, 38vh, 24rem);
+  --card-width: clamp(9.5rem, 11vw, 12.5rem);
+  --card-height: clamp(14rem, 16vw, 18rem);
 
   --font-sans: 'Segoe UI', 'Trebuchet MS', sans-serif;
 
