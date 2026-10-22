@@ -210,6 +210,7 @@ export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
                   <Focusable
                     key={genre.id}
                     focusKey={`CAT_GENRE_${String(genre.id)}`}
+                    variant="nav"
                     className={cx(
                       styles.tile,
                       accents[index % accents.length],
