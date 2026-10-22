@@ -19,10 +19,13 @@ import {
   type EpisodeSelection,
 } from '@/ui/modals/EpisodePrompt'
 import { TitleDetails } from '@/ui/modals/TitleDetails'
+import { CategoriesScreen } from '@/ui/screens/CategoriesScreen'
 import { HistoryScreen } from '@/ui/screens/HistoryScreen'
 import { HomeScreen } from '@/ui/screens/HomeScreen'
+import { PlatformScreen } from '@/ui/screens/PlatformScreen'
 import { SearchScreen } from '@/ui/screens/SearchScreen'
 import { SettingsScreen } from '@/ui/screens/SettingsScreen'
+import { SurpriseScreen } from '@/ui/screens/SurpriseScreen'
 import { ThemeRoot } from '@/ui/theme/ThemeRoot'
 
 init({
@@ -75,6 +78,7 @@ export default function App() {
   const view = useSettingsStore((s) => s.view)
   const setView = useSettingsStore((s) => s.setView)
   const setActiveTheme = useSettingsStore((s) => s.setActiveTheme)
+  const catalogPlatform = useSettingsStore((s) => s.catalogPlatform)
   const ownedPlatforms = useSettingsStore((s) => s.ownedPlatforms)
   const addEntry = useHistoryStore((s) => s.addEntry)
   const entries = useHistoryStore((s) => s.entries)
@@ -276,6 +280,18 @@ export default function App() {
             onContinueEntry={continueEntry}
             onMoreInfoEntry={moreInfoEntry}
           />
+        ) : null}
+        {view === 'platform' && catalogPlatform ? (
+          <PlatformScreen
+            platform={catalogPlatform}
+            onOpenItem={openDetails}
+          />
+        ) : null}
+        {view === 'categories' ? (
+          <CategoriesScreen onOpenItem={openDetails} />
+        ) : null}
+        {view === 'surprise' ? (
+          <SurpriseScreen onOpenItem={openDetails} onWatch={watchFromDetails} />
         ) : null}
         {view === 'history' ? (
           <HistoryScreen onContinueId={continueById} />

@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { WatchEntry } from '@/domain/types'
-import {
-  getTrailerYoutubeKey,
-  imageUrl,
-  youtubeEmbedUrl,
-} from '@/services/tmdb'
+import { getTrailerYoutubeKey } from '@/services/tmdb'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
+import { TrailerArt } from '@/ui/media/TrailerArt'
 import styles from './Hero.module.css'
 
 interface HeroProps {
@@ -23,7 +20,6 @@ export function Hero({
   onMoreInfo,
 }: HeroProps) {
   const [trailerKey, setTrailerKey] = useState<string>()
-  const backdrop = imageUrl(entry.backdropPath ?? entry.posterPath, 'w780')
   const episodeLabel =
     entry.mediaType === 'tv' && (entry.season || entry.episode)
       ? `T${String(entry.season ?? 1)} E${String(entry.episode ?? 1)}`
@@ -39,7 +35,10 @@ export function Hero({
     if (!entry.tmdbId) return
 
     void (async () => {
-      const key = await getTrailerYoutubeKey(entry.mediaType, entry.tmdbId as number)
+      const key = await getTrailerYoutubeKey(
+        entry.mediaType,
+        entry.tmdbId as number,
+      )
       if (!cancelled) setTrailerKey(key)
     })()
 
@@ -50,23 +49,12 @@ export function Hero({
 
   return (
     <Focusable focusKey="HERO" className={styles.hero} saveLastFocusedChild>
-      {trailerKey ? (
-        <iframe
-          className={styles.trailer}
-          src={youtubeEmbedUrl(trailerKey, true)}
-          title={`Trailer ${entry.title}`}
-          allow="autoplay; encrypted-media"
-        />
-      ) : backdrop ? (
-        <img
-          className={styles.backdrop}
-          src={backdrop}
-          alt=""
-          width={1280}
-          height={720}
-          decoding="async"
-        />
-      ) : null}
+      <TrailerArt
+        className={styles.backdrop}
+        backdropPath={entry.backdropPath}
+        posterPath={entry.posterPath}
+        youtubeKey={trailerKey}
+      />
       <div className={styles.overlay} />
       {rating ? <span className={styles.rating}>{rating}</span> : null}
       <div className={styles.body}>

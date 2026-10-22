@@ -89,9 +89,22 @@ export function PlatformIcon({
 export function NavIcon({ view, size = 24 }: { view: AppView; size?: number }) {
   switch (view) {
     case 'home':
+    case 'platform':
       return (
         <Svg size={size}>
           <path d="M12 3 3 10.5V21h6v-6h6v6h6V10.5L12 3z" />
+        </Svg>
+      )
+    case 'categories':
+      return (
+        <Svg size={size}>
+          <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" />
+        </Svg>
+      )
+    case 'surprise':
+      return (
+        <Svg size={size}>
+          <path d="M12 2 9.5 8.5 3 9.2l5 4.6L6.5 20 12 16.7 17.5 20 16 13.8l5-4.6-6.5-.7L12 2zm0 5.2 1.1 2.9 3.1.3-2.4 2.2.7 3-2.5-1.5-2.5 1.5.7-3-2.4-2.2 3.1-.3L12 7.2z" />
         </Svg>
       )
     case 'history':

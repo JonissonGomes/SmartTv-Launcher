@@ -9,9 +9,12 @@ interface SettingsState {
   ownedPlatforms: Platform[]
   /** Tema visual ativo (acento/transparência). */
   activeTheme: Platform | null
+  /** Streaming cujo catálogo está aberto em `view === 'platform'`. */
+  catalogPlatform: Platform | null
   reducedMotion: boolean
   setView: (view: AppView) => void
   setActiveTheme: (platform: Platform | null) => void
+  openPlatformCatalog: (platform: Platform) => void
   togglePlatform: (platform: Platform) => void
   setReducedMotion: (value: boolean) => void
 }
@@ -22,11 +25,19 @@ export const useSettingsStore = create<SettingsState>()(
       view: 'home',
       ownedPlatforms: [...PLATFORM_ORDER],
       activeTheme: null,
+      catalogPlatform: null,
       reducedMotion: false,
 
       setView: (view) => set({ view }),
 
       setActiveTheme: (platform) => set({ activeTheme: platform }),
+
+      openPlatformCatalog: (platform) =>
+        set({
+          catalogPlatform: platform,
+          activeTheme: platform,
+          view: 'platform',
+        }),
 
       togglePlatform: (platform) => {
         const current = get().ownedPlatforms

@@ -7,7 +7,14 @@ export type Platform =
 
 export type MediaType = 'movie' | 'tv'
 
-export type AppView = 'home' | 'search' | 'settings' | 'history'
+export type AppView =
+  | 'home'
+  | 'search'
+  | 'settings'
+  | 'history'
+  | 'platform'
+  | 'categories'
+  | 'surprise'
 
 export interface WatchEntry {
   id: string

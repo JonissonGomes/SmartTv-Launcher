@@ -115,18 +115,13 @@ export async function getTrailerYoutubeKey(
   }
 }
 
-export function youtubeEmbedUrl(key: string, autoplay = true): string {
-  const params = new URLSearchParams({
-    autoplay: autoplay ? '1' : '0',
-    mute: '1',
-    controls: '0',
-    rel: '0',
-    modestbranding: '1',
-    playsinline: '1',
-    loop: '1',
-    playlist: key,
-  })
-  return `https://www.youtube.com/embed/${key}?${params.toString()}`
+/** Thumbnail estático — embeds iframe falham com erro 153 no webOS/Simulator. */
+export function youtubeThumbUrl(key: string, quality: 'hq' | 'mq' = 'hq'): string {
+  return `https://i.ytimg.com/vi/${key}/${quality}default.jpg`
+}
+
+export function youtubeWatchUrl(key: string): string {
+  return `https://www.youtube.com/watch?v=${key}`
 }
 
 async function readCache<T>(key: string): Promise<T | undefined> {
@@ -326,16 +321,41 @@ export async function getRecommendations(
   return data.results.map((r) => toCatalogItem(r, mediaType))
 }
 
+export async function getSimilar(
+  mediaType: MediaType,
+  tmdbId: number,
+): Promise<CatalogItem[]> {
+  const data = await tmdbFetch<TmdbPagedResult<TmdbSearchItem>>(
+    `/${mediaType}/${String(tmdbId)}/similar`,
+  )
+  return data.results.map((r) => toCatalogItem(r, mediaType))
+}
+
+/** Recomendações; se vazio, usa similares. */
+export async function getRelatedTitles(
+  mediaType: MediaType,
+  tmdbId: number,
+): Promise<CatalogItem[]> {
+  const recs = await getRecommendations(mediaType, tmdbId)
+  if (recs.length > 0) return recs
+  return getSimilar(mediaType, tmdbId)
+}
+
 export async function discoverByGenres(
   genreIds: number[],
   mediaType: MediaType = 'movie',
-  options: { excludeAnimation?: boolean } = {},
+  options: {
+    excludeAnimation?: boolean
+    /** 'and' = todos os gêneros; 'or' = qualquer um */
+    match?: 'and' | 'or'
+  } = {},
 ): Promise<CatalogItem[]> {
   if (genreIds.length === 0) return []
+  const sep = options.match === 'or' ? '|' : ','
   const data = await tmdbFetch<TmdbPagedResult<TmdbSearchItem>>(
     `/discover/${mediaType}`,
     {
-      with_genres: genreIds.slice(0, 3).join(','),
+      with_genres: genreIds.slice(0, 4).join(sep),
       sort_by: 'popularity.desc',
       watch_region: 'BR',
       region: 'BR',
@@ -459,4 +479,20 @@ export const RAIL_GENRES: Array<{ id: number; label: string }> = [
   { id: 878, label: 'Ficção' },
   { id: 27, label: 'Terror' },
   { id: 10749, label: 'Romance' },
+]
+
+/** Catálogo ampliado para a tela Categorias (IDs TMDB filme; TV mapeia o que couber). */
+export const CATEGORY_GENRES: Array<{ id: number; label: string }> = [
+  ...RAIL_GENRES,
+  { id: 12, label: 'Aventura' },
+  { id: 16, label: 'Animação' },
+  { id: 80, label: 'Crime' },
+  { id: 99, label: 'Documentário' },
+  { id: 14, label: 'Fantasia' },
+  { id: 36, label: 'História' },
+  { id: 10402, label: 'Musical' },
+  { id: 9648, label: 'Mistério' },
+  { id: 53, label: 'Thriller' },
+  { id: 10751, label: 'Família' },
+  { id: 10765, label: 'Sci-Fi & Fantasy' },
 ]

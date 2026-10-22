@@ -6,7 +6,6 @@ import {
 import { useEffect, type RefObject } from 'react'
 import { APP_CONFIGS, PLATFORM_ORDER } from '@/config/apps'
 import type { AppView, Platform } from '@/domain/types'
-import { launchApp } from '@/services/webos'
 import { useSettingsStore } from '@/store/settings'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
@@ -19,6 +18,8 @@ interface SidebarProps {
 
 const MENU_ITEMS: Array<{ view: AppView; label: string }> = [
   { view: 'home', label: 'Início' },
+  { view: 'categories', label: 'Categorias' },
+  { view: 'surprise', label: 'Surpreenda' },
   { view: 'search', label: 'Busca' },
   { view: 'history', label: 'Recentes' },
 ]
@@ -27,11 +28,19 @@ const GENERAL_ITEMS: Array<{ view: AppView; label: string }> = [
   { view: 'settings', label: 'Configurações' },
 ]
 
+function focusForView(view: AppView): string {
+  if (view === 'home') return 'VIEW_home'
+  if (view === 'platform') return 'VIEW_platform'
+  return `VIEW_${view}`
+}
+
 export function Sidebar({ onExpandedChange }: SidebarProps) {
   const view = useSettingsStore((s) => s.view)
   const setView = useSettingsStore((s) => s.setView)
+  const catalogPlatform = useSettingsStore((s) => s.catalogPlatform)
   const activeTheme = useSettingsStore((s) => s.activeTheme)
   const setActiveTheme = useSettingsStore((s) => s.setActiveTheme)
+  const openPlatformCatalog = useSettingsStore((s) => s.openPlatformCatalog)
 
   const { ref, focused, hasFocusedChild, focusKey } = useFocusable({
     focusKey: 'SIDEBAR',
@@ -47,12 +56,12 @@ export function Sidebar({ onExpandedChange }: SidebarProps) {
 
   const openView = (next: AppView) => {
     setView(next)
-    void setFocus(`VIEW_${next === 'home' ? 'home' : next}`)
+    void setFocus(focusForView(next))
   }
 
   const openPlatform = (platform: Platform) => {
-    setActiveTheme(platform)
-    void launchApp(platform)
+    openPlatformCatalog(platform)
+    void setFocus('VIEW_platform')
   }
 
   return (
@@ -96,7 +105,9 @@ export function Sidebar({ onExpandedChange }: SidebarProps) {
               focusKey={`SIDEBAR_APP_${platform}`}
               className={cx(
                 styles.item,
-                activeTheme === platform && styles.itemActive,
+                ((view === 'platform' && catalogPlatform === platform) ||
+                  activeTheme === platform) &&
+                  styles.itemActive,
               )}
               onFocus={() => {
                 setActiveTheme(platform)

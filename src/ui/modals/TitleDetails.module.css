@@ -2,47 +2,75 @@
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: rgba(0, 0, 0, 0.78);
-  display: grid;
-  place-items: center;
-  padding: var(--space-5);
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
 }
 
 .panel {
-  width: min(72rem, 94vw);
-  height: min(40rem, 88vh);
-  display: grid;
-  grid-template-columns: 1.35fr 1fr;
-  gap: var(--space-5);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  width: min(36rem, 46vw);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--color-surface) 96%, var(--color-tint));
+  border-left: 1px solid var(--color-border);
+  box-shadow: -18px 0 48px rgba(0, 0, 0, 0.45);
   overflow: hidden;
+  animation: slideIn var(--transition-med) ease-out;
+  transform-origin: right center;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0.85;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
 }
 
 .media {
   position: relative;
+  flex: 0 0 38%;
+  min-height: 12rem;
   background: #000;
-  min-height: 0;
+  overflow: hidden;
 }
 
-.trailer,
-.poster {
+.media::after {
+  content: '';
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  object-fit: cover;
+  background: linear-gradient(
+    180deg,
+    transparent 40%,
+    color-mix(in srgb, var(--color-surface) 92%, transparent) 100%
+  );
+  pointer-events: none;
 }
 
 .info {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-6) var(--space-5) var(--space-5);
-  min-width: 0;
+  padding: var(--space-5);
+  min-height: 0;
+  flex: 1;
   overflow: auto;
+  scrollbar-width: none;
+}
+
+.info::-webkit-scrollbar {
+  display: none;
 }
 
 .kicker {
@@ -56,7 +84,7 @@
 
 .title {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.85rem;
   line-height: 1.15;
 }
 
@@ -70,7 +98,7 @@
   margin: 0;
   color: var(--color-text-muted);
   line-height: 1.45;
-  font-size: 1rem;
+  font-size: 0.98rem;
   flex: 1;
 }
 
@@ -107,6 +135,7 @@
   flex-wrap: wrap;
   gap: var(--space-3);
   margin-top: auto;
+  padding-top: var(--space-3);
 }
 
 .btn {

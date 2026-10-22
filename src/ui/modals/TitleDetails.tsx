@@ -2,15 +2,12 @@ import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useEffect, useState } from 'react'
 import { APP_CONFIGS, PLATFORM_ORDER } from '@/config/apps'
 import type { CatalogItem, Platform } from '@/domain/types'
-import {
-  getTrailerYoutubeKey,
-  imageUrl,
-  youtubeEmbedUrl,
-} from '@/services/tmdb'
+import { getTrailerYoutubeKey } from '@/services/tmdb'
 import { launchApp } from '@/services/webos'
 import { useSettingsStore } from '@/store/settings'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
+import { TrailerArt } from '@/ui/media/TrailerArt'
 import styles from './TitleDetails.module.css'
 
 interface TitleDetailsProps {
@@ -63,23 +60,20 @@ export function TitleDetails({
     }
   }, [item.mediaType, item.tmdbId])
 
-  const poster = imageUrl(item.backdropPath ?? item.posterPath, 'w780')
-
   return (
     <div className={styles.backdrop}>
-      <Focusable focusKey="TITLE_DETAILS" className={styles.panel} isFocusBoundary>
+      <Focusable
+        focusKey="TITLE_DETAILS"
+        className={styles.panel}
+        isFocusBoundary
+      >
         <div className={styles.media}>
-          {trailerKey ? (
-            <iframe
-              className={styles.trailer}
-              src={youtubeEmbedUrl(trailerKey, true)}
-              title={`Trailer ${item.title}`}
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-            />
-          ) : poster ? (
-            <img className={styles.poster} src={poster} alt="" />
-          ) : null}
+          <TrailerArt
+            backdropPath={item.backdropPath}
+            posterPath={item.posterPath}
+            youtubeKey={trailerKey}
+            alt=""
+          />
         </div>
 
         <div className={styles.info}>
@@ -138,16 +132,18 @@ export function TitleDetails({
             >
               Abrir {APP_CONFIGS[selected].label}
             </Focusable>
-            <Focusable
-              focusKey="DETAILS_TRAILER_APP"
-              className={cx(styles.btn, styles.btnGhost)}
-              onEnterPress={() => {
-                setActiveTheme('youtube')
-                void launchApp('youtube')
-              }}
-            >
-              Trailer no YouTube
-            </Focusable>
+            {trailerKey ? (
+              <Focusable
+                focusKey="DETAILS_TRAILER_APP"
+                className={cx(styles.btn, styles.btnGhost)}
+                onEnterPress={() => {
+                  setActiveTheme('youtube')
+                  void launchApp('youtube')
+                }}
+              >
+                Trailer no YouTube
+              </Focusable>
+            ) : null}
             <Focusable
               focusKey="DETAILS_CLOSE"
               className={cx(styles.btn, styles.btnGhost)}
