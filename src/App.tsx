@@ -264,7 +264,6 @@ export default function App() {
       <Shell
         continuing={continuing}
         rail={feed.rail}
-        onContinueEntry={continueEntry}
         onOpenItem={openDetails}
         showRail={view === 'home' || view === 'history'}
       >
@@ -283,32 +282,33 @@ export default function App() {
         ) : null}
         {view === 'search' ? <SearchScreen onSelect={openDetails} /> : null}
         {view === 'settings' ? <SettingsScreen /> : null}
-
-        {details ? (
-          <TitleDetails
-            item={details}
-            onWatch={watchFromDetails}
-            onClose={() => {
-              setDetails(null)
-              focusHome(hasHero)
-            }}
-          />
-        ) : null}
-
-        {pending ? (
-          <EpisodePrompt
-            title={pending.title}
-            initialSeason={pending.season ?? 1}
-            initialEpisode={pending.episode ?? 1}
-            onConfirm={(selection) => {
-              void commitLaunch(pending, selection)
-            }}
-            onSkip={() => {
-              void commitLaunch(pending)
-            }}
-          />
-        ) : null}
       </Shell>
+
+      {/* Fora do Shell/Focusable MAIN para position:fixed não ser clipado */}
+      {details ? (
+        <TitleDetails
+          item={details}
+          onWatch={watchFromDetails}
+          onClose={() => {
+            setDetails(null)
+            focusHome(hasHero)
+          }}
+        />
+      ) : null}
+
+      {pending ? (
+        <EpisodePrompt
+          title={pending.title}
+          initialSeason={pending.season ?? 1}
+          initialEpisode={pending.episode ?? 1}
+          onConfirm={(selection) => {
+            void commitLaunch(pending, selection)
+          }}
+          onSkip={() => {
+            void commitLaunch(pending)
+          }}
+        />
+      ) : null}
     </ThemeRoot>
   )
 }

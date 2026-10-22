@@ -37,14 +37,20 @@ export function TitleDetails({
         ? ownedPlatforms
         : PLATFORM_ORDER.slice(0, 1)
 
-  const selected =
+  const initialPlatform =
     preferredPlatform && platforms.includes(preferredPlatform)
       ? preferredPlatform
       : (platforms[0] ?? 'netflix')
 
+  const [selected, setSelected] = useState<Platform>(initialPlatform)
+
   useEffect(() => {
     void setFocus('DETAILS_WATCH')
   }, [])
+
+  useEffect(() => {
+    setSelected(initialPlatform)
+  }, [initialPlatform])
 
   useEffect(() => {
     let cancelled = false
@@ -92,15 +98,19 @@ export function TitleDetails({
             {item.overview || 'Sinopse indisponível para este título.'}
           </p>
 
+          <p className={styles.platformsLabel}>Onde assistir</p>
           <div className={styles.platforms}>
             {platforms.map((platform) => (
               <Focusable
                 key={platform}
                 focusKey={`DETAILS_PLATFORM_${platform}`}
-                className={styles.chip}
+                className={cx(
+                  styles.chip,
+                  platform === selected && styles.chipActive,
+                )}
                 onEnterPress={() => {
+                  setSelected(platform)
                   setActiveTheme(platform)
-                  void launchApp(platform)
                 }}
               >
                 {APP_CONFIGS[platform].label}
@@ -119,6 +129,16 @@ export function TitleDetails({
               Assistir
             </Focusable>
             <Focusable
+              focusKey="DETAILS_OPEN_APP"
+              className={cx(styles.btn, styles.btnGhost)}
+              onEnterPress={() => {
+                setActiveTheme(selected)
+                void launchApp(selected)
+              }}
+            >
+              Abrir {APP_CONFIGS[selected].label}
+            </Focusable>
+            <Focusable
               focusKey="DETAILS_TRAILER_APP"
               className={cx(styles.btn, styles.btnGhost)}
               onEnterPress={() => {
@@ -126,7 +146,7 @@ export function TitleDetails({
                 void launchApp('youtube')
               }}
             >
-              Abrir no YouTube
+              Trailer no YouTube
             </Focusable>
             <Focusable
               focusKey="DETAILS_CLOSE"

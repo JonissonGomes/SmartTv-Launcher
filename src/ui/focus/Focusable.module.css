@@ -1,6 +1,7 @@
 .root {
   position: relative;
-  transform: translateZ(0) scale(1);
+  /* Sem transform no estado normal: evita que position:fixed
+     dos modais fique preso/clipado dentro do MAIN. */
   transition:
     transform var(--transition-med),
     box-shadow var(--transition-med),
@@ -13,7 +14,7 @@
 }
 
 .focused {
-  transform: translateZ(0) scale(var(--focus-scale));
+  transform: scale(var(--focus-scale));
   outline-color: var(--color-focus);
   box-shadow: 0 0 0 2px var(--color-accent-soft);
   will-change: transform;

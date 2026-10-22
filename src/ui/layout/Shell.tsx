@@ -12,7 +12,6 @@ interface ShellProps {
   children: ReactNode
   continuing: WatchEntry[]
   rail: RailInsights
-  onContinueEntry: (entry: WatchEntry) => void
   onOpenItem: (item: CatalogItem) => void
   showRail?: boolean
 }
@@ -21,11 +20,11 @@ export function Shell({
   children,
   continuing,
   rail,
-  onContinueEntry,
   onOpenItem,
   showRail = true,
 }: ShellProps) {
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
+  const [railExpanded, setRailExpanded] = useState(false)
 
   return (
     <div
@@ -33,6 +32,7 @@ export function Shell({
         styles.shell,
         !showRail && styles.shellNoRail,
         sidebarExpanded && styles.shellSidebarExpanded,
+        showRail && railExpanded && styles.shellRailExpanded,
       )}
     >
       <Sidebar onExpandedChange={setSidebarExpanded} />
@@ -44,8 +44,8 @@ export function Shell({
         <RightRail
           continuing={continuing}
           rail={rail}
-          onContinue={onContinueEntry}
           onOpenItem={onOpenItem}
+          onExpandedChange={setRailExpanded}
         />
       ) : null}
     </div>

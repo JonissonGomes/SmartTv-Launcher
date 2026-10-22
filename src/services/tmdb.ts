@@ -80,23 +80,36 @@ interface TmdbVideo {
   name?: string
 }
 
+function pickYoutubeTrailer(results: TmdbVideo[]): string | undefined {
+  const videos = results.filter(
+    (v) => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'),
+  )
+  const preferred =
+    videos.find((v) => v.type === 'Trailer' && v.official) ??
+    videos.find((v) => v.type === 'Trailer') ??
+    videos[0]
+  return preferred?.key
+}
+
 export async function getTrailerYoutubeKey(
   mediaType: MediaType,
   tmdbId: number,
 ): Promise<string | undefined> {
+  if (!tmdbId) return undefined
+
   try {
-    const data = await tmdbFetch<{ results: TmdbVideo[] }>(
-      `/${mediaType}/${String(tmdbId)}/videos`,
-      { language: 'pt-BR' },
-    )
-    const videos = data.results.filter(
-      (v) => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser'),
-    )
-    const preferred =
-      videos.find((v) => v.type === 'Trailer' && v.official) ??
-      videos.find((v) => v.type === 'Trailer') ??
-      videos[0]
-    return preferred?.key
+    const path = `/${mediaType}/${String(tmdbId)}/videos`
+    const local = await tmdbFetch<{ results: TmdbVideo[] }>(path, {
+      language: 'pt-BR',
+    })
+    const localKey = pickYoutubeTrailer(local.results)
+    if (localKey) return localKey
+
+    // Muitos títulos só têm trailer em en-US
+    const fallback = await tmdbFetch<{ results: TmdbVideo[] }>(path, {
+      language: 'en-US',
+    })
+    return pickYoutubeTrailer(fallback.results)
   } catch {
     return undefined
   }
@@ -110,8 +123,10 @@ export function youtubeEmbedUrl(key: string, autoplay = true): string {
     rel: '0',
     modestbranding: '1',
     playsinline: '1',
+    loop: '1',
+    playlist: key,
   })
-  return `https://www.youtube-nocookie.com/embed/${key}?${params.toString()}`
+  return `https://www.youtube.com/embed/${key}?${params.toString()}`
 }
 
 async function readCache<T>(key: string): Promise<T | undefined> {

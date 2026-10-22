@@ -1,19 +1,26 @@
 .shell {
   --sidebar-track: var(--sidebar-width-collapsed);
+  --rail-track: var(--rail-width-collapsed);
   display: grid;
-  grid-template-columns: var(--sidebar-track) minmax(0, 1fr) var(--rail-width);
+  grid-template-columns: var(--sidebar-track) minmax(0, 1fr) var(--rail-track);
   width: 100%;
   height: 100%;
   overflow: hidden;
   isolation: isolate;
+  transition: grid-template-columns var(--transition-med);
 }
 
 .shellNoRail {
+  --rail-track: 0px;
   grid-template-columns: var(--sidebar-track) minmax(0, 1fr);
 }
 
 .shellSidebarExpanded {
   --sidebar-track: var(--sidebar-width-expanded);
+}
+
+.shellRailExpanded {
+  --rail-track: var(--rail-width-expanded);
 }
 
 .main {
@@ -25,7 +32,6 @@
   max-width: 100%;
   height: 100%;
   overflow: hidden;
-  contain: layout paint;
 }
 
 .content {
@@ -33,5 +39,6 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  padding: 0 clamp(0.75rem, 1.2vw, 1.25rem) var(--space-5);
+  /* Folga para o scale de foco não “entrar” nas laterais */
+  padding: 0 clamp(0.85rem, 1.4vw, 1.5rem) var(--space-5);
 }

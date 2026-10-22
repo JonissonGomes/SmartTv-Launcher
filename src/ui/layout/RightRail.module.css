@@ -1,12 +1,33 @@
 .rail {
   position: relative;
-  z-index: 2;
+  z-index: 0;
   height: 100%;
   min-width: 0;
   width: 100%;
   overflow: hidden;
   border-left: 1px solid var(--color-border);
   background: color-mix(in srgb, var(--color-bg-elevated) 88%, var(--color-tint));
+}
+
+.peek {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 1;
+  transition: opacity var(--transition-med);
+  pointer-events: none;
+  color: var(--color-text-muted);
+}
+
+.peekMark {
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  opacity: 0.7;
+}
+
+.railExpanded .peek {
+  opacity: 0;
 }
 
 .railInner {
@@ -18,6 +39,12 @@
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: none;
+  opacity: 0;
+  transition: opacity var(--transition-med);
+}
+
+.railExpanded .railInner {
+  opacity: 1;
 }
 
 .railInner::-webkit-scrollbar {

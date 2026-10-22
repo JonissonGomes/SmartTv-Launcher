@@ -19,10 +19,13 @@
   --radius-sm: 12px;
   --radius-lg: 24px;
 
-  --sidebar-width-collapsed: 5.75rem;
-  --sidebar-width-expanded: 15.5rem;
+  --sidebar-width-collapsed: 5.5rem;
+  --sidebar-width-expanded: 14.5rem;
   --sidebar-width: var(--sidebar-width-collapsed);
-  --rail-width: clamp(14.5rem, 16vw, 18.5rem);
+  /* Faixa mínima para o D-pad alcançar o rail sem cobrir o centro */
+  --rail-width-collapsed: 2.75rem;
+  --rail-width-expanded: clamp(13.5rem, 15vw, 17rem);
+  --rail-width: var(--rail-width-expanded);
   --topbar-height: 4.25rem;
   --hero-height: clamp(16rem, 36vh, 22rem);
   --card-width: clamp(9rem, 10vw, 11.5rem);
