@@ -2,7 +2,7 @@ import type { AfAnime } from '@/domain/animefire'
 import type { AnimeWatchEntry } from '@/store/animeHistory'
 import { AnimeHeroBanner } from '@/ui/anime/AnimeHeroBanner'
 import { AnimeRow } from '@/ui/anime/AnimeCards'
-import { cx } from '@/ui/cx'
+import { AnimeHomeSkeleton } from '@/ui/anime/AnimeSkeletons'
 import styles from '@/ui/screens/LibraryScreen.module.css'
 
 interface AnimeHomeProps {
@@ -29,16 +29,12 @@ export function AnimeHome({
   // Banner: destaques + lançamentos (como o carrossel do site)
   const bannerItems = [...highlights, ...latest]
 
+  if (loading && highlights.length === 0 && latest.length === 0) {
+    return <AnimeHomeSkeleton />
+  }
+
   return (
     <>
-      {loading ? (
-        <div className={styles.skeletons}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className={cx('skeleton', styles.skeletonCard)} />
-          ))}
-        </div>
-      ) : null}
-
       <AnimeHeroBanner items={bannerItems} onOpen={onOpenAnime} />
 
       {continueItems.length > 0 ? (

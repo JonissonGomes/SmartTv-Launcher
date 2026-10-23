@@ -329,23 +329,79 @@
   position: relative;
 }
 
-/* Category tiles (Globoplay-like) */
+/* Category tiles (capa + ícone central) */
 .catGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.85rem;
 }
 
-.catTile {
+.catTile,
+.genreTile {
   position: relative;
-  aspect-ratio: 16 / 9;
   border-radius: 12px;
   overflow: hidden;
+  border: 2px solid transparent;
+  color: #fff;
+}
+
+.catTile {
+  aspect-ratio: 16 / 9;
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  justify-content: flex-end;
   padding: 0.85rem 1rem;
   background: linear-gradient(135deg, #2a1a3a, #121212);
-  border: 2px solid transparent;
+}
+
+.genreTile {
+  width: 11.5rem;
+  aspect-ratio: 16 / 9;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: linear-gradient(145deg, #1e293b, #0f172a);
+}
+
+.tileCover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  z-index: 0;
+}
+
+.tileShade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.25) 0%,
+    rgba(0, 0, 0, 0.35) 45%,
+    rgba(0, 0, 0, 0.88) 100%
+  );
+  pointer-events: none;
+}
+
+.tileIcon {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.92);
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.65));
+  pointer-events: none;
+  padding-bottom: 1.1rem;
+}
+
+.tileCaption {
+  position: relative;
+  z-index: 3;
 }
 
 .catTileLabel {
@@ -362,16 +418,12 @@
   margin-top: 0.15rem;
 }
 
-.genreTile {
-  width: 11rem;
-  aspect-ratio: 16 / 9;
-  border-radius: 10px;
-  padding: 0.75rem;
-  display: flex;
-  align-items: flex-end;
-  background: linear-gradient(145deg, #1e293b, #0f172a);
+.genreTileLabel {
+  position: relative;
+  z-index: 3;
   font-weight: 700;
   font-size: 1rem;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.75);
 }
 
 /* Search */
@@ -509,4 +561,114 @@
   aspect-ratio: 2 / 3;
   border-radius: 10px;
   flex-shrink: 0;
+}
+
+.skelHome {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.skelBanner {
+  width: 100%;
+  height: clamp(18rem, 50vh, 28rem);
+  border-radius: 14px;
+}
+
+.skelRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.skelRowTitle {
+  width: 11rem;
+  height: 1.1rem;
+  border-radius: 6px;
+}
+
+.skelRowCards {
+  display: flex;
+  gap: 0.85rem;
+  overflow: hidden;
+}
+
+.skelGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: 0.9rem;
+}
+
+.skelCatalog {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.skelCatGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.skelCatTile {
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+}
+
+.skelGenreTile {
+  width: 11.5rem;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.skelDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.skelDetailPoster {
+  width: 10rem;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+}
+
+.skelDetailMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.skelDetailLineLg {
+  height: 1.35rem;
+  width: 85%;
+  border-radius: 6px;
+}
+
+.skelDetailLine {
+  height: 0.85rem;
+  width: 70%;
+  border-radius: 6px;
+}
+
+.skelDetailBlock {
+  height: 4.5rem;
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 0.35rem;
+}
+
+.skelEpList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.skelEpItem {
+  height: 2.6rem;
+  border-radius: 8px;
 }

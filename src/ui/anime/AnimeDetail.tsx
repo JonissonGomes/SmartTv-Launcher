@@ -66,7 +66,13 @@ export function AnimeDetail({
         </div>
       </div>
 
-      {loading ? <p className={styles.hint}>Carregando episódios…</p> : null}
+      {loading && episodes.length === 0 ? (
+        <div className={styles.skelEpList} aria-hidden>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className={cx('skeleton', styles.skelEpItem)} />
+          ))}
+        </div>
+      ) : null}
 
       {seasons.length > 1 ? (
         <div className={styles.chips}>

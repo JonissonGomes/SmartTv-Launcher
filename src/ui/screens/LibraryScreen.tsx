@@ -20,6 +20,7 @@ import { AnimeCatalogHub } from '@/ui/anime/AnimeCatalogHub'
 import { PosterGrid } from '@/ui/anime/AnimeCards'
 import { AnimeDetail } from '@/ui/anime/AnimeDetail'
 import { AnimeHome } from '@/ui/anime/AnimeHome'
+import { AnimeGridSkeleton } from '@/ui/anime/AnimeSkeletons'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import { TvTextField } from '@/ui/input/TvTextField'
@@ -407,6 +408,10 @@ export function LibraryScreen() {
 
           {phase === 'catalog' ? (
             <AnimeCatalogHub
+              highlights={highlights}
+              latest={latest}
+              movies={movies}
+              upcoming={upcoming}
               onOpenSection={(path, title) => {
                 void openSection(path, title)
               }}
@@ -476,21 +481,23 @@ export function LibraryScreen() {
                 ))}
               </div>
               {searching ? (
-                <p className={styles.hint}>Buscando…</p>
+                <AnimeGridSkeleton count={12} />
               ) : (
-                <p className={styles.hint}>
-                  {query.trim().length < 2 && !audioFilter && !genreFilter
-                    ? 'Digite ao menos 2 letras ou escolha um filtro'
-                    : `${String(searchItems.length)} resultado(s)`}
-                </p>
+                <>
+                  <p className={styles.hint}>
+                    {query.trim().length < 2 && !audioFilter && !genreFilter
+                      ? 'Digite ao menos 2 letras ou escolha um filtro'
+                      : `${String(searchItems.length)} resultado(s)`}
+                  </p>
+                  <PosterGrid
+                    id="search"
+                    items={searchItems}
+                    onSelect={(a) => {
+                      void openAnime(a)
+                    }}
+                  />
+                </>
               )}
-              <PosterGrid
-                id="search"
-                items={searchItems}
-                onSelect={(a) => {
-                  void openAnime(a)
-                }}
-              />
             </>
           ) : null}
 
@@ -508,28 +515,36 @@ export function LibraryScreen() {
                 </Focusable>
               ) : null}
               <h2 className={styles.sectionTitle}>
-                {sectionTitle} · {sectionItems.length}
+                {sectionTitle}
+                {!loading ? ` · ${String(sectionItems.length)}` : ''}
               </h2>
-              {loading ? <p className={styles.hint}>Carregando…</p> : null}
-              <PosterGrid
-                id="category"
-                items={sectionItems}
-                onSelect={(a) => {
-                  void openAnime(a)
-                }}
-              />
-              {sectionExtraItems.length > 0 ? (
+              {loading ? (
+                <AnimeGridSkeleton count={20} />
+              ) : (
                 <>
-                  <h2 className={styles.sectionTitle}>{sectionExtraTitle}</h2>
                   <PosterGrid
-                    id="category-extra"
-                    items={sectionExtraItems}
+                    id="category"
+                    items={sectionItems}
                     onSelect={(a) => {
                       void openAnime(a)
                     }}
                   />
+                  {sectionExtraItems.length > 0 ? (
+                    <>
+                      <h2 className={styles.sectionTitle}>
+                        {sectionExtraTitle}
+                      </h2>
+                      <PosterGrid
+                        id="category-extra"
+                        items={sectionExtraItems}
+                        onSelect={(a) => {
+                          void openAnime(a)
+                        }}
+                      />
+                    </>
+                  ) : null}
                 </>
-              ) : null}
+              )}
             </>
           ) : null}
         </div>
