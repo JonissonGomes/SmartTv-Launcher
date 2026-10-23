@@ -29,6 +29,7 @@ import {
   RAIL_GENRES,
   TMDB_PROVIDER_IDS,
 } from '@/services/tmdb'
+import { useAnimeHistoryStore } from '@/store/animeHistory'
 
 export interface RailGenreTile {
   id: number
@@ -280,14 +281,35 @@ export function useHomeFeed(
         pushRow(rows, 'drama', 'Drama', dramaMovies)
         pushRow(rows, 'top-rated', 'Mais bem avaliados', topRatedMovies)
 
+        // Animes no home (TMDB) — o Player nativo fica no menu Animes.
+        const animeRecent = useAnimeHistoryStore.getState().getRecent(5)
+        const watchedAnime =
+          animeRecent.length > 0 ||
+          history.some(
+            (e) => e.genreIds.includes(16) || /anime/i.test(e.title),
+          )
+        const animeTaste = await discoverByGenres([16], 'tv', {
+          pages: 2,
+        }).catch(() => [])
         pushRow(
           rows,
-          'animation',
-          'Animações e animes',
+          'anime-recommend',
+          watchedAnime
+            ? 'Animes para você'
+            : 'Animes em alta',
           [
+            ...animeTaste,
             ...trendingWeek.filter(isMostlyAnimation),
             ...popularTv.filter(isMostlyAnimation),
           ],
+          18,
+        )
+
+        pushRow(
+          rows,
+          'animation',
+          'Animações',
+          [...trendingWeek, ...popularMovies].filter(isMostlyAnimation),
         )
 
         const candidatePool = uniqueById([

@@ -401,7 +401,7 @@ export default function App() {
           <HistoryScreen onContinueId={continueById} />
         ) : null}
         {view === 'search' ? <SearchScreen onSelect={openDetails} /> : null}
-        {view === 'library' ? <LibraryScreen /> : null}
+        {view === 'anime' || view === 'library' ? <LibraryScreen /> : null}
         {view === 'settings' ? <SettingsScreen /> : null}
       </Shell>
 

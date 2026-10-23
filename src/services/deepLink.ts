@@ -9,10 +9,39 @@ export interface DeepLinkContext {
   youtubeVideoId?: string
 }
 
+/** Extrai ID/path útil de URLs JustWatch → Max. */
+export function extractMaxContentRef(url: string | undefined): string | undefined {
+  if (!url) return undefined
+  try {
+    const u = new URL(url)
+    if (!/max\.com$/i.test(u.hostname) && !u.hostname.includes('max.com')) {
+      return undefined
+    }
+    // play.max.com/movie/uuid | /show/uuid | /video/watch/uuid
+    const path = u.pathname.replace(/\/+$/, '')
+    if (path.length > 1) return `https://play.max.com${path}`
+  } catch {
+    // ignore
+  }
+  return undefined
+}
+
+export function extractGloboplayPath(url: string | undefined): string | undefined {
+  if (!url) return undefined
+  try {
+    const u = new URL(url)
+    if (!u.hostname.includes('globoplay.globo.com')) return undefined
+    return u.toString()
+  } catch {
+    return undefined
+  }
+}
+
 /**
- * Um único payload de deep link (melhor esforço).
- * Importante: NÃO encadear vários launches com sucesso — o Luna retorna OK
- * ao só abrir o app, e tentativas extras reiniciam o streaming “do zero”.
+ * Um único payload de deep link.
+ * Max: perfil na abertura é comportamento do app Max (não dá para pular via Luna).
+ * Globoplay: URLs de busca quebram o app — só deep link com URL JustWatch real,
+ * senão abre o app limpo.
  */
 export function pickBestDeepLink(
   platform: Platform,
@@ -29,7 +58,6 @@ export function pickBestDeepLink(
     case 'netflix': {
       if (netflixId) {
         const id = netflixId.replace(/\D/g, '')
-        // Formato mais citado em integrações webOS / SSAP.
         return {
           contentTarget: `m=http://api.netflix.com/catalog/titles/movies/${id}&source_type=4`,
           contentId: `m=https://www.netflix.com/title/${id}`,
@@ -43,9 +71,7 @@ export function pickBestDeepLink(
             contentId: `m=https://www.netflix.com/title/${fromUrl}`,
           }
         }
-        return { contentTarget: ctx.providerUrl, contentId: ctx.providerUrl }
       }
-      // Sem ID: abre na busca (melhor que home vazia).
       return {
         contentTarget: `m=https://www.netflix.com/search?q=${q}`,
         contentId: `https://www.netflix.com/search?q=${q}`,
@@ -59,31 +85,42 @@ export function pickBestDeepLink(
         contentTarget: `https://www.youtube.com/results?search_query=${q}`,
       }
     }
-    case 'disney':
+    case 'disney': {
       if (ctx.providerUrl) {
         return { contentTarget: ctx.providerUrl, contentId: ctx.providerUrl }
       }
-      return {
-        contentTarget: `https://www.disneyplus.com/search/${q}`,
+      // Sem URL JustWatch: abre o app limpo (busca Disney costuma ignorar params).
+      return undefined
+    }
+    case 'hbomax': {
+      const maxRef = extractMaxContentRef(ctx.providerUrl) ?? ctx.providerUrl
+      if (maxRef) {
+        // Formato mais próximo do que o app Max aceita no webOS.
+        return {
+          contentTarget: maxRef,
+          contentId: maxRef,
+          deepLink: maxRef,
+        }
       }
-    case 'hbomax':
-      if (ctx.providerUrl) {
-        return { contentTarget: ctx.providerUrl, contentId: ctx.providerUrl }
+      // Sem ID: abrir limpo — search URL só mostra perfil e home.
+      return undefined
+    }
+    case 'globoplay': {
+      const gp = extractGloboplayPath(ctx.providerUrl)
+      if (gp) {
+        return {
+          contentTarget: gp,
+          contentId: gp,
+        }
       }
-      return { contentTarget: `https://play.max.com/search?q=${q}` }
-    case 'globoplay':
-      if (ctx.providerUrl) {
-        return { contentTarget: ctx.providerUrl, contentId: ctx.providerUrl }
-      }
-      return {
-        contentTarget: `https://globoplay.globo.com/busca/?q=${q}`,
-      }
+      // Busca por título derruba/ignora o Globoplay na TV — só abre o app.
+      return undefined
+    }
     default:
       return undefined
   }
 }
 
-/** @deprecated use pickBestDeepLink — mantido p/ testes legados */
 export function buildDeepLinkAttempts(
   platform: Platform,
   ctx: DeepLinkContext,

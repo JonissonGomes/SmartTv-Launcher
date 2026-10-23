@@ -66,11 +66,10 @@ export function SettingsScreen() {
       </section>
 
       <section className={styles.section}>
-        <h2>Biblioteca (catálogo)</h2>
+        <h2>Player de Animes</h2>
         <p>
-          O launcher busca <code>/launcher/catalog.json</code> neste site. A UI
-          é nativa (sem página web/anúncios). Sem o JSON remoto, usa o catálogo
-          empacotado.
+          Padrão: animesonlinecc.to. O app lê o catálogo do site (HTML) ou{' '}
+          <code>/launcher/catalog.json</code> se existir (streamUrl mp4/m3u8).
         </p>
         <TvTextField
           focusKey="SETTINGS_LIBRARY_URL"

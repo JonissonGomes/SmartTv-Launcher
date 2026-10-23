@@ -21,7 +21,7 @@ interface SidebarProps {
 const MENU_ITEMS: Array<{ view: AppView; label: string }> = [
   { view: 'home', label: 'Início' },
   { view: 'search', label: 'Busca' },
-  { view: 'library', label: 'Biblioteca' },
+  { view: 'anime', label: 'Animes' },
   { view: 'categories', label: 'Categorias' },
   { view: 'history', label: 'Histórico' },
   { view: 'surprise', label: 'Surpreenda-me' },
@@ -35,6 +35,7 @@ const GENERAL_ITEMS: Array<{ view: AppView; label: string }> = [
 function focusForView(view: AppView): string {
   if (view === 'home') return 'VIEW_home'
   if (view === 'platform') return 'VIEW_platform'
+  if (view === 'library') return 'VIEW_anime'
   return `VIEW_${view}`
 }
 

@@ -29,10 +29,11 @@ export const useSettingsStore = create<SettingsState>()(
       ownedPlatforms: [...PLATFORM_ORDER],
       activeTheme: null,
       catalogPlatform: null,
-      libraryBaseUrl: 'https://assistiranimesonline.net',
+      libraryBaseUrl: 'https://animesonlinecc.to',
       reducedMotion: false,
 
-      setView: (view) => set({ view }),
+      setView: (view) =>
+        set({ view: view === 'library' ? 'anime' : view }),
 
       setActiveTheme: (platform) => set({ activeTheme: platform }),
 
@@ -65,6 +66,27 @@ export const useSettingsStore = create<SettingsState>()(
         libraryBaseUrl: state.libraryBaseUrl,
         reducedMotion: state.reducedMotion,
       }),
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<SettingsState>
+        let libraryBaseUrl =
+          p.libraryBaseUrl ?? current.libraryBaseUrl
+        // Migra site antigo → animesonlinecc.to
+        if (
+          libraryBaseUrl.includes('assistiranimesonline.net') ||
+          !libraryBaseUrl
+        ) {
+          libraryBaseUrl = 'https://animesonlinecc.to'
+        }
+        return {
+          ...current,
+          ...p,
+          libraryBaseUrl,
+          view:
+            p.view === 'library' || current.view === 'library'
+              ? 'anime'
+              : (p.view ?? current.view),
+        }
+      },
     },
   ),
 )

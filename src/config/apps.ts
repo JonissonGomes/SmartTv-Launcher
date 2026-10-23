@@ -39,11 +39,15 @@ export const APP_CONFIGS: Record<Platform, AppConfig> = {
   globoplay: {
     platform: 'globoplay',
     label: 'Globoplay',
+    // IDs variam por versão/região — resolvePlatformAppId testa na ordem.
     webosAppId: 'com.globo.globosatplay',
     webosAppIdCandidates: [
       'com.globo.globosatplay',
       'com.globo.globoplay',
+      'br.com.globo.globoplay',
+      'com.globoplay.app',
       'globoplay',
+      'com.globo.globosatplay.tv',
     ],
     color: PLATFORM_THEMES.globoplay.accent,
   },

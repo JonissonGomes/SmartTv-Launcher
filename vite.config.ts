@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 import { gameRelayPlugin } from './server/gameRelay'
 import { jevProxyPlugin } from './server/jevProxy'
+import { libraryProxyPlugin } from './server/libraryProxy'
 
 function copyWebOsAssets() {
   return {
@@ -26,7 +27,13 @@ function copyWebOsAssets() {
 }
 
 export default defineConfig({
-  plugins: [react(), copyWebOsAssets(), jevProxyPlugin(), gameRelayPlugin()],
+  plugins: [
+    react(),
+    copyWebOsAssets(),
+    jevProxyPlugin(),
+    libraryProxyPlugin(),
+    gameRelayPlugin(),
+  ],
   base: './',
   resolve: {
     alias: {

@@ -16,6 +16,9 @@ export type AppView =
   | 'categories'
   | 'surprise'
   | 'games'
+  /** Player de animes (catálogo nativo + vídeo). */
+  | 'anime'
+  /** @deprecated use anime */
   | 'library'
 
 export interface UserProfile {

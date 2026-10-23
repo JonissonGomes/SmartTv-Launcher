@@ -1,17 +1,40 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
-import { useEffect, useState } from 'react'
-import type { LibraryCatalog, LibraryItem } from '@/domain/library'
-import { loadLibraryCatalog } from '@/services/libraryCatalog'
+import { useEffect, useMemo, useState } from 'react'
+import type { LibraryCatalog, LibraryItem, LibraryRow } from '@/domain/library'
+import {
+  FALLBACK_ANIME_CATALOG,
+  loadLibraryCatalog,
+  type CatalogSource,
+} from '@/services/libraryCatalog'
+import { isUrlAllowedForLibrary } from '@/services/urlSafety'
+import { launchBrowser } from '@/services/webos'
+import { useAnimeHistoryStore } from '@/store/animeHistory'
 import { useSettingsStore } from '@/store/settings'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import { VideoPlayer } from '@/ui/media/VideoPlayer'
 import styles from './LibraryScreen.module.css'
 
+/** Player de Animes — UI nativa (sem site/ads). */
 export function LibraryScreen() {
   const libraryBaseUrl = useSettingsStore((s) => s.libraryBaseUrl)
-  const [catalog, setCatalog] = useState<LibraryCatalog | null>(null)
-  const [source, setSource] = useState<'remote' | 'bundled'>('bundled')
+  const recordWatch = useAnimeHistoryStore((s) => s.recordWatch)
+  const entries = useAnimeHistoryStore((s) => s.entries)
+
+  const recentAnime = useMemo(
+    () =>
+      [...entries]
+        .sort(
+          (a, b) =>
+            new Date(b.lastWatchedAt).getTime() -
+            new Date(a.lastWatchedAt).getTime(),
+        )
+        .slice(0, 10),
+    [entries],
+  )
+
+  const [catalog, setCatalog] = useState<LibraryCatalog>(FALLBACK_ANIME_CATALOG)
+  const [source, setSource] = useState<CatalogSource | 'fallback'>('fallback')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>()
   const [selected, setSelected] = useState<LibraryItem | null>(null)
@@ -27,13 +50,19 @@ export function LibraryScreen() {
         setCatalog(result.catalog)
         setSource(result.source)
         setError(undefined)
-        void setFocus('VIEW_library')
       } catch (err) {
         if (!cancelled) {
+          setCatalog(FALLBACK_ANIME_CATALOG)
+          setSource('fallback')
           setError(err instanceof Error ? err.message : 'Falha ao carregar')
         }
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+          window.requestAnimationFrame(() => {
+            void setFocus('LIBRARY_REFRESH')
+          })
+        }
       }
     })()
     return () => {
@@ -51,27 +80,53 @@ export function LibraryScreen() {
         onClose={() => {
           setPlaying(null)
           void setFocus(
-            selected
-              ? `LIB_CARD_${selected.id}`
-              : 'VIEW_library',
+            selected ? `LIB_CARD_${selected.id}` : 'LIBRARY_REFRESH',
           )
         }}
       />
     )
   }
 
+  const continueRow: LibraryRow | null =
+    recentAnime.length > 0
+      ? {
+          id: 'continue-anime',
+          title: 'Continuar animes',
+          items: recentAnime.map((e) => ({
+            id: e.id,
+            title: e.title,
+            subtitle: e.subtitle,
+            poster: e.poster,
+            streamUrl: e.streamUrl,
+          })),
+        }
+      : null
+
+  const rows: LibraryRow[] = continueRow
+    ? [continueRow, ...catalog.rows]
+    : catalog.rows
+
+  const sourceLabel =
+    source === 'remote'
+      ? ' · catálogo JSON'
+      : source === 'site'
+        ? ' · catálogo do site'
+        : source === 'bundled'
+          ? ' · catálogo local'
+          : ' · catálogo embutido'
+
   return (
     <Focusable
-      focusKey="VIEW_library"
+      focusKey="VIEW_anime"
       className={styles.screen}
       saveLastFocusedChild
     >
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>{catalog?.title ?? 'Biblioteca'}</h1>
+          <h1 className={styles.title}>{catalog.title ?? 'Animes'}</h1>
           <p className={styles.sub}>
-            Experiência nativa · sem anúncios
-            {source === 'remote' ? ' · catálogo do site' : ' · catálogo local'}
+            Player nativo · animesonlinecc.to
+            {sourceLabel}
           </p>
         </div>
         <Focusable
@@ -79,11 +134,18 @@ export function LibraryScreen() {
           className={styles.btnGhost}
           onEnterPress={() => {
             setLoading(true)
-            void loadLibraryCatalog(libraryBaseUrl).then((result) => {
-              setCatalog(result.catalog)
-              setSource(result.source)
-              setLoading(false)
-            })
+            void loadLibraryCatalog(libraryBaseUrl)
+              .then((result) => {
+                setCatalog(result.catalog)
+                setSource(result.source)
+                setError(undefined)
+              })
+              .catch((err: unknown) => {
+                setError(err instanceof Error ? err.message : 'Falha')
+              })
+              .finally(() => {
+                setLoading(false)
+              })
           }}
         >
           Atualizar
@@ -94,26 +156,42 @@ export function LibraryScreen() {
       {error ? <p className={styles.error}>{error}</p> : null}
 
       <div className={styles.body} data-scroll-y="catalog">
-        {catalog?.rows.map((row) => (
+        {rows.map((row) => (
           <section key={row.id} className={styles.row}>
             <h2 className={styles.rowTitle}>{row.title}</h2>
             <div className={styles.viewport} data-scroll-x="row">
               <div className={styles.scroller}>
                 {row.items.map((item) => (
                   <Focusable
-                    key={item.id}
-                    focusKey={`LIB_CARD_${item.id}`}
+                    key={`${row.id}-${item.id}`}
+                    focusKey={`LIB_CARD_${row.id}_${item.id}`}
                     className={cx(
                       styles.card,
-                      selected?.id === item.id && styles.cardSelected,
+                      selected?.id === item.id &&
+                        selected.title === item.title &&
+                        styles.cardSelected,
                     )}
                     onEnterPress={() => {
                       setSelected(item)
                       if (item.streamUrl) {
+                        recordWatch(item)
                         setPlaying(item)
-                      } else {
-                        void setFocus('LIB_DETAIL_HINT')
+                        return
                       }
+                      if (
+                        item.pageUrl &&
+                        isUrlAllowedForLibrary(item.pageUrl, libraryBaseUrl)
+                      ) {
+                        void launchBrowser(item.pageUrl).catch((err: unknown) => {
+                          setError(
+                            err instanceof Error
+                              ? err.message
+                              : 'Falha ao abrir no navegador',
+                          )
+                        })
+                        return
+                      }
+                      void setFocus('LIB_DETAIL_HINT')
                     }}
                   >
                     {item.poster ? (
@@ -138,24 +216,19 @@ export function LibraryScreen() {
           </section>
         ))}
 
-        {selected && !selected.streamUrl ? (
-          <Focusable
-            focusKey="LIB_DETAIL_HINT"
-            className={styles.detail}
-          >
+        {selected && !selected.streamUrl && !selected.pageUrl ? (
+          <Focusable focusKey="LIB_DETAIL_HINT" className={styles.detail}>
             <h3>{selected.title}</h3>
             <p>
-              Este item ainda não tem <code>streamUrl</code> no catálogo. Inclua
-              a URL direta do vídeo (mp4/m3u8) em{' '}
-              <code>public/library/catalog.json</code> ou em{' '}
-              <code>/launcher/catalog.json</code> no seu site.
+              Sem mídia direta. Publique <code>streamUrl</code> (mp4/m3u8) em{' '}
+              <code>https://animesonlinecc.to/launcher/catalog.json</code>.
             </p>
           </Focusable>
         ) : null}
 
-        {!loading && (catalog?.rows.length ?? 0) === 0 ? (
+        {!loading && rows.length === 0 ? (
           <p className={styles.hint}>
-            Catálogo vazio. Publique JSON em /launcher/catalog.json no seu site.
+            Catálogo vazio. Verifique a URL do site em Configurações.
           </p>
         ) : null}
       </div>

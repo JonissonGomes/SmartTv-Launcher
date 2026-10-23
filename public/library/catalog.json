@@ -1,0 +1,551 @@
+{
+  "version": 1,
+  "title": "Animes",
+  "updatedAt": "2026-10-23",
+  "rows": [
+    {
+      "id": "destaques",
+      "title": "Destaques",
+      "items": [
+        {
+          "id": "darling-in-the-franxx",
+          "title": "Darling in the Franxx",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2019/07/oO5tir7lV4slZHTyhW8lTFrgyif-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/darling-in-the-franxx/",
+          "rating": 7.1
+        },
+        {
+          "id": "douluo-dalu-soul-land",
+          "title": "Douluo Dalu (Soul Land)",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2019/07/cXC9dtwy9SyODC4Zimi0b8vqzoh-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/douluo-dalu-soul-land/",
+          "rating": 8
+        },
+        {
+          "id": "haikyuu-hd",
+          "title": "Haikyuu!!",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2020/01/6R2GkrQW8ZRlZAhEdVKwJjrANwS-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/haikyuu-hd/",
+          "rating": 8.3
+        },
+        {
+          "id": "hunter-x-hunter-2011",
+          "title": "Hunter x Hunter 2011",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2020/01/obCPZOFe9IoBwZW8NbnRhFAhQxU-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/hunter-x-hunter-2011/",
+          "rating": 8.2
+        },
+        {
+          "id": "nanatsu-no-taizai-hd",
+          "title": "Nanatsu no Taizai Dublado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2019/09/7sjz43r1dkBpvecDMiiRVNYVllb-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/nanatsu-no-taizai-hd/",
+          "rating": 8
+        },
+        {
+          "id": "jojos-bizarre-adventure",
+          "title": "JoJo’s Bizarre Adventure",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2020/02/wDS9eLNQjRfG7aAL3cPw4FTb6Qg-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/jojos-bizarre-adventure/",
+          "rating": 7.4
+        },
+        {
+          "id": "tokyo-ghoul",
+          "title": "Tokyo Ghoul",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2019/06/dDxCpbuzk6pS2bRiJ99FibI2tDh-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/tokyo-ghoul/",
+          "rating": 7.2
+        },
+        {
+          "id": "high-school-dxd",
+          "title": "High School DxD",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2020/01/mpjtSazIvuoCFosb8xNE8pBiGvq-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/high-school-dxd/",
+          "rating": 7.5
+        },
+        {
+          "id": "yahari-ore-no-seishun-love-comedy-wa-machigatteiru",
+          "title": "Yahari Ore no Seishun Love Comedy wa Machigatteiru",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2019/06/hCiXuwSTy5rmx6DH7SurFk9dWIA-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/yahari-ore-no-seishun-love-comedy-wa-machigatteiru/",
+          "rating": 8
+        },
+        {
+          "id": "kuroko-no-basket",
+          "title": "Kuroko No Basket",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2019/07/ftT1qtT6yWO5rfs237a466N8QRr-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/kuroko-no-basket/",
+          "rating": 7.1
+        },
+        {
+          "id": "dragon-ball-super-beerus",
+          "title": "Dragon Ball Super: Beerus",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/w9sUCvGRtLeHzP9NylTWYP06rvg-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/dragon-ball-super-beerus/"
+        },
+        {
+          "id": "kyoufu-collector",
+          "title": "Kyoufu Collector",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/xgrdf7DfEL2lraPIYKTGUoydBXT-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/kyoufu-collector/"
+        },
+        {
+          "id": "shuiro-no-kamen",
+          "title": "Shuiro no Kamen",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/5oBnxSOixpHYWpKBIGwFpejouZ0-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/shuiro-no-kamen/"
+        },
+        {
+          "id": "aoki-denshou-welsh-shedar",
+          "title": "Aoki Denshou Welsh &#038; Shedar",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/76WhR4wbg3dSPPWaF1Ez39J0ykV-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/aoki-denshou-welsh-shedar/"
+        },
+        {
+          "id": "toaru-anbu-no-item",
+          "title": "Toaru Anbu no Item",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/lUeLWmfZP3sNrAdLvnsNp65dvM5-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/toaru-anbu-no-item/"
+        },
+        {
+          "id": "sekai-saikyou-no-majo-hajimemashita",
+          "title": "Sekai Saikyou no Majo, Hajimemashita",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/9KT3xygANWLJMFIhJT2WD8ytKkj-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/sekai-saikyou-no-majo-hajimemashita/"
+        },
+        {
+          "id": "the-laid-off-cheat-granting-mage-enjoys-a-second-lease-on-life",
+          "title": "The Laid-Off Cheat-Granting Mage Enjoys a Second Lease on Life",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/iRkFny4BWIw5nNkAbfph5UMxw18-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/the-laid-off-cheat-granting-mage-enjoys-a-second-lease-on-life/"
+        },
+        {
+          "id": "battle-spirits-re-zekkai-no-kuu",
+          "title": "Battle Spirits [Re]: Zekkai no Kuu",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/iXYE8eRrYChIkxF49RDBTarrIPJ-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/battle-spirits-re-zekkai-no-kuu/"
+        },
+        {
+          "id": "choujun-choujou-senpai",
+          "title": "Choujun! Choujou-senpai",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/d8970CnqbeYS9rPuXmvcnehFknW-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/choujun-choujou-senpai/"
+        },
+        {
+          "id": "shiotaiou-no-satou-san-ga-ore-ni-dake-amai",
+          "title": "Shiotaiou no Satou-san ga Ore ni dake Amai",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/eInC49veg0lHg13BaBiKmQiPk6U-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/shiotaiou-no-satou-san-ga-ore-ni-dake-amai/"
+        },
+        {
+          "id": "kyouran-reijou-nia-liston-byoujaku-reijou-ni-tensei-shita-kamigoroshi-no-bujin-no-karei-naru-musouroku",
+          "title": "Kyouran Reijou Nia Liston: Byoujaku Reijou ni Tensei shita Kamigoroshi no Bujin no Karei Naru Musouroku",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/dI2Hw5WZwylKh62kSIy1tPKtQty-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/kyouran-reijou-nia-liston-byoujaku-reijou-ni-tensei-shita-kamigoroshi-no-bujin-no-karei-naru-musouroku/"
+        },
+        {
+          "id": "mahou-shoujo-ikusei-keikaku-restart",
+          "title": "Mahou Shoujo Ikusei Keikaku: Restart",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/s7WJ5gQSLwk5vVxwhzJDx94mMf6-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/mahou-shoujo-ikusei-keikaku-restart/"
+        },
+        {
+          "id": "psyren",
+          "title": "Psyren",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/g6eoR2gUcc4BSFvJ4Bt4EeoNSLI-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/psyren/"
+        },
+        {
+          "id": "doumo-suki-na-hito-ni-horegusuri-wo-irai-sareta-majo-desu",
+          "title": "Doumo, Suki na Hito ni Horegusuri wo Irai sareta Majo desu",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/4uEmg13gXfA9wz8DYeYHMLpIXaf-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/doumo-suki-na-hito-ni-horegusuri-wo-irai-sareta-majo-desu/"
+        }
+      ]
+    },
+    {
+      "id": "ultimos-episodios",
+      "title": "Últimos episódios",
+      "items": [
+        {
+          "id": "darling-in-the-franxx-episodio-1",
+          "title": "Darling in the Franxx Episodio 1",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2019/07/gQODK1aRngAfkCqBNqKrHyCtdqY-300x169.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/darling-in-the-franxx-episodio-1/"
+        },
+        {
+          "id": "boku-no-hero-academia-4-episodio-25",
+          "title": "Boku no Hero Academia 4 Episodio 25",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2020/04/k9FPjWsC0DNnVThIULcdEVuPn6h-300x169.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/boku-no-hero-academia-4-episodio-25/"
+        },
+        {
+          "id": "nanatsu-no-taizai-kamigami-no-gekirin-episodio-24",
+          "title": "Nanatsu no Taizai: Kamigami no Gekirin Episodio 24",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2020/03/e5eZiAjBrRJYhg7VzfuUOv6p2FA-300x169.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/nanatsu-no-taizai-kamigami-no-gekirin-episodio-24/"
+        },
+        {
+          "id": "black-clover-episodio-170",
+          "title": "Black Clover Episodio 170",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2021/03/mremza0bToVBacGXFnY5BmsjwIE-300x169.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/black-clover-episodio-170/"
+        },
+        {
+          "id": "100-man-no-inochi-no-ue-ni-ore-wa-tatte-iru-episodio-12",
+          "title": "100-man no Inochi no Ue ni Ore wa Tatte Iru Episodio 12",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2020/12/90ap6G2EHhXGrWW38DC948nFfS7-300x169.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/100-man-no-inochi-no-ue-ni-ore-wa-tatte-iru-episodio-12/"
+        },
+        {
+          "id": "douluo-dalu-soul-land-episodio-214",
+          "title": "Douluo Dalu (Soul Land) Episodio 214",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2022/03/o8cFi5tMHAJ0ZQovVsi0n5r8fFj-300x169.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/douluo-dalu-soul-land-episodio-214/"
+        },
+        {
+          "id": "hyouken-no-majutsushi-ga-sekai-wo-suberu-2-episodio-3",
+          "title": "Hyouken no Majutsushi ga Sekai wo Suberu 2 Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/ggmwwOPvC9YrRfy3D1hM2uCnnHf-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/hyouken-no-majutsushi-ga-sekai-wo-suberu-2-episodio-3/"
+        },
+        {
+          "id": "tsuihou-sareta-tensei-juukishi-wa-game-sashiki-de-musou-suru-episodio-17",
+          "title": "Tsuihou Sareta Tensei Juukishi wa Game Sashiki de Musou Suru Episodio 17",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/4ZRJ4vzEM84QF4BY6p0tHFeQLmp-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/tsuihou-sareta-tensei-juukishi-wa-game-sashiki-de-musou-suru-episodio-17/"
+        },
+        {
+          "id": "koori-no-jouheki-2-episodio-4",
+          "title": "Koori no Jouheki 2 Episodio 4",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/xPsP1ZnWEjuqa3qLhHKYaB6slNg-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/koori-no-jouheki-2-episodio-4/"
+        },
+        {
+          "id": "fx-fighter-kurumi-chan-episodio-4",
+          "title": "FX Fighter Kurumi-chan Episodio 4",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/rci1iMmCWo1iMLojwVOzZ25tI3h-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/fx-fighter-kurumi-chan-episodio-4/"
+        },
+        {
+          "id": "tensei-shitara-ken-deshita-2-episodio-4",
+          "title": "Tensei Shitara Ken Deshita 2 Episodio 4",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/hSGGlkFqsm8Z3hHutAvqaHNAYnw-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/tensei-shitara-ken-deshita-2-episodio-4/"
+        },
+        {
+          "id": "kikansha-no-mahou-wa-tokubetsu-desu-2-episodio-3",
+          "title": "Kikansha no Mahou wa Tokubetsu desu 2 Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/eXBYqpHQo6s6aaBOpNTkAaoSnHN-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/kikansha-no-mahou-wa-tokubetsu-desu-2-episodio-3/"
+        },
+        {
+          "id": "tantei-wa-mou-shindeiru-2-episodio-3",
+          "title": "Tantei wa Mou, Shindeiru 2 Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/gnAOTqcBqWSeqVwDBwBnKBlWiwA-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/tantei-wa-mou-shindeiru-2-episodio-3/"
+        },
+        {
+          "id": "sasaki-to-pii-chan-2-episodio-3",
+          "title": "Sasaki to Pii-chan 2 Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/lrVPGvMEfUX8mCSYBgEHSnp0FZ2-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/sasaki-to-pii-chan-2-episodio-3/"
+        },
+        {
+          "id": "sekai-saikyou-no-majo-hajimemashita-episodio-3",
+          "title": "Sekai Saikyou no Majo, Hajimemashita Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/vPmL2aNh7ryiHKM6Gy4z3wKTBPO-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/sekai-saikyou-no-majo-hajimemashita-episodio-3/"
+        },
+        {
+          "id": "kyouran-reijou-nia-liston-byoujaku-reijou-ni-tensei-shita-kamigoroshi-no-bujin-no-karei-naru-musouroku-episodio-3",
+          "title": "Kyouran Reijou Nia Liston: Byoujaku Reijou ni Tensei shita Kamigoroshi no Bujin no Karei Naru Musouroku Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/nscSnfWWzpyzMoOHStlvPzyaXKk-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/kyouran-reijou-nia-liston-byoujaku-reijou-ni-tensei-shita-kamigoroshi-no-bujin-no-karei-naru-musouroku-episodio-3/"
+        },
+        {
+          "id": "gensou-suikoden-episodio-3",
+          "title": "Gensou Suikoden Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/tXsFAlUp755gtLyUqBlVJiv2I85-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/gensou-suikoden-episodio-3/"
+        },
+        {
+          "id": "chitose-kun-wa-ramune-bin-no-naka-part-2-episodio-2",
+          "title": "Chitose-kun wa Ramune Bin no Naka Part 2 Episodio 2",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/hGMfW6Q6CNwKsIKBdNKNs98jeQ9-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/chitose-kun-wa-ramune-bin-no-naka-part-2-episodio-2/"
+        },
+        {
+          "id": "the-laid-off-cheat-granting-mage-enjoys-a-second-lease-on-life-episodio-3",
+          "title": "The Laid-Off Cheat-Granting Mage Enjoys a Second Lease on Life Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/wvo2oDC48Xg9rdGPOfVnZ9gJa8S-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/the-laid-off-cheat-granting-mage-enjoys-a-second-lease-on-life-episodio-3/"
+        },
+        {
+          "id": "choujun-choujou-senpai-episodio-3",
+          "title": "Choujun! Choujou-senpai Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/g5c6gfrYxUlDb3CABisuTrCKHOj-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/choujun-choujou-senpai-episodio-3/"
+        },
+        {
+          "id": "battle-spirits-re-zekkai-no-kuu-episodio-3",
+          "title": "Battle Spirits [Re]: Zekkai no Kuu Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/7hhyYeejT4wP9Od9fNzTrbVfCh-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/battle-spirits-re-zekkai-no-kuu-episodio-3/"
+        },
+        {
+          "id": "shiotaiou-no-satou-san-ga-ore-ni-dake-amai-episodio-3",
+          "title": "Shiotaiou no Satou-san ga Ore ni dake Amai Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/9tY7tiYgasOM5syuehBd5gu9blW-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/shiotaiou-no-satou-san-ga-ore-ni-dake-amai-episodio-3/"
+        },
+        {
+          "id": "mahou-shoujo-ikusei-keikaku-restart-episodio-2",
+          "title": "Mahou Shoujo Ikusei Keikaku: Restart Episodio 2",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/3B63XoQX5erx8vX8q6v4Pp83cYf-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/mahou-shoujo-ikusei-keikaku-restart-episodio-2/"
+        },
+        {
+          "id": "bleach-sennen-kessen-hen-kashin-tan-episodio-9",
+          "title": "Bleach: Sennen Kessen-hen &#8211; Kashin-tan Episodio 9",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/ytgu1uer3VcIjhThYDpnyrMny4x-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/bleach-sennen-kessen-hen-kashin-tan-episodio-9/"
+        },
+        {
+          "id": "psyren-episodio-3",
+          "title": "Psyren Episodio 3",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/dwbx24j019r1trCqZZX0aCt8P6S-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/psyren-episodio-3/"
+        },
+        {
+          "id": "tensei-goblin-dakedo-shitsumon-aru-episodio-4",
+          "title": "Tensei Goblin dakedo Shitsumon Aru? Episodio 4",
+          "subtitle": "Legendado",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/d1m5fWmG3LFopJ17sEaEZ7ob4Eo-300x170.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/episodio/tensei-goblin-dakedo-shitsumon-aru-episodio-4/"
+        }
+      ]
+    },
+    {
+      "id": "catalogo",
+      "title": "Lista de animes",
+      "items": [
+        {
+          "id": "dragon-ball-super-beerus",
+          "title": "Dragon Ball Super: Beerus",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/w9sUCvGRtLeHzP9NylTWYP06rvg-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/dragon-ball-super-beerus/"
+        },
+        {
+          "id": "kyoufu-collector",
+          "title": "Kyoufu Collector",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/xgrdf7DfEL2lraPIYKTGUoydBXT-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/kyoufu-collector/"
+        },
+        {
+          "id": "shuiro-no-kamen",
+          "title": "Shuiro no Kamen",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/5oBnxSOixpHYWpKBIGwFpejouZ0-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/shuiro-no-kamen/"
+        },
+        {
+          "id": "aoki-denshou-welsh-shedar",
+          "title": "Aoki Denshou Welsh &#038; Shedar",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/76WhR4wbg3dSPPWaF1Ez39J0ykV-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/aoki-denshou-welsh-shedar/"
+        },
+        {
+          "id": "toaru-anbu-no-item",
+          "title": "Toaru Anbu no Item",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/lUeLWmfZP3sNrAdLvnsNp65dvM5-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/toaru-anbu-no-item/"
+        },
+        {
+          "id": "sekai-saikyou-no-majo-hajimemashita",
+          "title": "Sekai Saikyou no Majo, Hajimemashita",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/9KT3xygANWLJMFIhJT2WD8ytKkj-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/sekai-saikyou-no-majo-hajimemashita/"
+        },
+        {
+          "id": "the-laid-off-cheat-granting-mage-enjoys-a-second-lease-on-life",
+          "title": "The Laid-Off Cheat-Granting Mage Enjoys a Second Lease on Life",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/iRkFny4BWIw5nNkAbfph5UMxw18-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/the-laid-off-cheat-granting-mage-enjoys-a-second-lease-on-life/"
+        },
+        {
+          "id": "battle-spirits-re-zekkai-no-kuu",
+          "title": "Battle Spirits [Re]: Zekkai no Kuu",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/iXYE8eRrYChIkxF49RDBTarrIPJ-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/battle-spirits-re-zekkai-no-kuu/"
+        },
+        {
+          "id": "choujun-choujou-senpai",
+          "title": "Choujun! Choujou-senpai",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/d8970CnqbeYS9rPuXmvcnehFknW-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/choujun-choujou-senpai/"
+        },
+        {
+          "id": "shiotaiou-no-satou-san-ga-ore-ni-dake-amai",
+          "title": "Shiotaiou no Satou-san ga Ore ni dake Amai",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/eInC49veg0lHg13BaBiKmQiPk6U-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/shiotaiou-no-satou-san-ga-ore-ni-dake-amai/"
+        },
+        {
+          "id": "kyouran-reijou-nia-liston-byoujaku-reijou-ni-tensei-shita-kamigoroshi-no-bujin-no-karei-naru-musouroku",
+          "title": "Kyouran Reijou Nia Liston: Byoujaku Reijou ni Tensei shita Kamigoroshi no Bujin no Karei Naru Musouroku",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/dI2Hw5WZwylKh62kSIy1tPKtQty-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/kyouran-reijou-nia-liston-byoujaku-reijou-ni-tensei-shita-kamigoroshi-no-bujin-no-karei-naru-musouroku/"
+        },
+        {
+          "id": "mahou-shoujo-ikusei-keikaku-restart",
+          "title": "Mahou Shoujo Ikusei Keikaku: Restart",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/s7WJ5gQSLwk5vVxwhzJDx94mMf6-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/mahou-shoujo-ikusei-keikaku-restart/"
+        },
+        {
+          "id": "psyren",
+          "title": "Psyren",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/g6eoR2gUcc4BSFvJ4Bt4EeoNSLI-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/psyren/"
+        },
+        {
+          "id": "doumo-suki-na-hito-ni-horegusuri-wo-irai-sareta-majo-desu",
+          "title": "Doumo, Suki na Hito ni Horegusuri wo Irai sareta Majo desu",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/4uEmg13gXfA9wz8DYeYHMLpIXaf-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/doumo-suki-na-hito-ni-horegusuri-wo-irai-sareta-majo-desu/"
+        },
+        {
+          "id": "tensei-goblin-dakedo-shitsumon-aru",
+          "title": "Tensei Goblin dakedo Shitsumon Aru?",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/3gHPd50EwLAhtzyOlZv47JafE6-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/tensei-goblin-dakedo-shitsumon-aru/"
+        },
+        {
+          "id": "gensou-suikoden",
+          "title": "Gensou Suikoden",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/xQHLWueC3t6ydU5ByGfkZ5M4QHP-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/gensou-suikoden/"
+        },
+        {
+          "id": "kanojo-no-tomodachi",
+          "title": "Kanojo no Tomodachi",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/9XJnHDxSoAsXQd4UTH787nBtZWV-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/kanojo-no-tomodachi/"
+        },
+        {
+          "id": "dark-summoner-to-dekiteiru",
+          "title": "Dark Summoner to Dekiteiru",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/wmremove-transformed1-185x278.jpeg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/dark-summoner-to-dekiteiru/"
+        },
+        {
+          "id": "yowaki-max-reijou-nanoni-ratsuwan-konyakusha-sama-no-kake-ni-notte-shimatta",
+          "title": "Yowaki Max Reijou nanoni, Ratsuwan Konyakusha-sama no Kake ni Notte Shimatta",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/deFPIrhtwbVp1juu0b5Vi94DVLN-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/yowaki-max-reijou-nanoni-ratsuwan-konyakusha-sama-no-kake-ni-notte-shimatta/"
+        },
+        {
+          "id": "kanata-kara",
+          "title": "Kanata kara",
+          "poster": "https://animesonlinecc.to/wp-content/uploads/2026/10/otOGOSpeP0EDzzhJAUCzSSCM1ba-185x278.jpg",
+          "streamUrl": "",
+          "pageUrl": "https://animesonlinecc.to/anime/kanata-kara/"
+        }
+      ]
+    }
+  ]
+}

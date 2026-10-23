@@ -199,21 +199,53 @@ async function lunaLaunch(
   }
 }
 
+async function launchWithCandidateFallback(
+  platform: Platform,
+  params?: Record<string, unknown>,
+): Promise<void> {
+  const config = getAppConfig(platform)
+  const preferred = await resolvePlatformAppId(platform)
+  const candidates = [
+    preferred,
+    ...(config.webosAppIdCandidates ?? []),
+    config.webosAppId,
+  ]
+  const unique = [...new Set(candidates)]
+
+  let lastError: unknown
+  for (const appId of unique) {
+    try {
+      await lunaLaunch(appId, params)
+      resolvedAppIds.set(platform, appId)
+      return
+    } catch (err) {
+      lastError = err
+    }
+  }
+
+  // Última chance: app limpo sem deep link.
+  if (params && Object.keys(params).length > 0) {
+    for (const appId of unique) {
+      try {
+        await lunaLaunch(appId)
+        resolvedAppIds.set(platform, appId)
+        return
+      } catch (err) {
+        lastError = err
+      }
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`Falha ao abrir ${config.label}`)
+}
+
 export async function launchApp(
   platform: Platform,
   params?: Record<string, unknown>,
 ): Promise<void> {
-  const appId = await resolvePlatformAppId(platform)
-  try {
-    await lunaLaunch(appId, params)
-  } catch (err) {
-    if (params && Object.keys(params).length > 0) {
-      console.warn('[webOS] deep link falhou, abrindo app limpo', err)
-      await lunaLaunch(appId)
-      return
-    }
-    throw err
-  }
+  await launchWithCandidateFallback(platform, params)
 }
 
 export async function launchPlatformTitle(
@@ -226,8 +258,6 @@ export async function launchPlatformTitle(
     providerUrl?: string
   },
 ): Promise<void> {
-  const appId = await resolvePlatformAppId(platform)
-  // Um único launch — tentativas em série reiniciavam o app “do zero”.
   const deep = pickBestDeepLink(platform, {
     title,
     tmdbId,
@@ -236,18 +266,7 @@ export async function launchPlatformTitle(
     providerUrl: extras?.providerUrl,
   })
 
-  try {
-    await lunaLaunch(appId, deep)
-  } catch (err) {
-    if (deep) {
-      console.warn('[webOS] deep link falhou, abrindo app', err)
-      await lunaLaunch(appId)
-      return
-    }
-    throw err instanceof Error
-      ? err
-      : new Error(`Falha ao abrir ${getAppConfig(platform).label}`)
-  }
+  await launchWithCandidateFallback(platform, deep)
 }
 
 export function getAllowedWebOsAppIds(): readonly string[] {

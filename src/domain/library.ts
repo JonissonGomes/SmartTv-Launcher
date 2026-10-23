@@ -8,6 +8,8 @@ export interface LibraryItem {
   backdrop?: string
   /** URL direta de mídia (mp4 / m3u8) — reproduz no player do launcher. */
   streamUrl: string
+  /** Página do título no site (fallback quando não há streamUrl). */
+  pageUrl?: string
   year?: number
   rating?: number
 }
