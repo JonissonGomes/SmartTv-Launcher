@@ -1,7 +1,8 @@
-import type { CatalogItem } from '@/domain/types'
+import type { CatalogItem, Platform } from '@/domain/types'
 import { imageUrl } from '@/services/tmdb'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
+import { PlatformIcon } from '@/ui/icons/Icons'
 import { CachedImage } from '@/ui/media/CachedImage'
 import styles from './Card.module.css'
 
@@ -24,6 +25,7 @@ export function Card({
       ? imageUrl(item.backdropPath ?? item.posterPath, 'w342')
       : imageUrl(item.posterPath, 'w342')
   const rating = item.voteAverage > 0 ? item.voteAverage.toFixed(1) : null
+  const platform: Platform | undefined = item.platforms[0]
 
   return (
     <Focusable
@@ -48,7 +50,16 @@ export function Card({
           {item.title}
         </div>
       )}
-      {rating ? <span className={styles.rating}>{rating}</span> : null}
+      {rating || platform ? (
+        <div className={styles.metaBadge}>
+          {platform ? (
+            <span className={styles.platformMark} title={platform}>
+              <PlatformIcon platform={platform} size={14} />
+            </span>
+          ) : null}
+          {rating ? <span className={styles.rating}>{rating}</span> : null}
+        </div>
+      ) : null}
     </Focusable>
   )
 }

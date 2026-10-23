@@ -371,10 +371,11 @@ export function LibraryScreen() {
             : undefined
         }
         onSelectEpisode={
-          playing.anime
+          playlist.length > 0
             ? (id) => {
                 const ep = playlist.find((e) => e.id === id)
-                if (ep) void playEpisode(ep, playing.anime!, playlist)
+                const anime = playing.anime ?? detailAnime
+                if (ep && anime) void playEpisode(ep, anime, playlist)
               }
             : undefined
         }
@@ -450,15 +451,42 @@ export function LibraryScreen() {
                 void openAnime(a)
               }}
               onPlayContinue={(entry) => {
-                setPlaying({
-                  title: entry.title,
-                  subtitle: entry.subtitle,
-                  src: entry.streamUrl,
-                  poster: entry.poster,
-                  watchId: entry.id,
-                  episodeId: entry.episodeId,
-                  startAt: entry.currentTime ?? 0,
-                })
+                void (async () => {
+                  let anime = detailAnime ?? undefined
+                  let episodes = detailEps
+                  if (entry.animeId) {
+                    try {
+                      const detail = await fetchAfAnimeDetail(entry.animeId)
+                      anime = detail.anime
+                      episodes = detail.episodes
+                    } catch {
+                      // segue só com o stream salvo
+                    }
+                  }
+                  setPlaying({
+                    title: entry.title,
+                    subtitle: entry.subtitle,
+                    src: entry.streamUrl,
+                    poster: entry.poster,
+                    watchId: entry.id,
+                    episodeId: entry.episodeId,
+                    startAt: entry.currentTime ?? 0,
+                    anime,
+                    episodes:
+                      episodes.length > 0
+                        ? episodes
+                        : entry.episodeId
+                          ? [
+                              {
+                                id: entry.episodeId,
+                                title: entry.subtitle ?? entry.title,
+                                season: 1,
+                                number: 1,
+                              },
+                            ]
+                          : [],
+                  })
+                })()
               }}
             />
           ) : null}

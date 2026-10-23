@@ -1,29 +1,14 @@
-import { useEffect, useState, type ImgHTMLAttributes } from 'react'
-import { cachedImageSrc } from '@/services/imageCache'
+import type { ImgHTMLAttributes } from 'react'
 
 type CachedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
   src?: string | null
 }
 
-/** <img> com cache de sessão (memória + Cache Storage). */
+/**
+ * Imagem direta (cache HTTP do browser).
+ * Evita fetch→blob no render — isso matava FPS no webOS.
+ */
 export function CachedImage({ src, ...rest }: CachedImageProps) {
-  const [resolved, setResolved] = useState<string | undefined>(src ?? undefined)
-
-  useEffect(() => {
-    let cancelled = false
-    if (!src) {
-      setResolved(undefined)
-      return
-    }
-    setResolved(src)
-    void cachedImageSrc(src).then((next) => {
-      if (!cancelled) setResolved(next)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [src])
-
-  if (!resolved) return null
-  return <img src={resolved} {...rest} />
+  if (!src) return null
+  return <img src={src} {...rest} />
 }

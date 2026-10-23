@@ -1,23 +1,17 @@
 .root {
   position: relative;
-  /* scale(1) explícito: evita zoom “preso” após blur no Chromium/webOS */
-  transform: scale(1);
-  transform-origin: center center;
+  /* Sem scale no foco: transform em dezenas de cards = jank no webOS */
+  transform: none;
   transition:
-    transform 120ms ease-out,
-    box-shadow 120ms ease-out,
-    opacity var(--transition-fast),
+    outline-color 80ms linear,
     background-color var(--transition-fast),
-    color var(--transition-fast),
-    outline-color 120ms ease-out;
+    color var(--transition-fast);
   border-radius: var(--radius-md);
   outline: 2px solid transparent;
   outline-offset: 2px;
-  will-change: auto;
 }
 
 .focused {
-  transform: scale(var(--focus-scale));
   outline-color: var(--color-focus);
   box-shadow: 0 0 0 2px var(--color-accent-soft);
   z-index: 2;
@@ -28,26 +22,22 @@
   border-radius: 0 !important;
   outline: none !important;
   box-shadow: none !important;
-  transform: scale(1) !important;
 }
 
 .plain.focused {
-  transform: scale(1) !important;
   outline: none !important;
   box-shadow: none !important;
   color: var(--color-accent);
 }
 
-/* Sidebar / nav: foco nítido, sem scale nem glow/blur */
+/* Sidebar / nav: foco nítido, sem glow */
 .nav {
   outline: none !important;
   box-shadow: none !important;
-  transform: scale(1) !important;
   border-radius: var(--radius-sm);
 }
 
 .nav.focused {
-  transform: scale(1) !important;
   outline: none !important;
   box-shadow: none !important;
   background: var(--color-accent-soft);

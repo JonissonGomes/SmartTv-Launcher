@@ -15,9 +15,8 @@
 
 .flyout.open {
   width: var(--fly-width);
-  background: rgba(10, 10, 10, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(10, 10, 10, 0.94);
+  /* Sem blur no open: backdrop-filter é caro no webOS */
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
 }

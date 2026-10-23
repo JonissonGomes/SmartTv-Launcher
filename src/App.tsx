@@ -50,8 +50,8 @@ function readControllerRoom(): string | null {
 init({
   debug: false,
   visualDebug: false,
-  // TV: throttle alto deixa o D-pad “pesado”; 40ms ainda evita flood.
-  throttle: 40,
+  // ~1 frame a 60Hz — D-pad mais responsivo sem flood
+  throttle: 16,
 })
 
 setKeyMap({

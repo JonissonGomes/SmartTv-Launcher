@@ -429,7 +429,7 @@ export function VideoPlayer({
   useEffect(() => {
     const id = window.setInterval(() => {
       setTick((t) => t + 1)
-    }, 500)
+    }, 1000)
     return () => {
       window.clearInterval(id)
     }
@@ -471,7 +471,8 @@ export function VideoPlayer({
   const canEpNav = episodes.length > 1
   const showPrev = Boolean(onPrevEpisode && (hasPrevEpisode ?? canEpNav))
   const showNext = Boolean(onNextEpisode && (hasNextEpisode ?? canEpNav))
-  const showList = Boolean(onSelectEpisode && episodes.length > 0)
+  // Mostra lista sempre que houver episódios (mesmo 1) + callback
+  const showList = episodes.length > 0 && typeof onSelectEpisode === 'function'
   const showCc = captionTracks.length > 0
   const ccOn = activeCaptionId !== null
 
