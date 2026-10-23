@@ -1,66 +1,63 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import {
-  isDirectMediaUrl,
-  isUrlAllowedForLibrary,
-  normalizeHttpsUrl,
-} from '@/services/urlSafety'
-import { isWebOsRuntime, launchBrowser } from '@/services/webos'
+import { useEffect, useState } from 'react'
+import type { LibraryCatalog, LibraryItem } from '@/domain/library'
+import { loadLibraryCatalog } from '@/services/libraryCatalog'
 import { useSettingsStore } from '@/store/settings'
+import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
-import { TvTextField } from '@/ui/input/TvTextField'
+import { VideoPlayer } from '@/ui/media/VideoPlayer'
 import styles from './LibraryScreen.module.css'
 
-/**
- * Biblioteca web do site próprio do usuário.
- * iframe quando o site permite; senão navegador da TV / <video> p/ MP4 direto.
- */
 export function LibraryScreen() {
   const libraryBaseUrl = useSettingsStore((s) => s.libraryBaseUrl)
-  const base = useMemo(
-    () => normalizeHttpsUrl(libraryBaseUrl) ?? 'https://assistiranimesonline.net',
-    [libraryBaseUrl],
-  )
-
-  const [currentUrl, setCurrentUrl] = useState(base)
-  const [pathInput, setPathInput] = useState('')
-  const [iframeBlocked, setIframeBlocked] = useState(false)
-  const [message, setMessage] = useState<string>()
-  const frameRef = useRef<HTMLIFrameElement>(null)
+  const [catalog, setCatalog] = useState<LibraryCatalog | null>(null)
+  const [source, setSource] = useState<'remote' | 'bundled'>('bundled')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string>()
+  const [selected, setSelected] = useState<LibraryItem | null>(null)
+  const [playing, setPlaying] = useState<LibraryItem | null>(null)
 
   useEffect(() => {
-    setCurrentUrl(base)
-    setIframeBlocked(false)
-    void setFocus('LIBRARY_OPEN')
-  }, [base])
-
-  const mediaMode = isDirectMediaUrl(currentUrl)
-
-  const goTo = (raw: string) => {
-    const normalized = normalizeHttpsUrl(raw)
-    if (!normalized) {
-      setMessage('URL inválida.')
-      return
+    let cancelled = false
+    setLoading(true)
+    void (async () => {
+      try {
+        const result = await loadLibraryCatalog(libraryBaseUrl)
+        if (cancelled) return
+        setCatalog(result.catalog)
+        setSource(result.source)
+        setError(undefined)
+        void setFocus('VIEW_library')
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Falha ao carregar')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
     }
-    if (!isUrlAllowedForLibrary(normalized, base)) {
-      setMessage(
-        `Só o host de ${new URL(base).hostname} (e subdomínios) é permitido.`,
-      )
-      return
-    }
-    setMessage(undefined)
-    setIframeBlocked(false)
-    setCurrentUrl(normalized)
-  }
+  }, [libraryBaseUrl])
 
-  const openExternal = () => {
-    void launchBrowser(currentUrl)
-      .then(() => {
-        setMessage('Aberto no navegador da TV.')
-      })
-      .catch((err: unknown) => {
-        setMessage(err instanceof Error ? err.message : 'Falha ao abrir navegador')
-      })
+  if (playing?.streamUrl) {
+    return (
+      <VideoPlayer
+        title={playing.title}
+        subtitle={playing.subtitle}
+        src={playing.streamUrl}
+        poster={playing.poster || playing.backdrop}
+        onClose={() => {
+          setPlaying(null)
+          void setFocus(
+            selected
+              ? `LIB_CARD_${selected.id}`
+              : 'VIEW_library',
+          )
+        }}
+      />
+    )
   }
 
   return (
@@ -71,125 +68,97 @@ export function LibraryScreen() {
     >
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Minha biblioteca</h1>
+          <h1 className={styles.title}>{catalog?.title ?? 'Biblioteca'}</h1>
           <p className={styles.sub}>
-            Site próprio · {new URL(base).hostname}
-            {isWebOsRuntime() ? ' · webOS' : ' · preview'}
+            Experiência nativa · sem anúncios
+            {source === 'remote' ? ' · catálogo do site' : ' · catálogo local'}
           </p>
         </div>
-        <div className={styles.actions}>
-          <Focusable
-            focusKey="LIBRARY_HOME"
-            className={styles.btn}
-            onEnterPress={() => {
-              goTo(base)
-            }}
-          >
-            Início do site
-          </Focusable>
-          <Focusable
-            focusKey="LIBRARY_RELOAD"
-            className={styles.btnGhost}
-            onEnterPress={() => {
-              setIframeBlocked(false)
-              if (frameRef.current) {
-                frameRef.current.src = currentUrl
-              } else {
-                setCurrentUrl((u) => u)
-              }
-            }}
-          >
-            Recarregar
-          </Focusable>
-          <Focusable
-            focusKey="LIBRARY_BROWSER"
-            className={styles.btnGhost}
-            onEnterPress={openExternal}
-          >
-            Abrir no navegador TV
-          </Focusable>
-        </div>
-      </header>
-
-      <div className={styles.pathRow}>
-        <TvTextField
-          focusKey="LIBRARY_PATH"
-          label="Caminho ou URL (mesmo domínio)"
-          value={pathInput}
-          onChange={setPathInput}
-          placeholder="/animes/... ou URL completa"
-          inputType="url"
-          maxLength={200}
-        />
         <Focusable
-          focusKey="LIBRARY_OPEN"
-          className={styles.btn}
+          focusKey="LIBRARY_REFRESH"
+          className={styles.btnGhost}
           onEnterPress={() => {
-            const raw = pathInput.trim()
-            if (!raw) {
-              goTo(base)
-              return
-            }
-            if (raw.startsWith('/')) {
-              goTo(new URL(raw, base).toString())
-              return
-            }
-            goTo(raw)
+            setLoading(true)
+            void loadLibraryCatalog(libraryBaseUrl).then((result) => {
+              setCatalog(result.catalog)
+              setSource(result.source)
+              setLoading(false)
+            })
           }}
         >
-          Ir
+          Atualizar
         </Focusable>
-      </div>
+      </header>
 
-      {message ? <p className={styles.message}>{message}</p> : null}
+      {loading ? <p className={styles.hint}>Carregando catálogo…</p> : null}
+      {error ? <p className={styles.error}>{error}</p> : null}
 
-      <div className={styles.stage}>
-        {mediaMode ? (
-          <video
-            className={styles.video}
-            src={currentUrl}
-            controls
-            autoPlay
-            playsInline
-          />
-        ) : iframeBlocked ? (
-          <div className={styles.blocked}>
+      <div className={styles.body} data-scroll-y="catalog">
+        {catalog?.rows.map((row) => (
+          <section key={row.id} className={styles.row}>
+            <h2 className={styles.rowTitle}>{row.title}</h2>
+            <div className={styles.viewport} data-scroll-x="row">
+              <div className={styles.scroller}>
+                {row.items.map((item) => (
+                  <Focusable
+                    key={item.id}
+                    focusKey={`LIB_CARD_${item.id}`}
+                    className={cx(
+                      styles.card,
+                      selected?.id === item.id && styles.cardSelected,
+                    )}
+                    onEnterPress={() => {
+                      setSelected(item)
+                      if (item.streamUrl) {
+                        setPlaying(item)
+                      } else {
+                        void setFocus('LIB_DETAIL_HINT')
+                      }
+                    }}
+                  >
+                    {item.poster ? (
+                      <img
+                        className={styles.poster}
+                        src={item.poster}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className={styles.posterFallback}>{item.title}</div>
+                    )}
+                    <span className={styles.cardTitle}>{item.title}</span>
+                    {item.subtitle ? (
+                      <span className={styles.cardSub}>{item.subtitle}</span>
+                    ) : null}
+                  </Focusable>
+                ))}
+              </div>
+            </div>
+          </section>
+        ))}
+
+        {selected && !selected.streamUrl ? (
+          <Focusable
+            focusKey="LIB_DETAIL_HINT"
+            className={styles.detail}
+          >
+            <h3>{selected.title}</h3>
             <p>
-              Este site bloqueia iframe (X-Frame-Options). Use o navegador da
-              TV para assistir em tela cheia.
+              Este item ainda não tem <code>streamUrl</code> no catálogo. Inclua
+              a URL direta do vídeo (mp4/m3u8) em{' '}
+              <code>public/library/catalog.json</code> ou em{' '}
+              <code>/launcher/catalog.json</code> no seu site.
             </p>
-            <Focusable
-              focusKey="LIBRARY_BLOCKED_BROWSER"
-              className={styles.btn}
-              onEnterPress={openExternal}
-            >
-              Abrir no navegador TV
-            </Focusable>
-          </div>
-        ) : (
-          <iframe
-            ref={frameRef}
-            className={styles.frame}
-            src={currentUrl}
-            title="Biblioteca web"
-            referrerPolicy="strict-origin-when-cross-origin"
-            // sandbox permissivo o bastante p/ players do site próprio
-            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
-            onLoad={() => {
-              // Se o site negar iframe, alguns browsers deixam contentDocument null
-              // cross-origin — não dá para detectar com certeza; timeout ajuda.
-            }}
-            onError={() => {
-              setIframeBlocked(true)
-            }}
-          />
-        )}
-      </div>
+          </Focusable>
+        ) : null}
 
-      <p className={styles.footer}>
-        Dica: se o player do site não responder no iframe, use “Abrir no
-        navegador TV”. URLs .mp4/.m3u8 abrem no player nativo do launcher.
-      </p>
+        {!loading && (catalog?.rows.length ?? 0) === 0 ? (
+          <p className={styles.hint}>
+            Catálogo vazio. Publique JSON em /launcher/catalog.json no seu site.
+          </p>
+        ) : null}
+      </div>
     </Focusable>
   )
 }

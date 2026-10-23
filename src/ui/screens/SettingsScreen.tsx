@@ -66,10 +66,11 @@ export function SettingsScreen() {
       </section>
 
       <section className={styles.section}>
-        <h2>Biblioteca web (seu site)</h2>
+        <h2>Biblioteca (catálogo)</h2>
         <p>
-          URL base usada em Biblioteca. Apenas esse domínio (e subdomínios) pode
-          ser aberto no launcher.
+          O launcher busca <code>/launcher/catalog.json</code> neste site. A UI
+          é nativa (sem página web/anúncios). Sem o JSON remoto, usa o catálogo
+          empacotado.
         </p>
         <TvTextField
           focusKey="SETTINGS_LIBRARY_URL"

@@ -46,7 +46,8 @@ export function HomeScreen({
     const el = rowsRef.current
     if (!el) return
     const next = Math.min(1, Math.max(0, el.scrollTop / HERO_COLLAPSE_RANGE))
-    setCollapse((prev) => (Math.abs(prev - next) < 0.008 ? prev : next))
+    // Threshold maior = menos re-renders do Hero durante o scroll.
+    setCollapse((prev) => (Math.abs(prev - next) < 0.03 ? prev : next))
   }, [])
 
   const onRowsScroll = () => {
@@ -60,7 +61,7 @@ export function HomeScreen({
   const expandHero = () => {
     const el = rowsRef.current
     if (!el) return
-    el.scrollTo({ top: 0, behavior: 'smooth' })
+    el.scrollTo({ top: 0 })
     setCollapse(0)
   }
 
