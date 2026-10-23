@@ -1,5 +1,9 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { AfAnime, AfEpisode, AfSeason } from '@/domain/animefire'
+import {
+  availableAudioKinds,
+  filterEpisodesByAudio,
+} from '@/domain/animeAudio'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import styles from '@/ui/screens/LibraryScreen.module.css'
@@ -25,10 +29,18 @@ export function AnimeDetail({
   onSeasonFilter,
   onPlayEpisode,
 }: AnimeDetailProps) {
+  const audioKinds = useMemo(() => availableAudioKinds(episodes), [episodes])
+  const [audioFilter, setAudioFilter] = useState<'dublado' | 'legendado' | 'all'>(
+    () => (audioKinds.length === 1 ? audioKinds[0]! : 'all'),
+  )
+
   const filteredEps = useMemo(() => {
-    if (seasonFilter === 'all') return episodes.slice(0, 80)
-    return episodes.filter((e) => e.season === seasonFilter).slice(0, 80)
-  }, [episodes, seasonFilter])
+    const bySeason =
+      seasonFilter === 'all'
+        ? episodes
+        : episodes.filter((e) => e.season === seasonFilter)
+    return filterEpisodesByAudio(bySeason, audioFilter).slice(0, 80)
+  }, [episodes, seasonFilter, audioFilter])
 
   return (
     <>
@@ -70,6 +82,38 @@ export function AnimeDetail({
         <div className={styles.skelEpList} aria-hidden>
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className={cx('skeleton', styles.skelEpItem)} />
+          ))}
+        </div>
+      ) : null}
+
+      {audioKinds.length > 1 ? (
+        <div className={styles.chips}>
+          <Focusable
+            focusKey="ANIME_AUDIO_all"
+            className={cx(
+              styles.chip,
+              audioFilter === 'all' && styles.chipActive,
+            )}
+            onEnterPress={() => {
+              setAudioFilter('all')
+            }}
+          >
+            Todos
+          </Focusable>
+          {audioKinds.map((kind) => (
+            <Focusable
+              key={kind}
+              focusKey={`ANIME_AUDIO_${kind}`}
+              className={cx(
+                styles.chip,
+                audioFilter === kind && styles.chipActive,
+              )}
+              onEnterPress={() => {
+                setAudioFilter(kind)
+              }}
+            >
+              {kind === 'dublado' ? 'Dublado' : 'Legendado'}
+            </Focusable>
           ))}
         </div>
       ) : null}

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { AfAnime } from '@/domain/animefire'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
@@ -10,10 +11,16 @@ const MAX_SLIDES = 10
 interface AnimeHeroBannerProps {
   items: AfAnime[]
   onOpen: (anime: AfAnime) => void
+  /** Focus key do primeiro item abaixo do banner (fileira). */
+  downFocusKey?: string
 }
 
-/** Banner em carrossel: auto-roll + Left/Right no D-pad (sem setas na UI). */
-export function AnimeHeroBanner({ items, onOpen }: AnimeHeroBannerProps) {
+/** Banner em carrossel: auto-roll + Left/Right no D-pad / clique nas laterais. */
+export function AnimeHeroBanner({
+  items,
+  onOpen,
+  downFocusKey,
+}: AnimeHeroBannerProps) {
   const slides = useMemo(() => {
     const seen = new Set<string>()
     const out: AfAnime[] = []
@@ -29,6 +36,8 @@ export function AnimeHeroBanner({ items, onOpen }: AnimeHeroBannerProps) {
 
   const [index, setIndex] = useState(0)
   const [hoverPaused, setHoverPaused] = useState(false)
+  const indexRef = useRef(0)
+  indexRef.current = index
 
   useEffect(() => {
     setIndex(0)
@@ -52,6 +61,20 @@ export function AnimeHeroBanner({ items, onOpen }: AnimeHeroBannerProps) {
     setIndex((i) => ((i + delta) % len + len) % len)
   }
 
+  const openOrSide = (clientX: number, target: HTMLElement) => {
+    const rect = target.getBoundingClientRect()
+    const x = (clientX - rect.left) / rect.width
+    if (slides.length > 1 && x < 0.28) {
+      go(-1)
+      return
+    }
+    if (slides.length > 1 && x > 0.72) {
+      go(1)
+      return
+    }
+    onOpen(current)
+  }
+
   return (
     <section
       className={styles.heroBanner}
@@ -69,6 +92,13 @@ export function AnimeHeroBanner({ items, onOpen }: AnimeHeroBannerProps) {
           onOpen(current)
         }}
         onArrowPress={(direction) => {
+          if (direction === 'down') {
+            if (downFocusKey) {
+              void setFocus(downFocusKey)
+              return false
+            }
+            return true
+          }
           if (slides.length < 2) return true
           if (direction === 'left') {
             go(-1)
@@ -79,6 +109,13 @@ export function AnimeHeroBanner({ items, onOpen }: AnimeHeroBannerProps) {
             return false
           }
           return true
+        }}
+        onClick={(event) => {
+          // Magic Remote: clique nas laterais troca slide; centro abre.
+          event.preventDefault()
+          event.stopPropagation()
+          void setFocus('ANIME_HERO')
+          openOrSide(event.clientX, event.currentTarget as HTMLElement)
         }}
       >
         {slides.map((slide, i) => {

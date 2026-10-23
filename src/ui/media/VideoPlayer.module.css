@@ -106,7 +106,8 @@
 }
 
 .progressFocus {
-  width: min(56rem, 92%);
+  width: 90%;
+  max-width: 90vw;
   padding: 0.35rem 0 !important;
   border-radius: 8px !important;
   background: transparent !important;
@@ -114,7 +115,7 @@
 
 .progressTrack {
   width: 100%;
-  height: 0.28rem;
+  height: 0.35rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.22);
   overflow: hidden;
@@ -127,7 +128,8 @@
 }
 
 .timeRow {
-  width: min(56rem, 92%);
+  width: 90%;
+  max-width: 90vw;
   display: flex;
   justify-content: space-between;
   font-size: 0.75rem;
@@ -180,6 +182,60 @@
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+.epModalBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 1.5rem;
+}
+
+.epModal {
+  width: min(36rem, 92vw);
+  max-height: min(78vh, 40rem);
+  background: rgba(12, 12, 12, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 1.1rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+
+.epFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.epChip {
+  padding: 0.4rem 0.75rem !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.82rem;
+  font-weight: 600;
+  width: max-content !important;
+}
+
+.epChipActive {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.epAudioTag {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .sidePanel {

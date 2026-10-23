@@ -4,7 +4,12 @@ import {
   useFocusable,
   type UseFocusableConfig,
 } from '@noriginmedia/norigin-spatial-navigation'
-import type { CSSProperties, ReactNode, RefObject } from 'react'
+import type {
+  CSSProperties,
+  MouseEvent as ReactMouseEvent,
+  ReactNode,
+  RefObject,
+} from 'react'
 import { cx } from '@/ui/cx'
 import { scrollFocusedIntoView } from '@/ui/input/magicRemoteScroll'
 import styles from './Focusable.module.css'
@@ -16,6 +21,8 @@ interface FocusableProps extends UseFocusableConfig {
   as?: 'div' | 'button' | 'li'
   /** plain = tabs; nav = sidebar sem blur/scale */
   variant?: 'default' | 'plain' | 'nav'
+  /** Se definido, substitui o clique padrão (Enter). */
+  onClick?: (event: ReactMouseEvent<HTMLElement>) => void
 }
 
 const LEFT_EDGE_PX = 110
@@ -29,6 +36,7 @@ export function Focusable({
   onFocus,
   onEnterPress,
   onArrowPress,
+  onClick,
   ...config
 }: FocusableProps) {
   const { ref, focused, focusKey } = useFocusable({
@@ -55,7 +63,8 @@ export function Focusable({
         !focusKey.startsWith('PLAYER_') &&
         !focusKey.startsWith('PROFILE_') &&
         !focusKey.startsWith('DETAILS_') &&
-        !focusKey.startsWith('TITLE_')
+        !focusKey.startsWith('TITLE_') &&
+        !focusKey.startsWith('ANIME_HERO')
       ) {
         const el = ref.current as HTMLElement | null
         if (el && el.getBoundingClientRect().left <= LEFT_EDGE_PX) {
@@ -96,7 +105,7 @@ export function Focusable({
           void setFocus(focusKey)
         }}
         onClick={(event) => {
-          if (config.focusable === false || !onEnterPress) return
+          if (config.focusable === false) return
           if (
             event.target instanceof HTMLInputElement ||
             event.target instanceof HTMLTextAreaElement
@@ -106,6 +115,11 @@ export function Focusable({
           event.preventDefault()
           event.stopPropagation()
           void setFocus(focusKey)
+          if (onClick) {
+            onClick(event as ReactMouseEvent<HTMLElement>)
+            return
+          }
+          if (!onEnterPress) return
           onEnterPress({} as never, {} as never)
         }}
       >

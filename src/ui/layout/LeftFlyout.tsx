@@ -9,6 +9,7 @@ import type { AppView, Platform } from '@/domain/types'
 import { launchApp, listInstalledApps } from '@/services/webos'
 import { useProfilesStore } from '@/store/profiles'
 import { useSettingsStore } from '@/store/settings'
+import { useUiSessionStore } from '@/store/uiSession'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import { PlatformIcon } from '@/ui/icons/Icons'
@@ -38,6 +39,7 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
   const activeProfileId = useProfilesStore((s) => s.activeProfileId)
   const activeProfile =
     profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
+  const playerOpen = useUiSessionStore((s) => s.playerOpen)
 
   const [installedPlatforms, setInstalledPlatforms] = useState<Platform[]>([])
   const [hoverOpen, setHoverOpen] = useState(false)
@@ -106,6 +108,8 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
     openPlatformCatalog(platform)
     void setFocus('VIEW_platform')
   }
+
+  if (playerOpen) return null
 
   return (
     <FocusContext.Provider value={focusKey}>

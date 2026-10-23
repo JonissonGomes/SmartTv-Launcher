@@ -25,16 +25,28 @@ export function AnimeHome({
   onOpenAnime,
   onPlayContinue,
 }: AnimeHomeProps) {
-  // Banner: destaques + lançamentos (como o carrossel do site)
   const bannerItems = [...highlights, ...latest]
 
   if (loading && highlights.length === 0 && latest.length === 0) {
     return <AnimeHomeSkeleton />
   }
 
+  const firstBelowKey =
+    continueItems[0]
+      ? `ANIME_ROW_continue_${continueItems[0].id}`
+      : highlights[0]
+        ? `ANIME_ROW_destaques_${highlights[0].id}`
+        : latest[0]
+          ? `ANIME_ROW_lancamentos_${latest[0].id}`
+          : undefined
+
   return (
     <>
-      <AnimeHeroBanner items={bannerItems} onOpen={onOpenAnime} />
+      <AnimeHeroBanner
+        items={bannerItems}
+        onOpen={onOpenAnime}
+        downFocusKey={firstBelowKey}
+      />
 
       {continueItems.length > 0 ? (
         <AnimeRow

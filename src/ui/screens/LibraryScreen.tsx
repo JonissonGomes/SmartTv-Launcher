@@ -34,6 +34,7 @@ type Phase = 'home' | 'catalog' | 'search' | 'category'
 /** Catálogo AnimeFire — Início / Catálogo / Lançamentos / Busca. */
 export function LibraryScreen() {
   const recordWatch = useAnimeHistoryStore((s) => s.recordWatch)
+  const updateProgress = useAnimeHistoryStore((s) => s.updateProgress)
   const entries = useAnimeHistoryStore((s) => s.entries)
 
   const [tab, setTab] = useState<Tab>('home')
@@ -71,6 +72,8 @@ export function LibraryScreen() {
     anime?: AfAnime
     episodeId?: string
     episodes?: AfEpisode[]
+    watchId?: string
+    startAt?: number
   } | null>(null)
 
   const continueItems = useMemo(
@@ -290,12 +293,15 @@ export function LibraryScreen() {
         setError('Episódio sem stream disponível')
         return
       }
+      const watchId = `${anime.id}-${ep.id}`
       recordWatch({
-        id: `${anime.id}-${ep.id}`,
+        id: watchId,
         title: anime.name,
         subtitle: `T${ep.season} E${ep.number} — ${ep.title}`,
         poster: ep.stillUrl || anime.posterUrl,
         streamUrl: src,
+        animeId: anime.id,
+        episodeId: ep.id,
       })
       setPlaying({
         title: anime.name,
@@ -305,6 +311,8 @@ export function LibraryScreen() {
         anime,
         episodeId: ep.id,
         episodes: playlist.length > 0 ? playlist : [ep],
+        watchId,
+        startAt: 0,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao abrir stream')
@@ -323,13 +331,23 @@ export function LibraryScreen() {
         subtitle={playing.subtitle}
         src={playing.src}
         poster={playing.poster}
+        startAt={playing.startAt}
         episodeId={playing.episodeId}
         episodes={playlist.map((e) => ({
           id: e.id,
           label: `T${e.season} E${e.number} — ${e.title}`,
+          audio: e.audio,
+          season: e.season,
         }))}
         hasPrevEpisode={hasPrev}
         hasNextEpisode={hasNext}
+        onProgress={
+          playing.watchId
+            ? (t, d) => {
+                updateProgress(playing.watchId!, t, d)
+              }
+            : undefined
+        }
         onPrevEpisode={
           hasPrev && playing.anime
             ? () => {
@@ -361,6 +379,10 @@ export function LibraryScreen() {
             : undefined
         }
         onClose={() => {
+          const el = document.querySelector('video')
+          if (playing.watchId && el instanceof HTMLVideoElement) {
+            updateProgress(playing.watchId, el.currentTime, el.duration)
+          }
           setPlaying(null)
           void setFocus(
             detailAnime ? 'ANIME_RAIL_CLOSE' : 'ANIME_TAB_home',
@@ -433,6 +455,9 @@ export function LibraryScreen() {
                   subtitle: entry.subtitle,
                   src: entry.streamUrl,
                   poster: entry.poster,
+                  watchId: entry.id,
+                  episodeId: entry.episodeId,
+                  startAt: entry.currentTime ?? 0,
                 })
               }}
             />

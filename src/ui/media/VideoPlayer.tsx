@@ -1,6 +1,11 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import Hls from 'hls.js'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  availableAudioKinds,
+  filterEpisodesByAudio,
+} from '@/domain/animeAudio'
+import { useUiSessionStore } from '@/store/uiSession'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import { MediaIcons } from '@/ui/icons/MediaIcons'
@@ -10,6 +15,8 @@ import styles from './VideoPlayer.module.css'
 export interface PlayerEpisodeOption {
   id: string
   label: string
+  audio?: string
+  season?: number
 }
 
 interface CaptionTrack {
@@ -26,6 +33,10 @@ interface VideoPlayerProps {
   src: string
   poster?: string
   onClose: () => void
+  /** Retoma em segundos (continuar assistindo). */
+  startAt?: number
+  /** Callback periódico de progresso. */
+  onProgress?: (currentTime: number, duration: number) => void
   episodeId?: string
   episodes?: PlayerEpisodeOption[]
   onPrevEpisode?: () => void
@@ -79,6 +90,8 @@ export function VideoPlayer({
   src,
   poster,
   onClose,
+  startAt = 0,
+  onProgress,
   episodeId,
   episodes = [],
   onPrevEpisode,
@@ -87,9 +100,11 @@ export function VideoPlayer({
   hasPrevEpisode,
   hasNextEpisode,
 }: VideoPlayerProps) {
+  const setPlayerOpen = useUiSessionStore((s) => s.setPlayerOpen)
   const videoRef = useRef<HTMLVideoElement>(null)
   const hlsRef = useRef<Hls | null>(null)
   const hideTimer = useRef<number>(0)
+  const startApplied = useRef(false)
   const [paused, setPaused] = useState(false)
   const [error, setError] = useState<string>()
   const [tick, setTick] = useState(0)
@@ -98,6 +113,39 @@ export function VideoPlayer({
   const [capListOpen, setCapListOpen] = useState(false)
   const [captionTracks, setCaptionTracks] = useState<CaptionTrack[]>([])
   const [activeCaptionId, setActiveCaptionId] = useState<string | null>(null)
+  const audioKinds = useMemo(() => availableAudioKinds(episodes), [episodes])
+  const [epAudioFilter, setEpAudioFilter] = useState<
+    'dublado' | 'legendado' | 'all'
+  >('all')
+  const [epSeasonFilter, setEpSeasonFilter] = useState<number | 'all'>('all')
+
+  const seasonsInList = useMemo(() => {
+    const set = new Set<number>()
+    for (const e of episodes) {
+      if (typeof e.season === 'number') set.add(e.season)
+    }
+    return [...set].sort((a, b) => a - b)
+  }, [episodes])
+
+  const filteredEpisodes = useMemo(() => {
+    let list = filterEpisodesByAudio(episodes, epAudioFilter)
+    if (epSeasonFilter !== 'all') {
+      list = list.filter((e) => e.season === epSeasonFilter)
+    }
+    return list
+  }, [episodes, epAudioFilter, epSeasonFilter])
+
+  useEffect(() => {
+    setPlayerOpen(true)
+    return () => {
+      setPlayerOpen(false)
+    }
+  }, [setPlayerOpen])
+
+  useEffect(() => {
+    if (audioKinds.length === 1) setEpAudioFilter(audioKinds[0]!)
+    else setEpAudioFilter('all')
+  }, [audioKinds])
   const [cueText, setCueText] = useState('')
 
   const panelOpen = epListOpen || capListOpen
@@ -278,8 +326,15 @@ export function VideoPlayer({
     if (epListOpen) {
       setChromeVisible(true)
       window.clearTimeout(hideTimer.current)
+      const el = videoRef.current
+      if (el && !el.paused) {
+        el.pause()
+        setPaused(true)
+      }
       void setFocus(
-        episodeId ? `PLAYER_EP_${episodeId}` : 'PLAYER_EP_CLOSE',
+        episodeId && filteredEpisodes.some((e) => e.id === episodeId)
+          ? `PLAYER_EP_${episodeId}`
+          : 'PLAYER_EP_CLOSE',
       )
       return
     }
@@ -290,7 +345,43 @@ export function VideoPlayer({
       return
     }
     showChrome()
-  }, [epListOpen, capListOpen, episodeId, showChrome])
+  }, [epListOpen, capListOpen, episodeId, showChrome, filteredEpisodes])
+
+  // Resume + progresso
+  useEffect(() => {
+    startApplied.current = false
+  }, [src])
+
+  useEffect(() => {
+    const el = videoRef.current
+    if (!el) return
+    const onMeta = () => {
+      if (startApplied.current) return
+      if (startAt > 5 && Number.isFinite(el.duration) && startAt < el.duration - 5) {
+        el.currentTime = startAt
+      }
+      startApplied.current = true
+    }
+    el.addEventListener('loadedmetadata', onMeta)
+    if (el.readyState >= 1) onMeta()
+    return () => {
+      el.removeEventListener('loadedmetadata', onMeta)
+    }
+  }, [src, startAt])
+
+  useEffect(() => {
+    if (!onProgress) return
+    const id = window.setInterval(() => {
+      const el = videoRef.current
+      if (!el || el.paused) return
+      const dur = el.duration
+      if (!Number.isFinite(dur) || dur <= 0) return
+      onProgress(el.currentTime, dur)
+    }, 5000)
+    return () => {
+      window.clearInterval(id)
+    }
+  }, [onProgress, src])
 
   useEffect(() => {
     return pushBackHandler(() => {
@@ -557,51 +648,113 @@ export function VideoPlayer({
                 {ccOn ? <MediaIcons.CaptionsOn /> : <MediaIcons.CaptionsOff />}
               </Focusable>
             ) : null}
-
-            <Focusable
-              focusKey="PLAYER_CLOSE"
-              className={styles.iconBtn}
-              onEnterPress={onClose}
-            >
-              <MediaIcons.Close />
-            </Focusable>
           </div>
         </div>
       </div>
 
       {epListOpen && showList ? (
-        <aside className={styles.sidePanel} data-scroll-y="player-eps">
-          <p className={styles.sidePanelTitle}>Episódios</p>
-          <div className={styles.sideList}>
-            {episodes.map((ep) => (
-              <Focusable
-                key={ep.id}
-                focusKey={`PLAYER_EP_${ep.id}`}
-                className={cx(
-                  styles.sideItem,
-                  ep.id === episodeId && styles.sideItemActive,
-                )}
-                onEnterPress={() => {
-                  onSelectEpisode?.(ep.id)
-                  setEpListOpen(false)
-                  showChrome()
-                }}
-              >
-                {ep.label}
-              </Focusable>
-            ))}
+        <div className={styles.epModalBackdrop}>
+          <div className={styles.epModal} data-scroll-y="player-eps">
+            <p className={styles.sidePanelTitle}>Capítulos</p>
+
+            {audioKinds.length > 1 ? (
+              <div className={styles.epFilters}>
+                <Focusable
+                  focusKey="PLAYER_EPA_all"
+                  className={cx(
+                    styles.epChip,
+                    epAudioFilter === 'all' && styles.epChipActive,
+                  )}
+                  onEnterPress={() => {
+                    setEpAudioFilter('all')
+                  }}
+                >
+                  Todos
+                </Focusable>
+                {audioKinds.map((kind) => (
+                  <Focusable
+                    key={kind}
+                    focusKey={`PLAYER_EPA_${kind}`}
+                    className={cx(
+                      styles.epChip,
+                      epAudioFilter === kind && styles.epChipActive,
+                    )}
+                    onEnterPress={() => {
+                      setEpAudioFilter(kind)
+                    }}
+                  >
+                    {kind === 'dublado' ? 'Dublado' : 'Legendado'}
+                  </Focusable>
+                ))}
+              </div>
+            ) : null}
+
+            {seasonsInList.length > 1 ? (
+              <div className={styles.epFilters}>
+                <Focusable
+                  focusKey="PLAYER_EPS_all"
+                  className={cx(
+                    styles.epChip,
+                    epSeasonFilter === 'all' && styles.epChipActive,
+                  )}
+                  onEnterPress={() => {
+                    setEpSeasonFilter('all')
+                  }}
+                >
+                  Temporadas
+                </Focusable>
+                {seasonsInList.map((n) => (
+                  <Focusable
+                    key={n}
+                    focusKey={`PLAYER_EPS_${String(n)}`}
+                    className={cx(
+                      styles.epChip,
+                      epSeasonFilter === n && styles.epChipActive,
+                    )}
+                    onEnterPress={() => {
+                      setEpSeasonFilter(n)
+                    }}
+                  >
+                    T{n}
+                  </Focusable>
+                ))}
+              </div>
+            ) : null}
+
+            <div className={styles.sideList}>
+              {filteredEpisodes.map((ep) => (
+                <Focusable
+                  key={ep.id}
+                  focusKey={`PLAYER_EP_${ep.id}`}
+                  className={cx(
+                    styles.sideItem,
+                    ep.id === episodeId && styles.sideItemActive,
+                  )}
+                  onEnterPress={() => {
+                    onSelectEpisode?.(ep.id)
+                    setEpListOpen(false)
+                    showChrome()
+                  }}
+                >
+                  {ep.label}
+                  {ep.audio ? (
+                    <span className={styles.epAudioTag}>{ep.audio}</span>
+                  ) : null}
+                </Focusable>
+              ))}
+            </div>
+            <Focusable
+              focusKey="PLAYER_EP_CLOSE"
+              className={styles.sideClose}
+              onEnterPress={() => {
+                setEpListOpen(false)
+                void setFocus('PLAYER_EPS')
+              }}
+            >
+              Fechar lista
+            </Focusable>
           </div>
-          <Focusable
-            focusKey="PLAYER_EP_CLOSE"
-            className={styles.sideClose}
-            onEnterPress={() => {
-              setEpListOpen(false)
-              void setFocus('PLAYER_EPS')
-            }}
-          >
-            Fechar
-          </Focusable>
-        </aside>
+        </div>
       ) : null}
 
       {capListOpen && showCc ? (
