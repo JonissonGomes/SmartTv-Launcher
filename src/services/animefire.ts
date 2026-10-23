@@ -343,11 +343,17 @@ export async function fetchAfStatusNotice(): Promise<AfStatusNotice | null> {
           message?: string
           active?: boolean
         }
+        id?: string
         body?: string
         message?: string
         active?: boolean
       }>(path, { cache: false })
-      const d = json.data ?? json
+      const d = json.data ?? {
+        id: json.id,
+        body: json.body,
+        message: json.message,
+        active: json.active,
+      }
       const body =
         (typeof d.body === 'string' && d.body) ||
         (typeof d.message === 'string' && d.message) ||
