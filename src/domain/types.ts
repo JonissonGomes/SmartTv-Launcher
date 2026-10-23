@@ -50,13 +50,11 @@ export interface WatchEntry {
 export interface AppConfig {
   platform: Platform
   label: string
-  /** TODO: validar com listApps na TV / Simulator */
+  /** ID principal (fallback). Preferir candidatos resolvidos na TV. */
   webosAppId: string
+  /** IDs possíveis por região/versão — resolvidos via getAppLoadStatus. */
+  webosAppIdCandidates?: string[]
   color: string
-  deepLink?: (e: {
-    tmdbId?: number
-    title: string
-  }) => Record<string, unknown> | null
 }
 
 export interface CatalogItem {

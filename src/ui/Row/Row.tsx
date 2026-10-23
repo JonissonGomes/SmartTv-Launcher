@@ -23,7 +23,7 @@ export function Row({ id, title, items, onSelect }: RowProps) {
       saveLastFocusedChild
     >
       <h2 className={styles.title}>{title}</h2>
-      <div className={styles.viewport}>
+      <div className={styles.viewport} data-scroll-x="row">
         <div className={styles.scroller}>
           {visible.map((item) => (
             <Card

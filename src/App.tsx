@@ -30,6 +30,7 @@ import { PlatformScreen } from '@/ui/screens/PlatformScreen'
 import { SearchScreen } from '@/ui/screens/SearchScreen'
 import { SettingsScreen } from '@/ui/screens/SettingsScreen'
 import { SurpriseScreen } from '@/ui/screens/SurpriseScreen'
+import { installMagicRemoteScroll } from '@/ui/input/magicRemoteScroll'
 import { ThemeRoot } from '@/ui/theme/ThemeRoot'
 
 function readControllerRoom(): string | null {
@@ -46,7 +47,8 @@ function readControllerRoom(): string | null {
 init({
   debug: false,
   visualDebug: false,
-  throttle: 120,
+  // TV: throttle alto deixa o D-pad “pesado”; 40ms ainda evita flood.
+  throttle: 40,
 })
 
 setKeyMap({
@@ -151,6 +153,8 @@ export default function App() {
     if (needsProfileSetup) setShowProfiles(true)
   }, [needsProfileSetup])
 
+  useEffect(() => installMagicRemoteScroll(), [])
+
   useEffect(() => {
     if (needsProfileSetup || showProfiles) return
     focusHome(hasHero)
@@ -206,7 +210,11 @@ export default function App() {
       try {
         await launchPlatformTitle(data.platform, data.title, data.tmdbId)
       } catch (err) {
-        console.warn('[launch]', err)
+        const text = err instanceof Error ? err.message : String(err)
+        console.warn('[launch]', text)
+        window.alert(
+          `Não foi possível abrir ${data.platform}.\n${text}\n\nConfira Configurações → Testar ${data.platform}.`,
+        )
       } finally {
         setPending(null)
         setDetails(null)

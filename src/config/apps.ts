@@ -2,48 +2,61 @@ import { PLATFORM_THEMES } from '@/config/themes'
 import type { AppConfig, Platform } from '@/domain/types'
 
 /**
- * IDs e deep links isolados para validação no aparelho / Simulator.
- * Use Configurações → Apps instalados para preencher os webosAppId reais.
+ * IDs webOS por plataforma. Candidatos cobrem variações de região/versão.
+ * Deep links de título ficam em `services/deepLink.ts` (tentativas + fallback).
  */
 export const APP_CONFIGS: Record<Platform, AppConfig> = {
   netflix: {
     platform: 'netflix',
     label: 'Netflix',
-    // TODO: validar com listApps na TV
     webosAppId: 'netflix',
+    webosAppIdCandidates: ['netflix'],
     color: PLATFORM_THEMES.netflix.accent,
-    deepLink: ({ title }) => ({ contentTarget: title }),
   },
   disney: {
     platform: 'disney',
     label: 'Disney+',
-    // TODO: validar com listApps na TV
     webosAppId: 'com.disney.disneyplus-prod',
+    webosAppIdCandidates: [
+      'com.disney.disneyplus-prod',
+      'com.disney.disneyplus',
+      'disney',
+    ],
     color: PLATFORM_THEMES.disney.accent,
   },
   hbomax: {
     platform: 'hbomax',
-    label: 'HBO Max',
-    // TODO: validar com listApps na TV
-    webosAppId: 'com.hbo.hbomax',
+    label: 'Max',
+    webosAppId: 'com.wbd.stream',
+    webosAppIdCandidates: [
+      'com.wbd.stream',
+      'com.hbo.hbomax',
+      'hbomax',
+      'max',
+    ],
     color: PLATFORM_THEMES.hbomax.accent,
   },
   globoplay: {
     platform: 'globoplay',
     label: 'Globoplay',
-    // TODO: validar com listApps na TV
     webosAppId: 'com.globo.globosatplay',
+    webosAppIdCandidates: [
+      'com.globo.globosatplay',
+      'com.globo.globoplay',
+      'globoplay',
+    ],
     color: PLATFORM_THEMES.globoplay.accent,
   },
   youtube: {
     platform: 'youtube',
     label: 'YouTube',
-    // TODO: validar com listApps na TV
     webosAppId: 'youtube.leanback.v4',
+    webosAppIdCandidates: [
+      'youtube.leanback.v4',
+      'youtube.leanback.v3',
+      'youtube',
+    ],
     color: PLATFORM_THEMES.youtube.accent,
-    deepLink: ({ title }) => ({
-      contentTarget: `v=${encodeURIComponent(title)}`,
-    }),
   },
 }
 
@@ -57,4 +70,16 @@ export const PLATFORM_ORDER: Platform[] = [
 
 export function getAppConfig(platform: Platform): AppConfig {
   return APP_CONFIGS[platform]
+}
+
+/** Todos os IDs conhecidos (allowlist de launch). */
+export function getAllKnownWebOsAppIds(): string[] {
+  const ids = new Set<string>()
+  for (const config of Object.values(APP_CONFIGS)) {
+    ids.add(config.webosAppId)
+    for (const candidate of config.webosAppIdCandidates ?? []) {
+      ids.add(candidate)
+    }
+  }
+  return [...ids]
 }

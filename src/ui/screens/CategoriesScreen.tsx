@@ -208,7 +208,7 @@ export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
           </p>
 
           {mode === 'similar' ? (
-            <div className={styles.browsePane}>
+            <div className={styles.browsePane} data-scroll-y="catalog">
               <CatalogGrid
                 id="cat-seeds"
                 items={seeds}
@@ -322,7 +322,7 @@ export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
             </div>
           ) : null}
 
-          <div className={styles.resultsPane}>
+          <div className={styles.resultsPane} data-scroll-y="catalog">
             {loading ? <p className="empty-state">Carregando catálogo…</p> : null}
             {error ? <p className="error-state">{error}</p> : null}
             {!loading && results.length > 0 ? (

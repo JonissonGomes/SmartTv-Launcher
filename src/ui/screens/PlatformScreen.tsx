@@ -182,7 +182,7 @@ export function PlatformScreen({ platform, onOpenItem }: PlatformScreenProps) {
         </div>
       ) : null}
 
-      <div className={styles.body}>
+      <div className={styles.body} data-scroll-y="catalog">
         {loading ? <p className="empty-state">Carregando catálogo…</p> : null}
         {error ? <p className="error-state">{error}</p> : null}
         {!loading && !error && rows.length === 0 && shortcuts.length === 0 ? (

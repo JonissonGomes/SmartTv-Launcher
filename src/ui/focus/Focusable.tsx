@@ -1,10 +1,12 @@
 import {
   FocusContext,
+  setFocus,
   useFocusable,
   type UseFocusableConfig,
 } from '@noriginmedia/norigin-spatial-navigation'
 import type { CSSProperties, ReactNode, RefObject } from 'react'
 import { cx } from '@/ui/cx'
+import { scrollFocusedIntoView } from '@/ui/input/magicRemoteScroll'
 import styles from './Focusable.module.css'
 
 interface FocusableProps extends UseFocusableConfig {
@@ -22,9 +24,16 @@ export function Focusable({
   style,
   as: Tag = 'div',
   variant = 'default',
+  onFocus,
   ...config
 }: FocusableProps) {
-  const { ref, focused, focusKey } = useFocusable(config)
+  const { ref, focused, focusKey } = useFocusable({
+    ...config,
+    onFocus: (...args) => {
+      scrollFocusedIntoView(ref.current as HTMLElement | null)
+      onFocus?.(...args)
+    },
+  })
 
   const classes = cx(
     styles.root,
@@ -41,6 +50,11 @@ export function Focusable({
         className={classes}
         style={style}
         data-focused={focused ? 'true' : 'false'}
+        onMouseEnter={() => {
+          // Ponteiro Magic Remote ↔ foco espacial (obrigatório no guia LG).
+          if (config.focusable === false) return
+          void setFocus(focusKey)
+        }}
       >
         {typeof children === 'function' ? children(focused) : children}
       </Tag>

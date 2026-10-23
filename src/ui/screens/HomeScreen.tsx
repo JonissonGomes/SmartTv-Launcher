@@ -82,6 +82,7 @@ export function HomeScreen({
       <div
         ref={rowsRef}
         className={styles.rows}
+        data-scroll-y="catalog"
         onScroll={onRowsScroll}
       >
         {loading ? (

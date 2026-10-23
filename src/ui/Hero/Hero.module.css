@@ -9,7 +9,7 @@
   margin-bottom: calc(var(--space-5) * (1 - var(--hero-collapse)));
   background: var(--color-surface);
   opacity: calc(1 - (var(--hero-collapse) * 0.85));
-  will-change: height, opacity, margin-bottom;
+  /* Evita will-change em height (caro na TV); anima só opacity/transform no body. */
 }
 
 .heroGone {

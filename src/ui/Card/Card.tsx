@@ -20,7 +20,7 @@ export function Card({
 }: CardProps) {
   const src =
     layout === 'grid'
-      ? imageUrl(item.backdropPath ?? item.posterPath, 'w780')
+      ? imageUrl(item.backdropPath ?? item.posterPath, 'w342')
       : imageUrl(item.posterPath, 'w342')
   const rating = item.voteAverage > 0 ? item.voteAverage.toFixed(1) : null
 

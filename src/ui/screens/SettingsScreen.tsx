@@ -4,7 +4,12 @@ import {
   netflixRowsToEntries,
   parseNetflixCsv,
 } from '@/services/importers/netflixCsv'
-import { listInstalledApps, type WebOsInstalledApp } from '@/services/webos'
+import {
+  isWebOsRuntime,
+  launchApp,
+  listInstalledApps,
+  type WebOsInstalledApp,
+} from '@/services/webos'
 import { useHistoryStore } from '@/store/history'
 import { useSettingsStore } from '@/store/settings'
 import { cx } from '@/ui/cx'
@@ -52,10 +57,11 @@ export function SettingsScreen() {
       </section>
 
       <section className={styles.section}>
-        <h2>Apps instalados</h2>
+        <h2>Apps instalados / webOS</h2>
         <p>
-          IDs reais para preencher <code>src/config/apps.ts</code> (mock no
-          navegador).
+          Runtime:{' '}
+          <strong>{isWebOsRuntime() ? 'TV (Luna OK)' : 'mock (sem webOS)'}</strong>
+          . Use “Testar” para abrir cada streaming.
         </p>
         <div className={styles.list}>
           {apps.map((app) => (
@@ -65,6 +71,31 @@ export function SettingsScreen() {
             </div>
           ))}
         </div>
+        <div className={styles.row}>
+          {PLATFORM_ORDER.map((platform) => (
+            <Focusable
+              key={`test-${platform}`}
+              focusKey={`SETTINGS_TEST_${platform}`}
+              className={styles.btn}
+              onEnterPress={() => {
+                void launchApp(platform)
+                  .then(() => {
+                    setMessage(`Abriu ${APP_CONFIGS[platform].label}.`)
+                  })
+                  .catch((err: unknown) => {
+                    const text =
+                      err instanceof Error ? err.message : 'falha desconhecida'
+                    setMessage(
+                      `Não abriu ${APP_CONFIGS[platform].label}: ${text}`,
+                    )
+                  })
+              }}
+            >
+              Testar {APP_CONFIGS[platform].label}
+            </Focusable>
+          ))}
+        </div>
+        {message ? <p>{message}</p> : null}
       </section>
 
       <section className={styles.section}>
