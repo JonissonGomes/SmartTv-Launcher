@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import { MediaIcons } from '@/ui/icons/MediaIcons'
+import { pushBackHandler } from '@/ui/input/backStack'
 import styles from './VideoPlayer.module.css'
 
 export interface PlayerEpisodeOption {
@@ -292,23 +293,25 @@ export function VideoPlayer({
   }, [epListOpen, capListOpen, episodeId, showChrome])
 
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.keyCode === 461 || event.key === 'Escape') {
-        event.preventDefault()
-        event.stopPropagation()
-        if (capListOpen) {
-          setCapListOpen(false)
-          void setFocus('PLAYER_CC')
-          return
-        }
-        if (epListOpen) {
-          setEpListOpen(false)
-          void setFocus('PLAYER_EPS')
-          return
-        }
-        onClose()
-        return
+    return pushBackHandler(() => {
+      if (capListOpen) {
+        setCapListOpen(false)
+        void setFocus('PLAYER_CC')
+        return true
       }
+      if (epListOpen) {
+        setEpListOpen(false)
+        void setFocus('PLAYER_EPS')
+        return true
+      }
+      onClose()
+      return true
+    })
+  }, [capListOpen, epListOpen, onClose])
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.keyCode === 461 || event.key === 'Escape') return
       if (
         event.key.startsWith('Arrow') ||
         event.key === 'Enter' ||
@@ -330,7 +333,7 @@ export function VideoPlayer({
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('pointerdown', onMove)
     }
-  }, [onClose, epListOpen, capListOpen, showChrome])
+  }, [showChrome])
 
   useEffect(() => {
     const id = window.setInterval(() => {

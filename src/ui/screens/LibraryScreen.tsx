@@ -1,5 +1,6 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { pushBackHandler } from '@/ui/input/backStack'
 import type { AfAnime, AfAudioFilter, AfEpisode, AfSeason } from '@/domain/animefire'
 import {
   AF_AUDIO_FILTERS,
@@ -84,8 +85,9 @@ export function LibraryScreen() {
     [entries],
   )
 
-  const loadHome = async () => {
-    setLoading(true)
+  const loadHome = async (opts?: { soft?: boolean }) => {
+    const soft = opts?.soft ?? highlights.length > 0
+    if (!soft) setLoading(true)
     setError(undefined)
     try {
       const home = await fetchAfHome()
@@ -97,15 +99,45 @@ export function LibraryScreen() {
       setError(err instanceof Error ? err.message : 'Falha ao carregar')
     } finally {
       setLoading(false)
-      window.requestAnimationFrame(() => {
-        void setFocus('ANIME_TAB_home')
-      })
+      if (!soft) {
+        window.requestAnimationFrame(() => {
+          void setFocus('ANIME_TAB_home')
+        })
+      }
     }
   }
 
   useEffect(() => {
     void loadHome()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Back: player → detalhe → categoria → (deixa o App voltar de tela)
+  useEffect(() => {
+    return pushBackHandler(() => {
+      if (playing) {
+        setPlaying(null)
+        void setFocus(
+          detailAnime ? 'ANIME_RAIL_CLOSE' : 'ANIME_TAB_home',
+        )
+        return true
+      }
+      if (detailAnime) {
+        closeDetail()
+        void setFocus('VIEW_anime')
+        return true
+      }
+      if (phase === 'category' && tab !== 'releases') {
+        goTab('catalog')
+        return true
+      }
+      if (phase === 'category' && tab === 'releases') {
+        goTab('home')
+        return true
+      }
+      return false
+    })
+  }, [playing, detailAnime, phase, tab])
 
   useEffect(() => {
     if (phase !== 'search') return

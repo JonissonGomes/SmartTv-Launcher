@@ -120,11 +120,19 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
           setHoverOpen(false)
         }}
       >
-        <div className={styles.peek} aria-hidden={expanded}>
+        <Focusable
+          focusKey="FLY_PEEK"
+          variant="nav"
+          className={styles.peek}
+          focusable={!expanded}
+          onEnterPress={() => {
+            void setFocus('FLY_PROFILE')
+          }}
+        >
           <span className={styles.peekIcon} aria-hidden>
             ≡
           </span>
-        </div>
+        </Focusable>
 
         <div className={styles.panel}>
           <Focusable

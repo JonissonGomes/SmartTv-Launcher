@@ -6,12 +6,24 @@
 let raf = 0
 let pending: HTMLElement | null = null
 
+function isMostlyVisible(el: HTMLElement): boolean {
+  const rect = el.getBoundingClientRect()
+  const pad = 32
+  return (
+    rect.top >= pad &&
+    rect.left >= pad &&
+    rect.bottom <= window.innerHeight - pad &&
+    rect.right <= window.innerWidth - pad
+  )
+}
+
 /**
- * Instantâneo + coalescido em 1 frame — evita stutter quando o D-pad
- * dispara vários onFocus seguidos.
+ * Instantâneo + coalescido em 1 frame — evita stutter no D-pad.
+ * Não scrolla se o item já está visível.
  */
 export function scrollFocusedIntoView(el: HTMLElement | null): void {
   if (!el) return
+  if (isMostlyVisible(el)) return
   pending = el
   if (raf) return
   raf = window.requestAnimationFrame(() => {
@@ -19,6 +31,7 @@ export function scrollFocusedIntoView(el: HTMLElement | null): void {
     const target = pending
     pending = null
     if (!target || !target.isConnected) return
+    if (isMostlyVisible(target)) return
     target.scrollIntoView({
       behavior: 'auto',
       block: 'nearest',

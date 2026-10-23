@@ -6,6 +6,8 @@ import { idbStorage } from '@/store/idbStorage'
 
 interface SettingsState {
   view: AppView
+  /** Pilha de telas anteriores (Back do controle). */
+  viewStack: AppView[]
   ownedPlatforms: Platform[]
   /** Tema visual ativo (acento/transparência). */
   activeTheme: Platform | null
@@ -15,6 +17,8 @@ interface SettingsState {
   libraryBaseUrl: string
   reducedMotion: boolean
   setView: (view: AppView) => void
+  /** Volta à tela anterior; false se já estava no início. */
+  goBackView: () => boolean
   setActiveTheme: (platform: Platform | null) => void
   openPlatformCatalog: (platform: Platform) => void
   togglePlatform: (platform: Platform) => void
@@ -26,23 +30,53 @@ export const useSettingsStore = create<SettingsState>()(
   persist(
     (set, get) => ({
       view: 'home',
+      viewStack: [],
       ownedPlatforms: [...PLATFORM_ORDER],
       activeTheme: null,
       catalogPlatform: null,
       libraryBaseUrl: 'https://animefire.one',
       reducedMotion: false,
 
-      setView: (view) =>
-        set({ view: view === 'library' ? 'anime' : view }),
+      setView: (view) => {
+        const next = view === 'library' ? 'anime' : view
+        set((state) => {
+          if (state.view === next) return state
+          return {
+            view: next,
+            viewStack: [...state.viewStack.slice(-10), state.view],
+          }
+        })
+      },
+
+      goBackView: () => {
+        const { viewStack } = get()
+        if (viewStack.length === 0) {
+          if (get().view !== 'home') {
+            set({ view: 'home', viewStack: [] })
+            return true
+          }
+          return false
+        }
+        const prev = viewStack[viewStack.length - 1]!
+        set({
+          view: prev,
+          viewStack: viewStack.slice(0, -1),
+        })
+        return true
+      },
 
       setActiveTheme: (platform) => set({ activeTheme: platform }),
 
       openPlatformCatalog: (platform) =>
-        set({
+        set((state) => ({
           catalogPlatform: platform,
           activeTheme: platform,
           view: 'platform',
-        }),
+          viewStack:
+            state.view === 'platform'
+              ? state.viewStack
+              : [...state.viewStack.slice(-10), state.view],
+        })),
 
       togglePlatform: (platform) => {
         const current = get().ownedPlatforms

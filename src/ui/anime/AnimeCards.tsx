@@ -1,5 +1,6 @@
 import type { AfAnime } from '@/domain/animefire'
 import { Focusable } from '@/ui/focus/Focusable'
+import { CachedImage } from '@/ui/media/CachedImage'
 import styles from '@/ui/screens/LibraryScreen.module.css'
 
 export interface AnimeRowItem {
@@ -87,7 +88,7 @@ function PosterFace({ item }: { item: AnimeRowItem }) {
   return (
     <div className={styles.posterWrap}>
       {item.posterUrl ? (
-        <img
+        <CachedImage
           className={styles.poster}
           src={item.posterUrl}
           alt=""

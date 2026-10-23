@@ -28,21 +28,24 @@
   left: 0;
   width: var(--fly-peek);
   bottom: 0;
-  display: grid;
+  display: grid !important;
   place-items: center;
   opacity: 1;
   transition: opacity var(--transition-fast);
-  pointer-events: none;
+  pointer-events: auto;
   color: rgba(255, 255, 255, 0.75);
   background: linear-gradient(
     90deg,
     rgba(0, 0, 0, 0.45) 0%,
     transparent 100%
   );
+  border-radius: 0 !important;
+  z-index: 1;
 }
 
 .open .peek {
   opacity: 0;
+  pointer-events: none;
 }
 
 .peekIcon {

@@ -18,6 +18,8 @@ interface FocusableProps extends UseFocusableConfig {
   variant?: 'default' | 'plain' | 'nav'
 }
 
+const LEFT_EDGE_PX = 110
+
 export function Focusable({
   children,
   className,
@@ -26,14 +28,42 @@ export function Focusable({
   variant = 'default',
   onFocus,
   onEnterPress,
+  onArrowPress,
   ...config
 }: FocusableProps) {
   const { ref, focused, focusKey } = useFocusable({
     ...config,
     onEnterPress,
     onFocus: (...args) => {
-      scrollFocusedIntoView(ref.current as HTMLElement | null)
+      // Flyout / player: não forçar scroll da página
+      if (
+        !focusKey.startsWith('FLY_') &&
+        !focusKey.startsWith('PLAYER_')
+      ) {
+        scrollFocusedIntoView(ref.current as HTMLElement | null)
+      }
       onFocus?.(...args)
+    },
+    onArrowPress: (direction, props, details) => {
+      if (onArrowPress?.(direction, props, details) === false) return false
+
+      // D-pad esquerda na borda → abre menu lateral
+      if (
+        direction === 'left' &&
+        variant !== 'nav' &&
+        !focusKey.startsWith('FLY_') &&
+        !focusKey.startsWith('PLAYER_') &&
+        !focusKey.startsWith('PROFILE_') &&
+        !focusKey.startsWith('DETAILS_') &&
+        !focusKey.startsWith('TITLE_')
+      ) {
+        const el = ref.current as HTMLElement | null
+        if (el && el.getBoundingClientRect().left <= LEFT_EDGE_PX) {
+          void setFocus('FLY_PROFILE')
+          return false
+        }
+      }
+      return true
     },
   })
 
@@ -53,9 +83,7 @@ export function Focusable({
         style={style}
         data-focused={focused ? 'true' : 'false'}
         onMouseEnter={() => {
-          // Ponteiro Magic Remote ↔ foco espacial (obrigatório no guia LG).
           if (config.focusable === false) return
-          // Libera input/textarea ativos fora deste nó (evita ponteiro preso na busca).
           const active = document.activeElement
           if (
             (active instanceof HTMLInputElement ||
@@ -68,9 +96,7 @@ export function Focusable({
           void setFocus(focusKey)
         }}
         onClick={(event) => {
-          // Clique do ponteiro Magic Remote não dispara onEnterPress sozinho.
           if (config.focusable === false || !onEnterPress) return
-          // Clique veio do <input> interno — o próprio campo trata.
           if (
             event.target instanceof HTMLInputElement ||
             event.target instanceof HTMLTextAreaElement

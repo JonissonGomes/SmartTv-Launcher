@@ -31,6 +31,8 @@ import { PlatformScreen } from '@/ui/screens/PlatformScreen'
 import { SearchScreen } from '@/ui/screens/SearchScreen'
 import { SettingsScreen } from '@/ui/screens/SettingsScreen'
 import { SurpriseScreen } from '@/ui/screens/SurpriseScreen'
+import { installImageCacheLifecycle } from '@/services/imageCache'
+import { runBackHandlers } from '@/ui/input/backStack'
 import { installMagicRemoteScroll } from '@/ui/input/magicRemoteScroll'
 import { ThemeRoot } from '@/ui/theme/ThemeRoot'
 
@@ -107,7 +109,7 @@ function entryToCatalog(entry: WatchEntry): CatalogItem {
 export default function App() {
   const controllerRoom = readControllerRoom()
   const view = useSettingsStore((s) => s.view)
-  const setView = useSettingsStore((s) => s.setView)
+  const goBackView = useSettingsStore((s) => s.goBackView)
   const setActiveTheme = useSettingsStore((s) => s.setActiveTheme)
   const catalogPlatform = useSettingsStore((s) => s.catalogPlatform)
   const ownedPlatforms = useSettingsStore((s) => s.ownedPlatforms)
@@ -158,6 +160,7 @@ export default function App() {
   }, [needsProfileSetup])
 
   useEffect(() => installMagicRemoteScroll(), [])
+  useEffect(() => installImageCacheLifecycle(), [])
 
   useEffect(() => {
     if (needsProfileSetup || showProfiles) return
@@ -168,37 +171,68 @@ export default function App() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.keyCode !== 461 && event.key !== 'Escape') return
 
+      // Handlers locais (player, rail anime, teclado…)
+      if (runBackHandlers()) {
+        event.preventDefault()
+        event.stopPropagation()
+        return
+      }
+
       if (showProfiles && !needsProfileSetup) {
         setShowProfiles(false)
         event.preventDefault()
+        event.stopPropagation()
         return
       }
 
       if (details) {
         setDetails(null)
-        focusHome(hasHero)
+        // Volta o foco para o conteúdo atual — não para o início
+        window.requestAnimationFrame(() => {
+          void setFocus('MAIN')
+        })
         event.preventDefault()
+        event.stopPropagation()
         return
       }
 
       if (pending) {
         setPending(null)
         event.preventDefault()
+        event.stopPropagation()
         return
       }
 
-      if (view !== 'home') {
-        setView('home')
-        focusHome(hasHero)
+      if (goBackView()) {
+        const next = useSettingsStore.getState().view
+        window.requestAnimationFrame(() => {
+          void setFocus(
+            next === 'home'
+              ? hasHero
+                ? 'HERO'
+                : 'VIEW_home'
+              : next === 'anime' || next === 'library'
+                ? 'VIEW_anime'
+                : `VIEW_${next}`,
+          )
+        })
         event.preventDefault()
+        event.stopPropagation()
       }
     }
 
-    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keydown', onKeyDown, true)
     return () => {
-      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keydown', onKeyDown, true)
     }
-  }, [details, hasHero, needsProfileSetup, pending, setView, showProfiles, view])
+  }, [
+    details,
+    goBackView,
+    hasHero,
+    needsProfileSetup,
+    pending,
+    showProfiles,
+  ])
 
   const commitLaunch = useCallback(
     async (data: PendingLaunch, episode?: EpisodeSelection) => {

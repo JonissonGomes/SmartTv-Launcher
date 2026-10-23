@@ -113,7 +113,12 @@ export function useHomeFeed(
     let cancelled = false
 
     async function load() {
-      setState((s) => ({ ...s, loading: true, error: undefined }))
+      // Soft refresh: não pisca skeleton se já há fileiras em cache na tela
+      setState((s) => ({
+        ...s,
+        loading: s.rows.length === 0,
+        error: undefined,
+      }))
 
       try {
         if (!hasTmdbKey()) {

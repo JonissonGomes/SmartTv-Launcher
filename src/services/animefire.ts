@@ -4,6 +4,7 @@ import type {
   AfSeason,
   AfStream,
 } from '@/domain/animefire'
+import { sessionGet, sessionSet } from '@/services/sessionJsonCache'
 
 const PROD_API = 'https://api.animefire.one'
 export const AF_SITE = 'https://animefire.one'
@@ -16,6 +17,10 @@ function apiRoot(): string {
 }
 
 async function getJson<T>(path: string): Promise<T> {
+  const cacheKey = `af:${path}`
+  const cached = sessionGet<T>(cacheKey)
+  if (cached !== undefined) return cached
+
   const ctrl = new AbortController()
   const timer = window.setTimeout(() => ctrl.abort(), 15_000)
   try {
@@ -28,7 +33,9 @@ async function getJson<T>(path: string): Promise<T> {
       signal: ctrl.signal,
     })
     if (!res.ok) throw new Error(`AnimeFire HTTP ${String(res.status)}`)
-    return (await res.json()) as T
+    const data = (await res.json()) as T
+    sessionSet(cacheKey, data)
+    return data
   } finally {
     window.clearTimeout(timer)
   }

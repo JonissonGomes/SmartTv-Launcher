@@ -1,5 +1,6 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useEffect, useState } from 'react'
+import { pushBackHandler } from '@/ui/input/backStack'
 import { APP_CONFIGS, PLATFORM_ORDER } from '@/config/apps'
 import type { CatalogItem, Platform } from '@/domain/types'
 import {
@@ -63,6 +64,18 @@ export function TitleDetails({
   useEffect(() => {
     void setFocus(playingTrailer ? 'TRAILER_CLOSE' : 'DETAILS_WATCH')
   }, [playingTrailer])
+
+  useEffect(() => {
+    return pushBackHandler(() => {
+      if (playingTrailer) {
+        setPlayingTrailer(false)
+        void setFocus('DETAILS_TRAILER')
+        return true
+      }
+      onClose()
+      return true
+    })
+  }, [playingTrailer, onClose])
 
   useEffect(() => {
     setSelected(initialPlatform)

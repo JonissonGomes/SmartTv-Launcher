@@ -2,6 +2,7 @@ import type { CatalogItem } from '@/domain/types'
 import { imageUrl } from '@/services/tmdb'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
+import { CachedImage } from '@/ui/media/CachedImage'
 import styles from './Card.module.css'
 
 interface CardProps {
@@ -33,7 +34,7 @@ export function Card({
       }}
     >
       {src ? (
-        <img
+        <CachedImage
           className={styles.poster}
           src={src}
           alt={item.title}
