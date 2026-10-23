@@ -14,6 +14,7 @@ import {
 } from '@/services/jevCurate'
 import {
   discoverByGenres,
+  discoverByOriginCountry,
   discoverPopular,
   getNowPlaying,
   getOnTheAir,
@@ -150,6 +151,7 @@ export function useHomeFeed(
           comedyMovies,
           dramaMovies,
           personalizedDiscover,
+          nationalMovies,
           recLists,
           providerLists,
         ] = await Promise.all([
@@ -170,6 +172,9 @@ export function useHomeFeed(
           tasteGenres.length > 0
             ? discoverByGenres(tasteGenres, 'movie', { excludeAnimation: true })
             : Promise.resolve([] as CatalogItem[]),
+          discoverByOriginCountry('BR', 'movie', { pages: 2 }).catch(
+            () => [] as CatalogItem[],
+          ),
           Promise.all(
             recent
               .filter((e) => e.tmdbId)
@@ -259,6 +264,7 @@ export function useHomeFeed(
           'Filmes em alta',
           trendingMovies.length > 0 ? trendingMovies : liveActionMovies,
         )
+        pushRow(rows, 'national-movies', 'Filmes nacionais', nationalMovies, 16)
         pushRow(rows, 'now-playing', 'Nos cinemas', nowPlaying)
         pushRow(rows, 'popular-movies', 'Filmes populares', popularMovies)
         pushRow(

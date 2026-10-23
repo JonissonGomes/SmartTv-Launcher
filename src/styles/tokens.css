@@ -27,7 +27,7 @@
   --rail-width-expanded: clamp(13.5rem, 15vw, 17rem);
   --rail-width: var(--rail-width-expanded);
   --topbar-height: 4.25rem;
-  --hero-height: clamp(16rem, 36vh, 22rem);
+  --hero-height: clamp(22rem, 55vh, 36rem);
   --card-width: clamp(9rem, 10vw, 11.5rem);
   --card-height: clamp(13.5rem, 15vw, 17rem);
 

@@ -4,8 +4,10 @@ import type { CatalogItem } from '@/domain/types'
 import {
   CATEGORY_GENRES,
   discoverByGenres,
+  discoverByOriginCountry,
   getRelatedTitles,
   getTrending,
+  NATIONAL_MOVIES_CATEGORY_ID,
 } from '@/services/tmdb'
 import { CatalogGrid } from '@/ui/CatalogGrid/CatalogGrid'
 import { cx } from '@/ui/cx'
@@ -64,11 +66,18 @@ export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
     setSeed(null)
     setPhase('results')
     try {
-      const [movies, series] = await Promise.all([
-        discoverByGenres([genreId], 'movie', { match: 'and', pages: 3 }),
-        discoverByGenres([genreId], 'tv', { match: 'and', pages: 3 }),
-      ])
-      setResults(uniqueItems([...movies, ...series]).slice(0, 72))
+      if (genreId === NATIONAL_MOVIES_CATEGORY_ID) {
+        const movies = await discoverByOriginCountry('BR', 'movie', {
+          pages: 3,
+        })
+        setResults(uniqueItems(movies).slice(0, 72))
+      } else {
+        const [movies, series] = await Promise.all([
+          discoverByGenres([genreId], 'movie', { match: 'and', pages: 3 }),
+          discoverByGenres([genreId], 'tv', { match: 'and', pages: 3 }),
+        ])
+        setResults(uniqueItems([...movies, ...series]).slice(0, 72))
+      }
       void setFocus('CAT_BACK')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao filtrar')
@@ -85,11 +94,24 @@ export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
     setSeed(null)
     setPhase('results')
     try {
-      const [movies, series] = await Promise.all([
-        discoverByGenres(selected, 'movie', { match: 'or', pages: 3 }),
-        discoverByGenres(selected, 'tv', { match: 'or', pages: 3 }),
-      ])
-      setResults(uniqueItems([...movies, ...series]).slice(0, 72))
+      const wantsNational = selected.includes(NATIONAL_MOVIES_CATEGORY_ID)
+      const genreIds = selected.filter((id) => id !== NATIONAL_MOVIES_CATEGORY_ID)
+      const batches: CatalogItem[][] = []
+
+      if (wantsNational) {
+        batches.push(
+          await discoverByOriginCountry('BR', 'movie', { pages: 2 }),
+        )
+      }
+      if (genreIds.length > 0) {
+        const [movies, series] = await Promise.all([
+          discoverByGenres(genreIds, 'movie', { match: 'or', pages: 3 }),
+          discoverByGenres(genreIds, 'tv', { match: 'or', pages: 3 }),
+        ])
+        batches.push(movies, series)
+      }
+
+      setResults(uniqueItems(batches.flat()).slice(0, 72))
       void setFocus('CAT_BACK')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao filtrar')

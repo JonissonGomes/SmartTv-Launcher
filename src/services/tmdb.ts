@@ -378,12 +378,36 @@ export async function discoverByGenres(
   )
 }
 
+export async function discoverByOriginCountry(
+  countryCode: string,
+  mediaType: MediaType = 'movie',
+  options: { pages?: number; sortBy?: string } = {},
+): Promise<CatalogItem[]> {
+  const pageCount = Math.min(Math.max(options.pages ?? 2, 1), 4)
+  const pages = await Promise.all(
+    Array.from({ length: pageCount }, (_, index) =>
+      tmdbFetch<TmdbPagedResult<TmdbSearchItem>>(`/discover/${mediaType}`, {
+        with_origin_country: countryCode,
+        sort_by: options.sortBy ?? 'popularity.desc',
+        watch_region: 'BR',
+        region: 'BR',
+        include_adult: 'false',
+        page: String(index + 1),
+      }),
+    ),
+  )
+  return pages.flatMap((data) =>
+    data.results.map((r) => toCatalogItem(r, mediaType)),
+  )
+}
+
 export async function discoverPopular(
   mediaType: MediaType,
   options: {
     withoutGenres?: number[]
     withWatchProvider?: number
     sortBy?: string
+    withOriginCountry?: string
   } = {},
 ): Promise<CatalogItem[]> {
   const data = await tmdbFetch<TmdbPagedResult<TmdbSearchItem>>(
@@ -395,6 +419,9 @@ export async function discoverPopular(
       include_adult: 'false',
       ...(options.withoutGenres?.length
         ? { without_genres: options.withoutGenres.join(',') }
+        : {}),
+      ...(options.withOriginCountry
+        ? { with_origin_country: options.withOriginCountry }
         : {}),
       ...(options.withWatchProvider
         ? {
@@ -493,8 +520,12 @@ export const RAIL_GENRES: Array<{ id: number; label: string }> = [
   { id: 10749, label: 'Romance' },
 ]
 
+/** ID especial (não é genre TMDB) — Filmes Nacionais BR. */
+export const NATIONAL_MOVIES_CATEGORY_ID = -1001
+
 /** Catálogo ampliado para a tela Categorias (IDs TMDB filme; TV mapeia o que couber). */
 export const CATEGORY_GENRES: Array<{ id: number; label: string }> = [
+  { id: NATIONAL_MOVIES_CATEGORY_ID, label: 'Filmes Nacionais' },
   ...RAIL_GENRES,
   { id: 12, label: 'Aventura' },
   { id: 16, label: 'Animação' },

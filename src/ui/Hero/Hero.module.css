@@ -59,20 +59,21 @@
 
 .title {
   margin: 0;
-  font-size: 2.4rem;
-  line-height: 1.08;
+  font-size: clamp(2.2rem, 3.8vw, 3.2rem);
+  line-height: 1.06;
   font-weight: 700;
 }
 
 .overview {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 1rem;
+  font-size: 1.05rem;
   line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  max-width: 38rem;
 }
 
 .actions {
