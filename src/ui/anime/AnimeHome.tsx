@@ -3,7 +3,6 @@ import type { AnimeWatchEntry } from '@/store/animeHistory'
 import { AnimeHeroBanner } from '@/ui/anime/AnimeHeroBanner'
 import { AnimeRow } from '@/ui/anime/AnimeCards'
 import { AnimeHomeSkeleton } from '@/ui/anime/AnimeSkeletons'
-import styles from '@/ui/screens/LibraryScreen.module.css'
 
 interface AnimeHomeProps {
   loading: boolean
