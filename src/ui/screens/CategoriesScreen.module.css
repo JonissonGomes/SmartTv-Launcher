@@ -65,6 +65,8 @@
 
 .genreRow {
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  touch-action: pan-y;
   scrollbar-width: none;
 }
 
@@ -93,11 +95,16 @@
 }
 
 .backBtn {
+  display: inline-flex !important;
+  width: max-content !important;
+  align-items: center;
   align-self: flex-start;
-  padding: 0.45rem 0.85rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
   font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .hint {

@@ -1,46 +1,7 @@
 /**
- * Magic Remote: só intercepta a roda sobre fileiras horizontais.
- * Scroll vertical fica nativo (prevenir default em tudo deixava a TV lenta).
+ * Magic Remote: scroll vertical nativo.
+ * Horizontal NÃO via roda — só D-pad (scrollIntoView no foco).
  */
-
-function canScrollX(el: HTMLElement): boolean {
-  return el.scrollWidth > el.clientWidth + 2
-}
-
-function findHorizontalScroller(start: EventTarget | null): HTMLElement | null {
-  const row =
-    start instanceof Element
-      ? start.closest<HTMLElement>('[data-scroll-x="row"]')
-      : null
-  if (row && canScrollX(row)) return row
-  return null
-}
-
-let wheelRaf = 0
-let pendingDelta = 0
-let pendingEl: HTMLElement | null = null
-
-function onWheel(event: WheelEvent): void {
-  const row = findHorizontalScroller(event.target)
-  if (!row) {
-    // Vertical: deixa o browser/TV scrollar — não preventDefault.
-    return
-  }
-
-  // Roda vertical sobre a fileira → scroll lateral.
-  if (Math.abs(event.deltaY) < Math.abs(event.deltaX)) return
-
-  event.preventDefault()
-  pendingEl = row
-  pendingDelta += event.deltaY
-  if (wheelRaf) return
-  wheelRaf = window.requestAnimationFrame(() => {
-    wheelRaf = 0
-    if (pendingEl) pendingEl.scrollLeft += pendingDelta
-    pendingDelta = 0
-    pendingEl = null
-  })
-}
 
 /** Instantâneo: smooth no webOS causa stutter no D-pad. */
 export function scrollFocusedIntoView(el: HTMLElement | null): void {
@@ -52,11 +13,28 @@ export function scrollFocusedIntoView(el: HTMLElement | null): void {
   })
 }
 
+function onWheel(event: WheelEvent): void {
+  const target = event.target instanceof Element ? event.target : null
+  if (!target) return
+
+  const row = target.closest<HTMLElement>('[data-scroll-x="row"]')
+  if (!row) return
+
+  // Impede a fileira de rolar no eixo X com a roda / trackpad.
+  event.preventDefault()
+
+  // Vertical continua: aplica no container de página mais próximo.
+  const dy = event.deltaY
+  if (Math.abs(dy) < 1) return
+  const scroller = target.closest<HTMLElement>('[data-scroll-y]')
+  if (scroller) {
+    scroller.scrollTop += dy
+  }
+}
+
 export function installMagicRemoteScroll(): () => void {
   window.addEventListener('wheel', onWheel, { passive: false, capture: true })
   return () => {
     window.removeEventListener('wheel', onWheel, true)
-    if (wheelRaf) window.cancelAnimationFrame(wheelRaf)
-    wheelRaf = 0
   }
 }

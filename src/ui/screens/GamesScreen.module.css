@@ -128,12 +128,16 @@
 .startBtn,
 .backBtn,
 .localBtn {
+  display: inline-flex !important;
+  width: max-content !important;
+  align-items: center;
   padding: 0.8rem 1.2rem;
   border-radius: 999px;
   background: var(--color-accent);
   color: #fff;
   font-weight: 700;
   text-align: center;
+  white-space: nowrap;
 }
 
 .startDisabled {

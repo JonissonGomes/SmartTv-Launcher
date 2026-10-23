@@ -13,6 +13,8 @@
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  touch-action: pan-y;
   scrollbar-width: none;
   /* Folga para outline/scale de foco não cortar o arredondamento */
   margin: -0.35rem 0;

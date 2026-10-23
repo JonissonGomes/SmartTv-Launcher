@@ -1,13 +1,12 @@
 import type { AfAnime } from '@/domain/animefire'
 import type { AnimeWatchEntry } from '@/store/animeHistory'
+import { AnimeHeroBanner } from '@/ui/anime/AnimeHeroBanner'
 import { AnimeRow } from '@/ui/anime/AnimeCards'
 import { cx } from '@/ui/cx'
-import { Focusable } from '@/ui/focus/Focusable'
 import styles from '@/ui/screens/LibraryScreen.module.css'
 
 interface AnimeHomeProps {
   loading: boolean
-  hero?: AfAnime
   highlights: AfAnime[]
   latest: AfAnime[]
   movies: AfAnime[]
@@ -19,7 +18,6 @@ interface AnimeHomeProps {
 
 export function AnimeHome({
   loading,
-  hero,
   highlights,
   latest,
   movies,
@@ -28,6 +26,9 @@ export function AnimeHome({
   onOpenAnime,
   onPlayContinue,
 }: AnimeHomeProps) {
+  // Banner: destaques + lançamentos (como o carrossel do site)
+  const bannerItems = [...highlights, ...latest]
+
   return (
     <>
       {loading ? (
@@ -38,34 +39,7 @@ export function AnimeHome({
         </div>
       ) : null}
 
-      {hero ? (
-        <Focusable
-          focusKey="ANIME_HERO"
-          className={styles.hero}
-          onEnterPress={() => {
-            onOpenAnime(hero)
-          }}
-        >
-          {hero.backdropUrl || hero.posterUrl ? (
-            <img
-              className={styles.heroImg}
-              src={hero.backdropUrl || hero.posterUrl}
-              alt=""
-            />
-          ) : null}
-          <div className={styles.heroFade} />
-          <div className={styles.heroContent}>
-            <h1 className={styles.heroTitle}>{hero.name}</h1>
-            <p className={styles.heroMeta}>
-              {[hero.year, hero.audio, hero.status].filter(Boolean).join(' · ')}
-            </p>
-            {hero.synopsis ? (
-              <p className={styles.heroSynopsis}>{hero.synopsis}</p>
-            ) : null}
-            <span className={styles.heroCta}>Ver episódios</span>
-          </div>
-        </Focusable>
-      ) : null}
+      <AnimeHeroBanner items={bannerItems} onOpen={onOpenAnime} />
 
       {continueItems.length > 0 ? (
         <AnimeRow

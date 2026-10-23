@@ -44,7 +44,6 @@ export interface AfCatalogSection {
 
 export const AF_SECTIONS: AfCatalogSection[] = [
   { id: 'destaques', title: 'Animes', path: '/animes' },
-  { id: 'lancamentos', title: 'Lançamentos', path: '/animes/lancamentos' },
   { id: 'filmes', title: 'Filmes', path: '/animes/filmes' },
   { id: 'em-breve', title: 'Em breve', path: '/animes/em-breve' },
 ]

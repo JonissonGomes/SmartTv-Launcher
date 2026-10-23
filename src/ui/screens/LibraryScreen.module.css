@@ -82,10 +82,15 @@
 }
 
 .btnGhost {
-  padding: 0.55rem 0.95rem;
-  border-radius: var(--radius-sm);
+  display: inline-flex !important;
+  width: max-content !important;
+  align-items: center;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .body {
@@ -111,23 +116,37 @@
   color: #ff8a8a;
 }
 
-/* Hero */
-.hero {
+/* Hero / banner carrossel */
+.heroBanner {
   position: relative;
   width: 100%;
-  aspect-ratio: 21 / 9;
-  max-height: 42vh;
-  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.hero {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: clamp(22rem, 62vh, 34rem);
+  border-radius: 14px;
   overflow: hidden;
-  margin-bottom: 1.25rem;
   background: #141414;
 }
 
 .heroImg {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
+  object-position: center 20%;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+  pointer-events: none;
+}
+
+.heroImgActive {
+  opacity: 1;
 }
 
 .heroFade {
@@ -138,51 +157,87 @@
     rgba(0, 0, 0, 0.92) 0%,
     rgba(0, 0, 0, 0.55) 42%,
     rgba(0, 0, 0, 0.15) 100%
-  );
+  ),
+    linear-gradient(
+      180deg,
+      transparent 45%,
+      rgba(0, 0, 0, 0.55) 100%
+    );
+  pointer-events: none;
 }
 
 .heroContent {
   position: absolute;
-  left: 1.25rem;
-  bottom: 1.25rem;
-  right: 1.25rem;
-  max-width: 36rem;
+  left: 1.5rem;
+  bottom: 2.4rem;
+  right: 1.5rem;
+  max-width: 40rem;
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+  z-index: 1;
 }
 
 .heroTitle {
   margin: 0;
-  font-size: clamp(1.4rem, 2.6vw, 2.2rem);
+  font-size: clamp(1.65rem, 3.2vw, 2.65rem);
   font-weight: 800;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.65);
 }
 
 .heroMeta {
   margin: 0;
   color: rgba(255, 255, 255, 0.75);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .heroSynopsis {
   margin: 0;
   color: rgba(255, 255, 255, 0.78);
-  font-size: 0.95rem;
-  line-height: 1.35;
+  font-size: 1rem;
+  line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .heroCta {
   align-self: flex-start;
-  margin-top: 0.25rem;
-  padding: 0.65rem 1.2rem;
+  margin-top: 0.35rem;
+  padding: 0.7rem 1.35rem;
   border-radius: 8px;
   background: #e50914;
   color: #fff;
   font-weight: 700;
+}
+
+.heroDots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.85rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  pointer-events: none;
+}
+
+.heroDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.35);
+  transition:
+    width 0.25s ease,
+    background 0.25s ease;
+}
+
+.heroDotActive {
+  width: 1.35rem;
+  background: #fff;
 }
 
 /* Rows */
@@ -197,11 +252,14 @@
 }
 
 .viewport {
+  /* Horizontal só via D-pad (scrollIntoView); roda Magic Remote bloqueada */
   overflow-x: auto;
   overflow-y: hidden;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
   margin: -0.25rem 0;
   padding: 0.25rem 0;
+  touch-action: pan-y;
 }
 
 .viewport::-webkit-scrollbar {
@@ -425,12 +483,19 @@
 }
 
 .backBtn {
+  display: inline-flex !important;
+  align-items: center;
+  width: max-content !important;
+  max-width: max-content;
+  flex: 0 0 auto;
   align-self: flex-start;
   margin-bottom: 0.75rem;
-  padding: 0.5rem 0.9rem;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
   font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .skeletons {

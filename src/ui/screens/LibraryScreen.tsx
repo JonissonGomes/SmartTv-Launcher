@@ -26,10 +26,10 @@ import { TvTextField } from '@/ui/input/TvTextField'
 import { VideoPlayer } from '@/ui/media/VideoPlayer'
 import styles from './LibraryScreen.module.css'
 
-type Tab = 'home' | 'catalog' | 'search'
-type Phase = Tab | 'category'
+type Tab = 'home' | 'catalog' | 'releases' | 'search'
+type Phase = 'home' | 'catalog' | 'search' | 'category'
 
-/** Catálogo AnimeFire — Início / Catálogo / Busca. */
+/** Catálogo AnimeFire — Início / Catálogo / Lançamentos / Busca. */
 export function LibraryScreen() {
   const recordWatch = useAnimeHistoryStore((s) => s.recordWatch)
   const entries = useAnimeHistoryStore((s) => s.entries)
@@ -66,6 +66,9 @@ export function LibraryScreen() {
     subtitle?: string
     src: string
     poster?: string
+    anime?: AfAnime
+    episodeId?: string
+    episodes?: AfEpisode[]
   } | null>(null)
 
   const continueItems = useMemo(
@@ -139,8 +142,13 @@ export function LibraryScreen() {
 
   const goTab = (next: Tab) => {
     setTab(next)
-    setPhase(next)
     setError(undefined)
+    closeDetail()
+    if (next === 'releases') {
+      void openSection('/animes/lancamentos', 'Lançamentos', 'releases')
+      return
+    }
+    setPhase(next)
     window.requestAnimationFrame(() => {
       void setFocus(`ANIME_TAB_${next}`)
     })
@@ -174,7 +182,12 @@ export function LibraryScreen() {
     setSeasons([])
   }
 
-  const openSection = async (path: string, title: string) => {
+  const openSection = async (
+    path: string,
+    title: string,
+    originTab: Tab = 'catalog',
+  ) => {
+    setTab(originTab)
     setSectionTitle(title)
     setSectionExtraTitle('')
     setSectionExtraItems([])
@@ -198,7 +211,9 @@ export function LibraryScreen() {
         setSectionItems(await fetchAfSection(path))
       }
       window.requestAnimationFrame(() => {
-        void setFocus('ANIME_CAT_BACK')
+        void setFocus(
+          originTab === 'releases' ? 'ANIME_TAB_releases' : 'ANIME_CAT_BACK',
+        )
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha na categoria')
@@ -208,6 +223,7 @@ export function LibraryScreen() {
   }
 
   const openGenre = async (genre: string) => {
+    setTab('catalog')
     setSectionTitle(genre)
     setSectionExtraTitle('')
     setSectionExtraItems([])
@@ -228,7 +244,11 @@ export function LibraryScreen() {
     }
   }
 
-  const playEpisode = async (ep: AfEpisode, anime: AfAnime) => {
+  const playEpisode = async (
+    ep: AfEpisode,
+    anime: AfAnime,
+    playlist: AfEpisode[] = detailEps,
+  ) => {
     setError(undefined)
     try {
       const streams = await fetchAfEpisodeStreams(ep.id)
@@ -249,6 +269,9 @@ export function LibraryScreen() {
         subtitle: `T${ep.season} E${ep.number} — ${ep.title}`,
         src,
         poster: ep.stillUrl || anime.posterUrl,
+        anime,
+        episodeId: ep.id,
+        episodes: playlist.length > 0 ? playlist : [ep],
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao abrir stream')
@@ -256,12 +279,54 @@ export function LibraryScreen() {
   }
 
   if (playing) {
+    const playlist = playing.episodes ?? []
+    const epIndex = playlist.findIndex((e) => e.id === playing.episodeId)
+    const hasPrev = epIndex > 0
+    const hasNext = epIndex >= 0 && epIndex < playlist.length - 1
+
     return (
       <VideoPlayer
         title={playing.title}
         subtitle={playing.subtitle}
         src={playing.src}
         poster={playing.poster}
+        episodeId={playing.episodeId}
+        episodes={playlist.map((e) => ({
+          id: e.id,
+          label: `T${e.season} E${e.number} — ${e.title}`,
+        }))}
+        hasPrevEpisode={hasPrev}
+        hasNextEpisode={hasNext}
+        onPrevEpisode={
+          hasPrev && playing.anime
+            ? () => {
+                void playEpisode(
+                  playlist[epIndex - 1]!,
+                  playing.anime!,
+                  playlist,
+                )
+              }
+            : undefined
+        }
+        onNextEpisode={
+          hasNext && playing.anime
+            ? () => {
+                void playEpisode(
+                  playlist[epIndex + 1]!,
+                  playing.anime!,
+                  playlist,
+                )
+              }
+            : undefined
+        }
+        onSelectEpisode={
+          playing.anime
+            ? (id) => {
+                const ep = playlist.find((e) => e.id === id)
+                if (ep) void playEpisode(ep, playing.anime!, playlist)
+              }
+            : undefined
+        }
         onClose={() => {
           setPlaying(null)
           void setFocus(
@@ -288,6 +353,7 @@ export function LibraryScreen() {
               [
                 ['home', 'Início'],
                 ['catalog', 'Catálogo'],
+                ['releases', 'Lançamentos'],
                 ['search', 'Busca'],
               ] as const
             ).map(([id, label]) => (
@@ -297,7 +363,6 @@ export function LibraryScreen() {
                 className={cx(styles.tab, tab === id && styles.tabActive)}
                 onEnterPress={() => {
                   goTab(id)
-                  closeDetail()
                 }}
               >
                 {label}
@@ -321,7 +386,6 @@ export function LibraryScreen() {
           {phase === 'home' ? (
             <AnimeHome
               loading={loading}
-              hero={highlights[0]}
               highlights={highlights}
               latest={latest}
               movies={movies}
@@ -432,15 +496,17 @@ export function LibraryScreen() {
 
           {phase === 'category' ? (
             <>
-              <Focusable
-                focusKey="ANIME_CAT_BACK"
-                className={styles.backBtn}
-                onEnterPress={() => {
-                  goTab('catalog')
-                }}
-              >
-                ← Catálogo
-              </Focusable>
+              {tab !== 'releases' ? (
+                <Focusable
+                  focusKey="ANIME_CAT_BACK"
+                  className={styles.backBtn}
+                  onEnterPress={() => {
+                    goTab('catalog')
+                  }}
+                >
+                  ← Catálogo
+                </Focusable>
+              ) : null}
               <h2 className={styles.sectionTitle}>
                 {sectionTitle} · {sectionItems.length}
               </h2>
