@@ -1,13 +1,14 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { pushBackHandler } from '@/ui/input/backStack'
-import { APP_CONFIGS, PLATFORM_ORDER } from '@/config/apps'
+import { APP_CONFIGS } from '@/config/apps'
+import { isAnimeCatalogItem } from '@/domain/catalogAnime'
 import type { CatalogItem, Platform } from '@/domain/types'
 import {
   extractNetflixId,
   fetchProviderDeepLinks,
 } from '@/services/justwatch'
-import { getTrailerYoutubeKey } from '@/services/tmdb'
+import { getTrailerYoutubeKey, getWatchProviders } from '@/services/tmdb'
 import { launchApp, launchPlatformTitle } from '@/services/webos'
 import { useSettingsStore } from '@/store/settings'
 import { cx } from '@/ui/cx'
@@ -46,20 +47,18 @@ export function TitleDetails({
     'loading',
   )
   const [launchError, setLaunchError] = useState<string>()
+  const anime = useMemo(() => isAnimeCatalogItem(item), [item])
 
-  const platforms =
-    item.platforms.length > 0
-      ? item.platforms
-      : ownedPlatforms.length > 0
-        ? ownedPlatforms
-        : PLATFORM_ORDER.slice(0, 1)
-
-  const initialPlatform =
-    preferredPlatform && platforms.includes(preferredPlatform)
-      ? preferredPlatform
-      : (platforms[0] ?? 'netflix')
-
-  const [selected, setSelected] = useState<Platform>(initialPlatform)
+  /** Só plataformas verificadas (TMDB BR) — nunca lista todos os apps. */
+  const [platforms, setPlatforms] = useState<Platform[]>(() =>
+    item.platforms.length > 0 ? item.platforms : anime ? ['animefire'] : [],
+  )
+  const [selected, setSelected] = useState<Platform>(
+    () =>
+      (preferredPlatform && platforms.includes(preferredPlatform)
+        ? preferredPlatform
+        : platforms[0]) ?? (anime ? 'animefire' : 'netflix'),
+  )
 
   useEffect(() => {
     void setFocus(playingTrailer ? 'TRAILER_CLOSE' : 'DETAILS_WATCH')
@@ -78,10 +77,6 @@ export function TitleDetails({
   }, [playingTrailer, onClose])
 
   useEffect(() => {
-    setSelected(initialPlatform)
-  }, [initialPlatform])
-
-  useEffect(() => {
     let cancelled = false
     void (async () => {
       const key = await getTrailerYoutubeKey(item.mediaType, item.tmdbId)
@@ -96,22 +91,79 @@ export function TitleDetails({
     let cancelled = false
     setLinksStatus('loading')
     void (async () => {
-      const links = await fetchProviderDeepLinks({
-        title: item.title,
-        mediaType: item.mediaType,
-        tmdbId: item.tmdbId || undefined,
-        year: item.releaseYear,
-        country: 'BR',
-        language: 'pt',
-      })
+      const [tmdbProviders, links] = await Promise.all([
+        item.tmdbId > 0
+          ? getWatchProviders(item.mediaType, item.tmdbId)
+          : Promise.resolve([] as Platform[]),
+        anime
+          ? Promise.resolve({} as Partial<Record<Platform, string>>)
+          : fetchProviderDeepLinks({
+              title: item.title,
+              mediaType: item.mediaType,
+              tmdbId: item.tmdbId || undefined,
+              year: item.releaseYear,
+              country: 'BR',
+              language: 'pt',
+            }),
+      ])
       if (cancelled) return
+
+      const verified = tmdbProviders.filter(
+        (p) => ownedPlatforms.includes(p) && p !== 'youtube' && p !== 'animefire',
+      )
+      const withJw = (Object.keys(links) as Platform[]).filter(
+        (p) => ownedPlatforms.includes(p) && p !== 'youtube',
+      )
+
+      // Preferir interseção JustWatch ∩ TMDB; senão só TMDB BR confirmado.
+      let next: Platform[] =
+        withJw.length > 0
+          ? withJw.filter((p) => verified.includes(p) || verified.length === 0)
+          : verified
+
+      if (withJw.length > 0 && next.length === 0) {
+        next = withJw
+      }
+
+      if (anime) {
+        next = ['animefire', ...next.filter((p) => p !== 'animefire')]
+      }
+
+      // Sem inventar streamings: se vazio e não é anime, fica vazio.
+      if (next.length === 0 && item.platforms.includes('animefire')) {
+        next = ['animefire']
+      }
+
+      setPlatforms(next)
       setProviderLinks(links)
-      setLinksStatus(Object.keys(links).length > 0 ? 'ready' : 'empty')
+      setLinksStatus(
+        anime
+          ? 'ready'
+          : Object.keys(links).length > 0
+            ? 'ready'
+            : next.length > 0
+              ? 'ready'
+              : 'empty',
+      )
+      const prefer =
+        preferredPlatform && next.includes(preferredPlatform)
+          ? preferredPlatform
+          : next[0]
+      if (prefer) setSelected(prefer)
     })()
     return () => {
       cancelled = true
     }
-  }, [item.mediaType, item.releaseYear, item.title, item.tmdbId])
+  }, [
+    anime,
+    item.mediaType,
+    item.platforms,
+    item.releaseYear,
+    item.title,
+    item.tmdbId,
+    ownedPlatforms,
+    preferredPlatform,
+  ])
 
   const extrasFor = (platform: Platform): WatchExtras => ({
     providerUrl: providerLinks[platform],
@@ -123,6 +175,10 @@ export function TitleDetails({
   })
 
   const openStreaming = (platform: Platform) => {
+    if (platform === 'animefire') {
+      onWatch(item, platform, extrasFor(platform))
+      return
+    }
     setLaunchError(undefined)
     setActiveTheme(platform)
     void launchPlatformTitle(
@@ -189,6 +245,11 @@ export function TitleDetails({
 
           <p className={styles.platformsLabel}>Onde assistir</p>
           <div className={styles.platforms}>
+            {platforms.length === 0 && linksStatus !== 'loading' ? (
+              <p className={styles.jwNote}>
+                Nenhuma plataforma confirmada no Brasil para este título.
+              </p>
+            ) : null}
             {platforms.map((platform) => (
               <Focusable
                 key={platform}
@@ -203,16 +264,22 @@ export function TitleDetails({
                 }}
               >
                 {APP_CONFIGS[platform].label}
-                {providerLinks[platform] ? ' · link' : ''}
+                {platform === 'animefire'
+                  ? ' · app'
+                  : providerLinks[platform]
+                    ? ' · link'
+                    : ''}
               </Focusable>
             ))}
           </div>
           <p className={styles.jwNote}>
             {linksStatus === 'loading'
-              ? 'Buscando links JustWatch…'
-              : linksStatus === 'ready'
-                ? 'Links via JustWatch (quando disponíveis).'
-                : 'Sem deep link JustWatch — abrirá o app.'}
+              ? 'Confirmando onde assistir…'
+              : anime
+                ? 'Animes: prioridade AnimeFire; outros só se confirmados no BR.'
+                : linksStatus === 'ready'
+                  ? 'Somente streamings confirmados (TMDB/JustWatch BR).'
+                  : 'Sem confirmação de disponibilidade.'}
           </p>
 
           <div className={styles.actions}>
@@ -220,20 +287,23 @@ export function TitleDetails({
               focusKey="DETAILS_WATCH"
               className={styles.btn}
               onEnterPress={() => {
+                if (platforms.length === 0) return
                 onWatch(item, selected, extrasFor(selected))
               }}
             >
-              Assistir
+              {selected === 'animefire' ? 'Assistir no AnimeFire' : 'Assistir'}
             </Focusable>
-            <Focusable
-              focusKey="DETAILS_OPEN_APP"
-              className={cx(styles.btn, styles.btnGhost)}
-              onEnterPress={() => {
-                openStreaming(selected)
-              }}
-            >
-              Abrir {APP_CONFIGS[selected].label}
-            </Focusable>
+            {selected !== 'animefire' ? (
+              <Focusable
+                focusKey="DETAILS_OPEN_APP"
+                className={cx(styles.btn, styles.btnGhost)}
+                onEnterPress={() => {
+                  openStreaming(selected)
+                }}
+              >
+                Abrir {APP_CONFIGS[selected].label}
+              </Focusable>
+            ) : null}
             {trailerKey ? (
               <Focusable
                 focusKey="DETAILS_TRAILER"

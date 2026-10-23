@@ -4,6 +4,7 @@ import {
   setKeyMap,
 } from '@noriginmedia/norigin-spatial-navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { isAnimeFireOnlyItem } from '@/domain/catalogAnime'
 import type { CatalogItem, Platform, WatchEntry } from '@/domain/types'
 import { useHomeFeed } from '@/hooks/useHomeFeed'
 import { resolveByTitle } from '@/services/tmdb'
@@ -32,6 +33,7 @@ import { SearchScreen } from '@/ui/screens/SearchScreen'
 import { SettingsScreen } from '@/ui/screens/SettingsScreen'
 import { SurpriseScreen } from '@/ui/screens/SurpriseScreen'
 import { installImageCacheLifecycle } from '@/services/imageCache'
+import { useUiSessionStore } from '@/store/uiSession'
 import { runBackHandlers } from '@/ui/input/backStack'
 import { installMagicRemoteScroll } from '@/ui/input/magicRemoteScroll'
 import { ThemeRoot } from '@/ui/theme/ThemeRoot'
@@ -110,7 +112,9 @@ export default function App() {
   const controllerRoom = readControllerRoom()
   const view = useSettingsStore((s) => s.view)
   const goBackView = useSettingsStore((s) => s.goBackView)
+  const setView = useSettingsStore((s) => s.setView)
   const setActiveTheme = useSettingsStore((s) => s.setActiveTheme)
+  const setAnimeDeepLinkTitle = useUiSessionStore((s) => s.setAnimeDeepLinkTitle)
   const catalogPlatform = useSettingsStore((s) => s.catalogPlatform)
   const ownedPlatforms = useSettingsStore((s) => s.ownedPlatforms)
   const addEntry = useHistoryStore((s) => s.addEntry)
@@ -269,6 +273,16 @@ export default function App() {
 
   const openDetails = useCallback(
     (item: CatalogItem) => {
+      // Lançamentos AnimeFire do home → módulo Animes (sem modal TMDB)
+      if (isAnimeFireOnlyItem(item)) {
+        setActiveTheme('animefire')
+        setAnimeDeepLinkTitle(item.title)
+        setView('anime')
+        window.requestAnimationFrame(() => {
+          void setFocus('VIEW_anime')
+        })
+        return
+      }
       const platform: Platform =
         item.platforms[0] ??
         useSettingsStore.getState().ownedPlatforms[0] ??
@@ -276,7 +290,7 @@ export default function App() {
       setActiveTheme(platform)
       setDetails(item)
     },
-    [setActiveTheme],
+    [setActiveTheme, setAnimeDeepLinkTitle, setView],
   )
 
   const watchFromDetails = useCallback(
@@ -289,6 +303,18 @@ export default function App() {
         youtubeVideoId?: string
       },
     ) => {
+      setDetails(null)
+
+      if (platform === 'animefire') {
+        setActiveTheme('animefire')
+        setAnimeDeepLinkTitle(item.title)
+        setView('anime')
+        window.requestAnimationFrame(() => {
+          void setFocus('VIEW_anime')
+        })
+        return
+      }
+
       setActiveTheme(platform)
       const payload: PendingLaunch = {
         title: item.title,
@@ -305,9 +331,6 @@ export default function App() {
         youtubeVideoId: extras?.youtubeVideoId,
       }
 
-      // Fecha o drawer antes do launch para o focus boundary não prender o cursor.
-      setDetails(null)
-
       if (item.mediaType === 'tv') {
         setPending(payload)
         return
@@ -315,7 +338,7 @@ export default function App() {
 
       void commitLaunch(payload)
     },
-    [commitLaunch, setActiveTheme],
+    [commitLaunch, setActiveTheme, setAnimeDeepLinkTitle, setView],
   )
 
   const continueEntry = useCallback(

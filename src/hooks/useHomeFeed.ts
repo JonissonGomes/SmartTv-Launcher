@@ -6,12 +6,14 @@ import {
   rankRecommendations,
   topGenreIds,
 } from '@/domain/recommend'
+import { afAnimeToCatalogItem } from '@/domain/catalogAnime'
 import type { CatalogItem, ContentRow, Platform, WatchEntry } from '@/domain/types'
 import {
   applyCurateToRows,
   curateWithJev,
   pickFeaturedCandidate,
 } from '@/services/jevCurate'
+import { fetchAfLancamentos } from '@/services/animefire'
 import {
   discoverByGenres,
   discoverByOriginCountry,
@@ -22,6 +24,7 @@ import {
   getPopularTv,
   getRecommendations,
   getTopRatedMovies,
+  getTopRatedTv,
   getTrending,
   getUpcoming,
   hasTmdbKey,
@@ -29,7 +32,6 @@ import {
   RAIL_GENRES,
   TMDB_PROVIDER_IDS,
 } from '@/services/tmdb'
-import { useAnimeHistoryStore } from '@/store/animeHistory'
 
 export interface RailGenreTile {
   id: number
@@ -145,14 +147,18 @@ export function useHomeFeed(
           trendingWeek,
           trendingDay,
           trendingMovies,
+          trendingTv,
           popularMovies,
           popularTv,
           topRatedMovies,
+          topRatedTv,
           nowPlaying,
           upcoming,
           onTheAir,
           liveActionMovies,
           liveActionTv,
+          recentMovies,
+          recentTv,
           actionMovies,
           comedyMovies,
           dramaMovies,
@@ -160,18 +166,28 @@ export function useHomeFeed(
           nationalMovies,
           recLists,
           providerLists,
+          afLancamentos,
         ] = await Promise.all([
           getTrending('all', 'week'),
           getTrending('all', 'day'),
           getTrending('movie', 'week'),
+          getTrending('tv', 'week'),
           getPopularMovies(),
           getPopularTv(),
           getTopRatedMovies(),
+          getTopRatedTv(),
           getNowPlaying(),
           getUpcoming(),
           getOnTheAir(),
           discoverPopular('movie', { withoutGenres: [16] }),
           discoverPopular('tv', { withoutGenres: [16] }),
+          discoverPopular('movie', {
+            sortBy: 'primary_release_date.desc',
+            withoutGenres: [16],
+          }).catch(() => [] as CatalogItem[]),
+          discoverPopular('tv', {
+            sortBy: 'first_air_date.desc',
+          }).catch(() => [] as CatalogItem[]),
           discoverByGenres([28], 'movie', { excludeAnimation: true }),
           discoverByGenres([35], 'movie', { excludeAnimation: true }),
           discoverByGenres([18], 'movie', { excludeAnimation: true }),
@@ -191,16 +207,29 @@ export function useHomeFeed(
                 ),
               ),
           ),
+          // Por streaming: filmes + séries (não só movie)
           Promise.all(
-            owned.map((platform) => {
+            owned.map(async (platform) => {
               const providerId = TMDB_PROVIDER_IDS[platform]
-              if (!providerId) return Promise.resolve([] as CatalogItem[])
-              return discoverPopular('movie', {
-                withWatchProvider: providerId,
-                withoutGenres: [16],
-              }).catch(() => [] as CatalogItem[])
+              if (!providerId) return [] as CatalogItem[]
+              const [movies, tv] = await Promise.all([
+                discoverPopular('movie', {
+                  withWatchProvider: providerId,
+                  withoutGenres: [16],
+                }).catch(() => [] as CatalogItem[]),
+                discoverPopular('tv', {
+                  withWatchProvider: providerId,
+                }).catch(() => [] as CatalogItem[]),
+              ])
+              return uniqueById([...movies, ...tv])
             }),
           ),
+          fetchAfLancamentos().catch(() => ({
+            animes: [],
+            upcomingTitle: 'Em breve',
+            upcomingSub: '',
+            upcoming: [],
+          })),
         ])
 
         const continueItems = history
@@ -248,13 +277,52 @@ export function useHomeFeed(
           )
         }
 
-        // Sessões por streaming em destaque (antes das fileiras genéricas)
+        // Top 10 geral (filmes + séries)
+        pushRow(
+          rows,
+          'top10-week',
+          'Top 10 da semana',
+          trendingWeek.filter((i) => !isMostlyAnimation(i)),
+          10,
+        )
+        pushRow(
+          rows,
+          'top10-day',
+          'Top 10 de hoje',
+          trendingDay.filter((i) => !isMostlyAnimation(i)),
+          10,
+        )
+
+        // Lançamentos recentes (cinema + streaming / TV)
+        pushRow(
+          rows,
+          'recent-releases',
+          'Lançamentos recentes',
+          uniqueById([
+            ...recentMovies,
+            ...recentTv,
+            ...nowPlaying,
+            ...onTheAir,
+          ]).filter((i) => !isMostlyAnimation(i)),
+          16,
+        )
+
+        // Por streaming: Top 10 + catálogo misto filmes/séries
         owned.forEach((platform, index) => {
+          const list = providerLists[index] ?? []
+          pushRow(
+            rows,
+            `top10-${platform}`,
+            `Top 10 · ${platformLabel(platform)}`,
+            list,
+            10,
+          )
           pushRow(
             rows,
             `provider-${platform}`,
-            `${platformLabel(platform)}`,
-            providerLists[index] ?? [],
+            `${platformLabel(platform)} · filmes e séries`,
+            list,
+            16,
           )
         })
 
@@ -270,6 +338,14 @@ export function useHomeFeed(
           'Filmes em alta',
           trendingMovies.length > 0 ? trendingMovies : liveActionMovies,
         )
+        pushRow(
+          rows,
+          'trending-tv',
+          'Séries em alta',
+          (trendingTv.length > 0 ? trendingTv : popularTv).filter(
+            (i) => !isMostlyAnimation(i),
+          ),
+        )
         pushRow(rows, 'national-movies', 'Filmes nacionais', nationalMovies, 16)
         pushRow(rows, 'now-playing', 'Nos cinemas', nowPlaying)
         pushRow(rows, 'popular-movies', 'Filmes populares', popularMovies)
@@ -277,44 +353,38 @@ export function useHomeFeed(
           rows,
           'popular-tv',
           'Séries populares',
-          [...popularTv, ...liveActionTv].filter((i) => !isMostlyAnimation(i)),
+          [...popularTv, ...liveActionTv, ...topRatedTv].filter(
+            (i) => !isMostlyAnimation(i),
+          ),
         )
         pushRow(rows, 'on-air', 'No ar esta semana', onTheAir)
         pushRow(rows, 'upcoming', 'Em breve', upcoming)
         pushRow(rows, 'action', 'Ação e aventura', actionMovies)
         pushRow(rows, 'comedy', 'Comédia', comedyMovies)
         pushRow(rows, 'drama', 'Drama', dramaMovies)
-        pushRow(rows, 'top-rated', 'Mais bem avaliados', topRatedMovies)
-
-        // Animes no home (TMDB) — o Player nativo fica no menu Animes.
-        const animeRecent = useAnimeHistoryStore.getState().getRecent(5)
-        const watchedAnime =
-          animeRecent.length > 0 ||
-          history.some(
-            (e) => e.genreIds.includes(16) || /anime/i.test(e.title),
-          )
-        const animeTaste = await discoverByGenres([16], 'tv', {
-          pages: 2,
-        }).catch(() => [])
         pushRow(
           rows,
-          'anime-recommend',
-          watchedAnime
-            ? 'Animes para você'
-            : 'Animes em alta',
-          [
-            ...animeTaste,
-            ...trendingWeek.filter(isMostlyAnimation),
-            ...popularTv.filter(isMostlyAnimation),
-          ],
-          18,
+          'top-rated',
+          'Mais bem avaliados',
+          uniqueById([...topRatedMovies, ...topRatedTv]),
         )
 
+        // Animes no home = lançamentos AnimeFire (não TMDB gênero 16)
+        const afLatest = afLancamentos.animes.map(afAnimeToCatalogItem)
+        const afUpcoming = afLancamentos.upcoming.map(afAnimeToCatalogItem)
         pushRow(
           rows,
-          'animation',
-          'Animações',
-          [...trendingWeek, ...popularMovies].filter(isMostlyAnimation),
+          'anime-af-lancamentos',
+          'Animes — Lançamentos',
+          afLatest,
+          18,
+        )
+        pushRow(
+          rows,
+          'anime-af-em-breve',
+          afLancamentos.upcomingTitle || 'Animes em breve',
+          afUpcoming,
+          14,
         )
 
         const candidatePool = uniqueById([
@@ -414,5 +484,7 @@ function platformLabel(platform: Platform): string {
       return 'Globoplay'
     case 'youtube':
       return 'YouTube'
+    case 'animefire':
+      return 'AnimeFire'
   }
 }

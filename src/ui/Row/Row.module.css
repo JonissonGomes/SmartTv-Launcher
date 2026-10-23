@@ -1,5 +1,9 @@
 .row {
   margin-bottom: var(--space-5);
+  /* Fileiras fora da viewport: skip de layout/paint no Chromium/webOS */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 18rem;
+  contain: layout style;
 }
 
 .title {

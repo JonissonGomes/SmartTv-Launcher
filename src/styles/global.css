@@ -77,28 +77,7 @@ img {
 }
 
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--color-surface) 0%,
-    var(--color-surface-2) 50%,
-    var(--color-surface) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
+  /* Sem shimmer contínuo — animação infinita mata FPS na TV */
+  background: var(--color-surface-2);
   border-radius: var(--radius-md);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton {
-    animation: none;
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
 }

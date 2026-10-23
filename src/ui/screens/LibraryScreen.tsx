@@ -17,6 +17,7 @@ import {
   searchAfAnimes,
 } from '@/services/animefire'
 import { useAnimeHistoryStore } from '@/store/animeHistory'
+import { useUiSessionStore } from '@/store/uiSession'
 import { AnimeCatalogHub } from '@/ui/anime/AnimeCatalogHub'
 import { PosterGrid } from '@/ui/anime/AnimeCards'
 import { AnimeDetail } from '@/ui/anime/AnimeDetail'
@@ -36,6 +37,8 @@ export function LibraryScreen() {
   const recordWatch = useAnimeHistoryStore((s) => s.recordWatch)
   const updateProgress = useAnimeHistoryStore((s) => s.updateProgress)
   const entries = useAnimeHistoryStore((s) => s.entries)
+  const animeDeepLinkTitle = useUiSessionStore((s) => s.animeDeepLinkTitle)
+  const setAnimeDeepLinkTitle = useUiSessionStore((s) => s.setAnimeDeepLinkTitle)
 
   const [tab, setTab] = useState<Tab>('home')
   const [phase, setPhase] = useState<Phase>('home')
@@ -114,6 +117,19 @@ export function LibraryScreen() {
     void loadHome()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Deep link: Assistir no AnimeFire a partir da home
+  useEffect(() => {
+    if (!animeDeepLinkTitle) return
+    const q = animeDeepLinkTitle
+    setAnimeDeepLinkTitle(null)
+    setTab('search')
+    setPhase('search')
+    setQuery(q)
+    window.requestAnimationFrame(() => {
+      void setFocus('ANIME_SEARCH')
+    })
+  }, [animeDeepLinkTitle, setAnimeDeepLinkTitle])
 
   // Back: player → detalhe → categoria → (deixa o App voltar de tela)
   useEffect(() => {

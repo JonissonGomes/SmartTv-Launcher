@@ -51,6 +51,14 @@ export const PLATFORM_THEMES: Record<Platform, PlatformTheme> = {
     glow: 'rgba(255, 0, 0, 0.35)',
     focus: '#FF4D4D',
   },
+  animefire: {
+    label: 'AnimeFire',
+    accent: '#E50914',
+    accentSoft: 'rgba(229, 9, 20, 0.22)',
+    tint: 'rgba(229, 9, 20, 0.16)',
+    glow: 'rgba(229, 9, 20, 0.35)',
+    focus: '#FF4D57',
+  },
 }
 
 export const DEFAULT_THEME: PlatformTheme = {

@@ -258,6 +258,9 @@ export async function launchPlatformTitle(
     providerUrl?: string
   },
 ): Promise<void> {
+  if (platform === 'animefire') {
+    throw new Error('AnimeFire é in-app — use o menu Animes')
+  }
   const deep = pickBestDeepLink(platform, {
     title,
     tmdbId,

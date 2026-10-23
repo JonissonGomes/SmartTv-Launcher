@@ -62,8 +62,17 @@ export const APP_CONFIGS: Record<Platform, AppConfig> = {
     ],
     color: PLATFORM_THEMES.youtube.accent,
   },
+  animefire: {
+    platform: 'animefire',
+    label: 'AnimeFire',
+    // Destino in-app — não lança app webOS.
+    webosAppId: 'br.jonis.launcher',
+    webosAppIdCandidates: ['br.jonis.launcher'],
+    color: PLATFORM_THEMES.animefire.accent,
+  },
 }
 
+/** Streamings externos (flyout / settings) — sem AnimeFire. */
 export const PLATFORM_ORDER: Platform[] = [
   'netflix',
   'disney',

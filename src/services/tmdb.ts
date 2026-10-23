@@ -66,9 +66,11 @@ export function hasTmdbKey(): boolean {
 
 export function imageUrl(
   path: string | null | undefined,
-  size: 'w342' | 'w780' | 'w1280' = 'w342',
+  size: 'w185' | 'w342' | 'w780' | 'w1280' = 'w342',
 ): string | undefined {
   if (!path) return undefined
+  // AnimeFire / URLs absolutas: não prefixar CDN do TMDB
+  if (/^https?:\/\//i.test(path) || path.startsWith('data:')) return path
   return `${IMAGE_BASE}/${size}${path}`
 }
 

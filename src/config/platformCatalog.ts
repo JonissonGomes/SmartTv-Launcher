@@ -222,4 +222,12 @@ export const PLATFORM_SECTIONS: Record<Platform, PlatformSection[]> = {
       mediaType: 'movie',
     },
   ],
+  animefire: [
+    {
+      id: 'af-home',
+      label: 'Catálogo AnimeFire',
+      kind: 'open_app',
+      appHint: 'Abra pelo menu Animes',
+    },
+  ],
 }

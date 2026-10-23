@@ -6,6 +6,10 @@
   overflow: hidden;
   background: var(--color-surface);
   position: relative;
+  /* Isola paint/layout — crítico com dezenas de cards na TV */
+  contain: layout style paint;
+  content-visibility: auto;
+  contain-intrinsic-size: var(--card-width) var(--card-height);
 }
 
 /* Mosaicos: widescreen 16:9 */

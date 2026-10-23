@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { CatalogItem } from '@/domain/types'
 import { Card } from '@/ui/Card/Card'
 import { Focusable } from '@/ui/focus/Focusable'
@@ -10,11 +11,12 @@ interface RowProps {
   onSelect: (item: CatalogItem) => void
 }
 
-/** Fileira horizontal simples (sem virtualizar) — mais estável no Simulator/webOS. */
-export function Row({ id, title, items, onSelect }: RowProps) {
+/** Fileira horizontal — cards memoizados; content-visibility no CSS. */
+function RowInner({ id, title, items, onSelect }: RowProps) {
   if (items.length === 0) return null
 
-  const visible = items.slice(0, 12)
+  const limit = id.startsWith('top10') ? 10 : 12
+  const visible = items.slice(0, limit)
 
   return (
     <Focusable
@@ -38,3 +40,5 @@ export function Row({ id, title, items, onSelect }: RowProps) {
     </Focusable>
   )
 }
+
+export const Row = memo(RowInner)

@@ -37,8 +37,9 @@
   /* Escala leve — valores altos “grudam” visualmente no webOS Simulator */
   /* Scale desativado no Focusable (só outline) — mantido por compat */
   --focus-scale: 1;
-  --transition-fast: 120ms cubic-bezier(0.22, 1, 0.36, 1);
-  --transition-med: 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  /* Curtos = menos frames intermediários no webOS */
+  --transition-fast: 80ms linear;
+  --transition-med: 140ms ease-out;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;

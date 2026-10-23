@@ -2,9 +2,8 @@
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  /* Sem backdrop-filter: blur custa demais no webOS */
+  background: rgba(0, 0, 0, 0.72);
   display: flex;
   justify-content: flex-end;
   align-items: stretch;
@@ -17,27 +16,8 @@
   flex-direction: column;
   background: color-mix(in srgb, var(--color-surface) 96%, var(--color-tint));
   border-left: 1px solid var(--color-border);
-  box-shadow: -18px 0 48px rgba(0, 0, 0, 0.45);
   overflow: hidden;
-  animation: slideIn var(--transition-med) ease-out;
   transform-origin: right center;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0.85;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .panel {
-    animation: none;
-  }
 }
 
 .media {

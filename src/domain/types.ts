@@ -4,6 +4,8 @@ export type Platform =
   | 'hbomax'
   | 'globoplay'
   | 'youtube'
+  /** Player nativo AnimeFire (in-app, não é app webOS). */
+  | 'animefire'
 
 export type MediaType = 'movie' | 'tv'
 

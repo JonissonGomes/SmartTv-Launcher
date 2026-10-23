@@ -174,7 +174,7 @@ export function RightRail({
               <h2 className={styles.sectionTitle}>Gêneros</h2>
               <div className={styles.genreGrid}>
                 {rail.genres.map((genre) => {
-                  const poster = imageUrl(genre.posterPath, 'w342')
+                  const poster = imageUrl(genre.posterPath, 'w185')
                   return (
                     <div key={genre.id} className={styles.genreTile}>
                       {poster ? (
@@ -199,11 +199,17 @@ export function RightRail({
 }
 
 function RailPoster({ item }: { item: CatalogItem }) {
-  const thumb = imageUrl(item.posterPath, 'w342')
+  const thumb = imageUrl(item.posterPath, 'w185')
   return (
     <>
       {thumb ? (
-        <img className={styles.thumb} src={thumb} alt="" loading="lazy" />
+        <img
+          className={styles.thumb}
+          src={thumb}
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
       ) : (
         <div className={styles.thumb} />
       )}

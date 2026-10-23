@@ -47,7 +47,7 @@ export function HomeScreen({
     if (!el) return
     const next = Math.min(1, Math.max(0, el.scrollTop / HERO_COLLAPSE_RANGE))
     // Threshold maior = menos re-renders do Hero durante o scroll.
-    setCollapse((prev) => (Math.abs(prev - next) < 0.03 ? prev : next))
+    setCollapse((prev) => (Math.abs(prev - next) < 0.05 ? prev : next))
   }, [])
 
   const onRowsScroll = () => {

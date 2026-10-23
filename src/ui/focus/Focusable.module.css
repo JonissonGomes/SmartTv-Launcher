@@ -1,11 +1,8 @@
 .root {
   position: relative;
-  /* Sem scale no foco: transform em dezenas de cards = jank no webOS */
+  /* Sem scale/shadow no foco: só outline (barato no compositor) */
   transform: none;
-  transition:
-    outline-color 80ms linear,
-    background-color var(--transition-fast),
-    color var(--transition-fast);
+  transition: outline-color 60ms linear;
   border-radius: var(--radius-md);
   outline: 2px solid transparent;
   outline-offset: 2px;
@@ -13,7 +10,6 @@
 
 .focused {
   outline-color: var(--color-focus);
-  box-shadow: 0 0 0 2px var(--color-accent-soft);
   z-index: 2;
 }
 

@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { CatalogItem, Platform } from '@/domain/types'
 import { imageUrl } from '@/services/tmdb'
 import { cx } from '@/ui/cx'
@@ -14,16 +15,17 @@ interface CardProps {
   layout?: 'row' | 'grid'
 }
 
-export function Card({
+function CardInner({
   item,
   focusKey,
   onSelect,
   layout = 'row',
 }: CardProps) {
+  // w185: menos decode/GPU na TV; grid usa w342 (widescreen)
   const src =
     layout === 'grid'
       ? imageUrl(item.backdropPath ?? item.posterPath, 'w342')
-      : imageUrl(item.posterPath, 'w342')
+      : imageUrl(item.posterPath, 'w185')
   const rating = item.voteAverage > 0 ? item.voteAverage.toFixed(1) : null
   const platform: Platform | undefined = item.platforms[0]
 
@@ -39,11 +41,12 @@ export function Card({
         <CachedImage
           className={styles.poster}
           src={src}
-          alt={item.title}
-          width={layout === 'grid' ? 320 : 192}
-          height={layout === 'grid' ? 180 : 280}
+          alt=""
+          width={layout === 'grid' ? 320 : 185}
+          height={layout === 'grid' ? 180 : 278}
           loading="lazy"
           decoding="async"
+          draggable={false}
         />
       ) : (
         <div className={styles.placeholder} title={item.title}>
@@ -63,3 +66,5 @@ export function Card({
     </Focusable>
   )
 }
+
+export const Card = memo(CardInner)
