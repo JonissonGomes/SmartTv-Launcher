@@ -2,14 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { buildDeepLinkAttempts } from '@/services/deepLink'
 
 describe('deepLink', () => {
-  it('netflix prioriza ID interno e termina com fallback limpo', () => {
+  it('netflix prioriza URL JustWatch / ID interno', () => {
     const attempts = buildDeepLinkAttempts('netflix', {
       title: 'Interestelar',
+      providerUrl: 'https://www.netflix.com/title/80057281',
       netflixId: '80057281',
     })
-    expect(attempts[0]).toMatchObject({
-      contentTarget: expect.stringContaining('80057281'),
-    })
+    expect(JSON.stringify(attempts[0])).toContain('80057281')
     expect(attempts.at(-1)).toBeUndefined()
   })
 

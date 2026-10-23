@@ -71,6 +71,9 @@ interface PendingLaunch {
   voteAverage?: number
   season?: number
   episode?: number
+  providerUrl?: string
+  netflixId?: string
+  youtubeVideoId?: string
 }
 
 function focusHome(hasHero: boolean): void {
@@ -208,7 +211,11 @@ export default function App() {
       )
 
       try {
-        await launchPlatformTitle(data.platform, data.title, data.tmdbId)
+        await launchPlatformTitle(data.platform, data.title, data.tmdbId, {
+          netflixId: data.netflixId,
+          providerUrl: data.providerUrl,
+          youtubeVideoId: data.youtubeVideoId,
+        })
       } catch (err) {
         const text = err instanceof Error ? err.message : String(err)
         console.warn('[launch]', text)
@@ -238,7 +245,15 @@ export default function App() {
   )
 
   const watchFromDetails = useCallback(
-    (item: CatalogItem, platform: Platform) => {
+    (
+      item: CatalogItem,
+      platform: Platform,
+      extras?: {
+        providerUrl?: string
+        netflixId?: string
+        youtubeVideoId?: string
+      },
+    ) => {
       setActiveTheme(platform)
       const payload: PendingLaunch = {
         title: item.title,
@@ -250,6 +265,9 @@ export default function App() {
         backdropPath: item.backdropPath ?? undefined,
         overview: item.overview,
         voteAverage: item.voteAverage,
+        providerUrl: extras?.providerUrl,
+        netflixId: extras?.netflixId,
+        youtubeVideoId: extras?.youtubeVideoId,
       }
 
       // Fecha o drawer antes do launch para o focus boundary não prender o cursor.

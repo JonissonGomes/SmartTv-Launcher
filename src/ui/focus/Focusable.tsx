@@ -25,10 +25,12 @@ export function Focusable({
   as: Tag = 'div',
   variant = 'default',
   onFocus,
+  onEnterPress,
   ...config
 }: FocusableProps) {
   const { ref, focused, focusKey } = useFocusable({
     ...config,
+    onEnterPress,
     onFocus: (...args) => {
       scrollFocusedIntoView(ref.current as HTMLElement | null)
       onFocus?.(...args)
@@ -54,6 +56,14 @@ export function Focusable({
           // Ponteiro Magic Remote ↔ foco espacial (obrigatório no guia LG).
           if (config.focusable === false) return
           void setFocus(focusKey)
+        }}
+        onClick={(event) => {
+          // Clique do ponteiro Magic Remote não dispara onEnterPress sozinho.
+          if (config.focusable === false || !onEnterPress) return
+          event.preventDefault()
+          event.stopPropagation()
+          void setFocus(focusKey)
+          onEnterPress({} as never, {} as never)
         }}
       >
         {typeof children === 'function' ? children(focused) : children}

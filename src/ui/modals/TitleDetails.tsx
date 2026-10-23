@@ -2,18 +2,29 @@ import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useEffect, useState } from 'react'
 import { APP_CONFIGS, PLATFORM_ORDER } from '@/config/apps'
 import type { CatalogItem, Platform } from '@/domain/types'
+import {
+  extractNetflixId,
+  fetchProviderDeepLinks,
+} from '@/services/justwatch'
 import { getTrailerYoutubeKey } from '@/services/tmdb'
-import { launchApp } from '@/services/webos'
+import { launchApp, launchPlatformTitle } from '@/services/webos'
 import { useSettingsStore } from '@/store/settings'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import { TrailerArt } from '@/ui/media/TrailerArt'
+import { TrailerPlayer } from '@/ui/media/TrailerPlayer'
 import styles from './TitleDetails.module.css'
+
+export interface WatchExtras {
+  providerUrl?: string
+  netflixId?: string
+  youtubeVideoId?: string
+}
 
 interface TitleDetailsProps {
   item: CatalogItem
   preferredPlatform?: Platform
-  onWatch: (item: CatalogItem, platform: Platform) => void
+  onWatch: (item: CatalogItem, platform: Platform, extras?: WatchExtras) => void
   onClose: () => void
 }
 
@@ -26,6 +37,14 @@ export function TitleDetails({
   const ownedPlatforms = useSettingsStore((s) => s.ownedPlatforms)
   const setActiveTheme = useSettingsStore((s) => s.setActiveTheme)
   const [trailerKey, setTrailerKey] = useState<string>()
+  const [playingTrailer, setPlayingTrailer] = useState(false)
+  const [providerLinks, setProviderLinks] = useState<
+    Partial<Record<Platform, string>>
+  >({})
+  const [linksStatus, setLinksStatus] = useState<'loading' | 'ready' | 'empty'>(
+    'loading',
+  )
+  const [launchError, setLaunchError] = useState<string>()
 
   const platforms =
     item.platforms.length > 0
@@ -42,8 +61,8 @@ export function TitleDetails({
   const [selected, setSelected] = useState<Platform>(initialPlatform)
 
   useEffect(() => {
-    void setFocus('DETAILS_WATCH')
-  }, [])
+    void setFocus(playingTrailer ? 'TRAILER_CLOSE' : 'DETAILS_WATCH')
+  }, [playingTrailer])
 
   useEffect(() => {
     setSelected(initialPlatform)
@@ -60,6 +79,50 @@ export function TitleDetails({
     }
   }, [item.mediaType, item.tmdbId])
 
+  useEffect(() => {
+    let cancelled = false
+    setLinksStatus('loading')
+    void (async () => {
+      const links = await fetchProviderDeepLinks({
+        title: item.title,
+        mediaType: item.mediaType,
+        tmdbId: item.tmdbId || undefined,
+        year: item.releaseYear,
+        country: 'BR',
+        language: 'pt',
+      })
+      if (cancelled) return
+      setProviderLinks(links)
+      setLinksStatus(Object.keys(links).length > 0 ? 'ready' : 'empty')
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [item.mediaType, item.releaseYear, item.title, item.tmdbId])
+
+  const extrasFor = (platform: Platform): WatchExtras => ({
+    providerUrl: providerLinks[platform],
+    netflixId:
+      platform === 'netflix'
+        ? extractNetflixId(providerLinks.netflix)
+        : undefined,
+    youtubeVideoId: trailerKey,
+  })
+
+  const openStreaming = (platform: Platform) => {
+    setLaunchError(undefined)
+    setActiveTheme(platform)
+    void launchPlatformTitle(
+      platform,
+      item.title,
+      item.tmdbId || undefined,
+      extrasFor(platform),
+    ).catch((err: unknown) => {
+      const text = err instanceof Error ? err.message : String(err)
+      setLaunchError(text)
+    })
+  }
+
   return (
     <div className={styles.backdrop}>
       <Focusable
@@ -68,12 +131,31 @@ export function TitleDetails({
         isFocusBoundary
       >
         <div className={styles.media}>
-          <TrailerArt
-            backdropPath={item.backdropPath}
-            posterPath={item.posterPath}
-            youtubeKey={trailerKey}
-            alt=""
-          />
+          {playingTrailer && trailerKey ? (
+            <TrailerPlayer
+              youtubeKey={trailerKey}
+              title={item.title}
+              onClose={() => {
+                setPlayingTrailer(false)
+                void setFocus('DETAILS_WATCH')
+              }}
+              onOpenYoutubeApp={() => {
+                setActiveTheme('youtube')
+                void launchApp('youtube', {
+                  contentTarget: `v=${trailerKey}`,
+                }).catch(() => {
+                  void launchApp('youtube')
+                })
+              }}
+            />
+          ) : (
+            <TrailerArt
+              backdropPath={item.backdropPath}
+              posterPath={item.posterPath}
+              youtubeKey={trailerKey}
+              alt=""
+            />
+          )}
         </div>
 
         <div className={styles.info}>
@@ -108,16 +190,24 @@ export function TitleDetails({
                 }}
               >
                 {APP_CONFIGS[platform].label}
+                {providerLinks[platform] ? ' · link' : ''}
               </Focusable>
             ))}
           </div>
+          <p className={styles.jwNote}>
+            {linksStatus === 'loading'
+              ? 'Buscando links JustWatch…'
+              : linksStatus === 'ready'
+                ? 'Links via JustWatch (quando disponíveis).'
+                : 'Sem deep link JustWatch — abrirá o app.'}
+          </p>
 
           <div className={styles.actions}>
             <Focusable
               focusKey="DETAILS_WATCH"
               className={styles.btn}
               onEnterPress={() => {
-                onWatch(item, selected)
+                onWatch(item, selected, extrasFor(selected))
               }}
             >
               Assistir
@@ -126,22 +216,20 @@ export function TitleDetails({
               focusKey="DETAILS_OPEN_APP"
               className={cx(styles.btn, styles.btnGhost)}
               onEnterPress={() => {
-                setActiveTheme(selected)
-                void launchApp(selected)
+                openStreaming(selected)
               }}
             >
               Abrir {APP_CONFIGS[selected].label}
             </Focusable>
             {trailerKey ? (
               <Focusable
-                focusKey="DETAILS_TRAILER_APP"
+                focusKey="DETAILS_TRAILER"
                 className={cx(styles.btn, styles.btnGhost)}
                 onEnterPress={() => {
-                  setActiveTheme('youtube')
-                  void launchApp('youtube')
+                  setPlayingTrailer(true)
                 }}
               >
-                Trailer no YouTube
+                Ver trailer
               </Focusable>
             ) : null}
             <Focusable
@@ -152,6 +240,9 @@ export function TitleDetails({
               Fechar
             </Focusable>
           </div>
+          {launchError ? (
+            <p className={styles.launchError}>{launchError}</p>
+          ) : null}
         </div>
       </Focusable>
     </div>

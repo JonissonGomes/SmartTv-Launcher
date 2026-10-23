@@ -136,7 +136,11 @@ export async function fetchProviderDeepLinks(input: {
           filter: { searchQuery: input.title },
         },
       }),
-      signal: AbortSignal.timeout(8000),
+      signal: (() => {
+        const ctrl = new AbortController()
+        window.setTimeout(() => ctrl.abort(), 8000)
+        return ctrl.signal
+      })(),
     })
 
     if (!res.ok) {

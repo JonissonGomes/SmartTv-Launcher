@@ -197,7 +197,11 @@ export async function launchPlatformTitle(
   platform: Platform,
   title: string,
   tmdbId?: number,
-  extras?: { netflixId?: string; youtubeVideoId?: string },
+  extras?: {
+    netflixId?: string
+    youtubeVideoId?: string
+    providerUrl?: string
+  },
 ): Promise<void> {
   const appId = await resolvePlatformAppId(platform)
   const attempts = buildDeepLinkAttempts(platform, {
@@ -205,6 +209,7 @@ export async function launchPlatformTitle(
     tmdbId,
     netflixId: extras?.netflixId,
     youtubeVideoId: extras?.youtubeVideoId,
+    providerUrl: extras?.providerUrl,
   })
 
   let lastError: unknown
