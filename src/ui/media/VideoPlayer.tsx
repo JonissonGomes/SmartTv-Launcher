@@ -3,11 +3,20 @@ import Hls from 'hls.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
+import { MediaIcons } from '@/ui/icons/MediaIcons'
 import styles from './VideoPlayer.module.css'
 
 export interface PlayerEpisodeOption {
   id: string
   label: string
+}
+
+interface CaptionTrack {
+  id: string
+  label: string
+  /** Índice em video.textTracks ou hls.subtitleTracks */
+  index: number
+  kind: 'native' | 'hls'
 }
 
 interface VideoPlayerProps {
@@ -16,7 +25,6 @@ interface VideoPlayerProps {
   src: string
   poster?: string
   onClose: () => void
-  /** Episódio atual (para destacar na lista). */
   episodeId?: string
   episodes?: PlayerEpisodeOption[]
   onPrevEpisode?: () => void
@@ -46,7 +54,24 @@ function formatTime(sec: number): string {
   return `${String(m)}:${String(s).padStart(2, '0')}`
 }
 
-/** Player fullscreen — controles minimalistas com auto-hide (estilo TV/mídia). */
+function collectNativeTracks(video: HTMLVideoElement): CaptionTrack[] {
+  const out: CaptionTrack[] = []
+  const list = video.textTracks
+  for (let i = 0; i < list.length; i++) {
+    const t = list[i]
+    if (!t) continue
+    if (t.kind !== 'subtitles' && t.kind !== 'captions') continue
+    out.push({
+      id: `native-${String(i)}`,
+      label: t.label || t.language || `Legenda ${String(i + 1)}`,
+      index: i,
+      kind: 'native',
+    })
+  }
+  return out
+}
+
+/** Player fullscreen — Lucide + auto-hide + legendas sem sair do vídeo. */
 export function VideoPlayer({
   title,
   subtitle,
@@ -69,16 +94,75 @@ export function VideoPlayer({
   const [tick, setTick] = useState(0)
   const [chromeVisible, setChromeVisible] = useState(true)
   const [epListOpen, setEpListOpen] = useState(false)
+  const [capListOpen, setCapListOpen] = useState(false)
+  const [captionTracks, setCaptionTracks] = useState<CaptionTrack[]>([])
+  const [activeCaptionId, setActiveCaptionId] = useState<string | null>(null)
+  const [cueText, setCueText] = useState('')
+
+  const panelOpen = epListOpen || capListOpen
 
   const showChrome = useCallback(() => {
     setChromeVisible(true)
     window.clearTimeout(hideTimer.current)
-    if (epListOpen) return
+    if (panelOpen) return
     hideTimer.current = window.setTimeout(() => {
       const el = videoRef.current
       if (el && !el.paused) setChromeVisible(false)
     }, HIDE_MS)
-  }, [epListOpen])
+  }, [panelOpen])
+
+  const refreshTracks = useCallback(() => {
+    const video = videoRef.current
+    const hls = hlsRef.current
+    if (!video) return
+
+    if (hls && hls.subtitleTracks.length > 0) {
+      const tracks: CaptionTrack[] = hls.subtitleTracks.map((t, i) => ({
+        id: `hls-${String(i)}`,
+        label: t.name || t.lang || `Legenda ${String(i + 1)}`,
+        index: i,
+        kind: 'hls' as const,
+      }))
+      setCaptionTracks(tracks)
+      return
+    }
+
+    setCaptionTracks(collectNativeTracks(video))
+  }, [])
+
+  const applyCaption = useCallback(
+    (trackId: string | null) => {
+      const video = videoRef.current
+      const hls = hlsRef.current
+      if (!video) return
+
+      setActiveCaptionId(trackId)
+      setCueText('')
+
+      if (hls && hls.subtitleTracks.length > 0) {
+        if (trackId === null) {
+          hls.subtitleTrack = -1
+        } else {
+          const t = captionTracks.find((c) => c.id === trackId)
+          if (t?.kind === 'hls') hls.subtitleTrack = t.index
+        }
+      }
+
+      const list = video.textTracks
+      for (let i = 0; i < list.length; i++) {
+        const tt = list[i]
+        if (!tt) continue
+        if (tt.kind !== 'subtitles' && tt.kind !== 'captions') continue
+        const match =
+          trackId !== null &&
+          captionTracks.some(
+            (c) => c.id === trackId && c.kind === 'native' && c.index === i,
+          )
+        tt.mode = match ? 'showing' : 'hidden'
+      }
+    },
+    [captionTracks],
+  )
 
   useEffect(() => {
     void setFocus('PLAYER_PLAY')
@@ -86,6 +170,9 @@ export function VideoPlayer({
     if (!video) return
 
     setError(undefined)
+    setCaptionTracks([])
+    setActiveCaptionId(null)
+    setCueText('')
     hlsRef.current?.destroy()
     hlsRef.current = null
 
@@ -106,6 +193,10 @@ export function VideoPlayer({
       hls.attachMedia(video)
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         play()
+        refreshTracks()
+      })
+      hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
+        refreshTracks()
       })
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (!data.fatal) return
@@ -121,16 +212,59 @@ export function VideoPlayer({
     ) {
       video.src = src
       play()
+      window.setTimeout(refreshTracks, 800)
     } else {
       video.src = src
       play()
+      window.setTimeout(refreshTracks, 400)
     }
 
+    const onAddTrack = () => {
+      refreshTracks()
+    }
+    video.textTracks.addEventListener('addtrack', onAddTrack)
+
     return () => {
+      video.textTracks.removeEventListener('addtrack', onAddTrack)
       hlsRef.current?.destroy()
       hlsRef.current = null
     }
-  }, [src])
+  }, [src, refreshTracks])
+
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !activeCaptionId) {
+      setCueText('')
+      return
+    }
+    const native = captionTracks.find(
+      (c) => c.id === activeCaptionId && c.kind === 'native',
+    )
+    if (!native) return
+    const track = video.textTracks[native.index]
+    if (!track) return
+
+    const onCue = () => {
+      const cues = track.activeCues
+      if (!cues || cues.length === 0) {
+        setCueText('')
+        return
+      }
+      const parts: string[] = []
+      for (let i = 0; i < cues.length; i++) {
+        const c = cues[i]
+        if (c && 'text' in c && typeof (c as TextTrackCue & { text?: string }).text === 'string') {
+          parts.push((c as TextTrackCue & { text: string }).text)
+        }
+      }
+      setCueText(parts.join('\n'))
+    }
+    track.addEventListener('cuechange', onCue)
+    onCue()
+    return () => {
+      track.removeEventListener('cuechange', onCue)
+    }
+  }, [activeCaptionId, captionTracks])
 
   useEffect(() => {
     showChrome()
@@ -144,20 +278,29 @@ export function VideoPlayer({
       setChromeVisible(true)
       window.clearTimeout(hideTimer.current)
       void setFocus(
-        episodeId
-          ? `PLAYER_EP_${episodeId}`
-          : 'PLAYER_EP_CLOSE',
+        episodeId ? `PLAYER_EP_${episodeId}` : 'PLAYER_EP_CLOSE',
       )
       return
     }
+    if (capListOpen) {
+      setChromeVisible(true)
+      window.clearTimeout(hideTimer.current)
+      void setFocus('PLAYER_CAP_OFF')
+      return
+    }
     showChrome()
-  }, [epListOpen, episodeId, showChrome])
+  }, [epListOpen, capListOpen, episodeId, showChrome])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.keyCode === 461 || event.key === 'Escape') {
         event.preventDefault()
         event.stopPropagation()
+        if (capListOpen) {
+          setCapListOpen(false)
+          void setFocus('PLAYER_CC')
+          return
+        }
         if (epListOpen) {
           setEpListOpen(false)
           void setFocus('PLAYER_EPS')
@@ -166,7 +309,6 @@ export function VideoPlayer({
         onClose()
         return
       }
-      // Qualquer tecla do controle mostra o chrome
       if (
         event.key.startsWith('Arrow') ||
         event.key === 'Enter' ||
@@ -188,7 +330,7 @@ export function VideoPlayer({
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('pointerdown', onMove)
     }
-  }, [onClose, epListOpen, showChrome])
+  }, [onClose, epListOpen, capListOpen, showChrome])
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -236,6 +378,8 @@ export function VideoPlayer({
   const showPrev = Boolean(onPrevEpisode && (hasPrevEpisode ?? canEpNav))
   const showNext = Boolean(onNextEpisode && (hasNextEpisode ?? canEpNav))
   const showList = Boolean(onSelectEpisode && episodes.length > 0)
+  const showCc = captionTracks.length > 0
+  const ccOn = activeCaptionId !== null
 
   return (
     <div
@@ -249,6 +393,7 @@ export function VideoPlayer({
         className={styles.video}
         poster={poster}
         playsInline
+        crossOrigin="anonymous"
         onPlay={() => {
           setPaused(false)
           showChrome()
@@ -270,6 +415,12 @@ export function VideoPlayer({
         }}
       />
 
+      {cueText ? (
+        <div className={styles.cueBox} aria-live="polite">
+          {cueText}
+        </div>
+      ) : null}
+
       {!chromeVisible ? (
         <button
           type="button"
@@ -290,12 +441,28 @@ export function VideoPlayer({
         </div>
 
         <div className={styles.bottom}>
-          <div className={styles.progressTrack}>
-            <div
-              className={styles.progressFill}
-              style={{ width: `${String(Math.round(progress * 100))}%` }}
-            />
-          </div>
+          <Focusable
+            focusKey="PLAYER_SEEK"
+            className={styles.progressFocus}
+            onArrowPress={(direction) => {
+              if (direction === 'left') {
+                seekBy(-10)
+                return false
+              }
+              if (direction === 'right') {
+                seekBy(10)
+                return false
+              }
+              return true
+            }}
+          >
+            <div className={styles.progressTrack}>
+              <div
+                className={styles.progressFill}
+                style={{ width: `${String(Math.round(progress * 100))}%` }}
+              />
+            </div>
+          </Focusable>
           <div className={styles.timeRow}>
             <span>{formatTime(current)}</span>
             <span>{formatTime(duration)}</span>
@@ -311,7 +478,7 @@ export function VideoPlayer({
                   showChrome()
                 }}
               >
-                ⏮
+                <MediaIcons.PrevEp />
               </Focusable>
             ) : null}
 
@@ -322,7 +489,10 @@ export function VideoPlayer({
                 seekBy(-10)
               }}
             >
-              <span className={styles.seekLabel}>−10</span>
+              <span className={styles.seekStack}>
+                <MediaIcons.SeekBack />
+                <span className={styles.seekLabel}>10</span>
+              </span>
             </Focusable>
 
             <Focusable
@@ -330,7 +500,7 @@ export function VideoPlayer({
               className={styles.iconBtnPrimary}
               onEnterPress={togglePlay}
             >
-              {paused ? '▶' : '❚❚'}
+              {paused ? <MediaIcons.Play size={26} /> : <MediaIcons.Pause size={26} />}
             </Focusable>
 
             <Focusable
@@ -340,7 +510,10 @@ export function VideoPlayer({
                 seekBy(10)
               }}
             >
-              <span className={styles.seekLabel}>+10</span>
+              <span className={styles.seekStack}>
+                <MediaIcons.SeekFwd />
+                <span className={styles.seekLabel}>10</span>
+              </span>
             </Focusable>
 
             {showNext ? (
@@ -352,7 +525,7 @@ export function VideoPlayer({
                   showChrome()
                 }}
               >
-                ⏭
+                <MediaIcons.NextEp />
               </Focusable>
             ) : null}
 
@@ -361,10 +534,24 @@ export function VideoPlayer({
                 focusKey="PLAYER_EPS"
                 className={styles.iconBtn}
                 onEnterPress={() => {
+                  setCapListOpen(false)
                   setEpListOpen(true)
                 }}
               >
-                ≡
+                <MediaIcons.Episodes />
+              </Focusable>
+            ) : null}
+
+            {showCc ? (
+              <Focusable
+                focusKey="PLAYER_CC"
+                className={cx(styles.iconBtn, ccOn && styles.iconBtnOn)}
+                onEnterPress={() => {
+                  setEpListOpen(false)
+                  setCapListOpen(true)
+                }}
+              >
+                {ccOn ? <MediaIcons.CaptionsOn /> : <MediaIcons.CaptionsOff />}
               </Focusable>
             ) : null}
 
@@ -373,23 +560,23 @@ export function VideoPlayer({
               className={styles.iconBtn}
               onEnterPress={onClose}
             >
-              ✕
+              <MediaIcons.Close />
             </Focusable>
           </div>
         </div>
       </div>
 
       {epListOpen && showList ? (
-        <aside className={styles.epPanel} data-scroll-y="player-eps">
-          <p className={styles.epPanelTitle}>Episódios</p>
-          <div className={styles.epList}>
+        <aside className={styles.sidePanel} data-scroll-y="player-eps">
+          <p className={styles.sidePanelTitle}>Episódios</p>
+          <div className={styles.sideList}>
             {episodes.map((ep) => (
               <Focusable
                 key={ep.id}
                 focusKey={`PLAYER_EP_${ep.id}`}
                 className={cx(
-                  styles.epItem,
-                  ep.id === episodeId && styles.epItemActive,
+                  styles.sideItem,
+                  ep.id === episodeId && styles.sideItemActive,
                 )}
                 onEnterPress={() => {
                   onSelectEpisode?.(ep.id)
@@ -403,13 +590,64 @@ export function VideoPlayer({
           </div>
           <Focusable
             focusKey="PLAYER_EP_CLOSE"
-            className={styles.epClose}
+            className={styles.sideClose}
             onEnterPress={() => {
               setEpListOpen(false)
               void setFocus('PLAYER_EPS')
             }}
           >
-            Fechar lista
+            Fechar
+          </Focusable>
+        </aside>
+      ) : null}
+
+      {capListOpen && showCc ? (
+        <aside className={styles.sidePanel} data-scroll-y="player-cc">
+          <p className={styles.sidePanelTitle}>Legendas</p>
+          <div className={styles.sideList}>
+            <Focusable
+              focusKey="PLAYER_CAP_OFF"
+              className={cx(
+                styles.sideItem,
+                activeCaptionId === null && styles.sideItemActive,
+              )}
+              onEnterPress={() => {
+                applyCaption(null)
+                setCapListOpen(false)
+                void setFocus('PLAYER_CC')
+                showChrome()
+              }}
+            >
+              Desligadas
+            </Focusable>
+            {captionTracks.map((t) => (
+              <Focusable
+                key={t.id}
+                focusKey={`PLAYER_CAP_${t.id}`}
+                className={cx(
+                  styles.sideItem,
+                  t.id === activeCaptionId && styles.sideItemActive,
+                )}
+                onEnterPress={() => {
+                  applyCaption(t.id)
+                  setCapListOpen(false)
+                  void setFocus('PLAYER_CC')
+                  showChrome()
+                }}
+              >
+                {t.label}
+              </Focusable>
+            ))}
+          </div>
+          <Focusable
+            focusKey="PLAYER_CAP_CLOSE"
+            className={styles.sideClose}
+            onEnterPress={() => {
+              setCapListOpen(false)
+              void setFocus('PLAYER_CC')
+            }}
+          >
+            Fechar
           </Focusable>
         </aside>
       ) : null}

@@ -4,12 +4,12 @@
   transform: scale(1);
   transform-origin: center center;
   transition:
-    transform var(--transition-med),
-    box-shadow var(--transition-med),
+    transform 120ms ease-out,
+    box-shadow 120ms ease-out,
     opacity var(--transition-fast),
     background-color var(--transition-fast),
     color var(--transition-fast),
-    outline-color var(--transition-fast);
+    outline-color 120ms ease-out;
   border-radius: var(--radius-md);
   outline: 2px solid transparent;
   outline-offset: 2px;

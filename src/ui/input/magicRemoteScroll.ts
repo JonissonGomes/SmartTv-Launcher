@@ -3,13 +3,27 @@
  * Horizontal NÃO via roda — só D-pad (scrollIntoView no foco).
  */
 
-/** Instantâneo: smooth no webOS causa stutter no D-pad. */
+let raf = 0
+let pending: HTMLElement | null = null
+
+/**
+ * Instantâneo + coalescido em 1 frame — evita stutter quando o D-pad
+ * dispara vários onFocus seguidos.
+ */
 export function scrollFocusedIntoView(el: HTMLElement | null): void {
   if (!el) return
-  el.scrollIntoView({
-    behavior: 'auto',
-    block: 'nearest',
-    inline: 'nearest',
+  pending = el
+  if (raf) return
+  raf = window.requestAnimationFrame(() => {
+    raf = 0
+    const target = pending
+    pending = null
+    if (!target || !target.isConnected) return
+    target.scrollIntoView({
+      behavior: 'auto',
+      block: 'nearest',
+      inline: 'nearest',
+    })
   })
 }
 
@@ -20,10 +34,8 @@ function onWheel(event: WheelEvent): void {
   const row = target.closest<HTMLElement>('[data-scroll-x="row"]')
   if (!row) return
 
-  // Impede a fileira de rolar no eixo X com a roda / trackpad.
   event.preventDefault()
 
-  // Vertical continua: aplica no container de página mais próximo.
   const dy = event.deltaY
   if (Math.abs(dy) < 1) return
   const scroller = target.closest<HTMLElement>('[data-scroll-y]')
@@ -36,5 +48,9 @@ export function installMagicRemoteScroll(): () => void {
   window.addEventListener('wheel', onWheel, { passive: false, capture: true })
   return () => {
     window.removeEventListener('wheel', onWheel, true)
+    if (raf) {
+      window.cancelAnimationFrame(raf)
+      raf = 0
+    }
   }
 }

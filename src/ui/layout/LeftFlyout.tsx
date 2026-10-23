@@ -41,6 +41,8 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
 
   const [installedPlatforms, setInstalledPlatforms] = useState<Platform[]>([])
   const [hoverOpen, setHoverOpen] = useState(false)
+  /** Mantém aberto por um instante após perder foco (evita flicker no D-pad). */
+  const [lingerOpen, setLingerOpen] = useState(false)
 
   const { ref, focused, hasFocusedChild, focusKey } = useFocusable({
     focusKey: 'LEFT_FLYOUT',
@@ -48,7 +50,22 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
     saveLastFocusedChild: true,
   })
 
-  const expanded = focused || hasFocusedChild || hoverOpen
+  const wantOpen = focused || hasFocusedChild || hoverOpen
+
+  useEffect(() => {
+    if (wantOpen) {
+      setLingerOpen(true)
+      return
+    }
+    const id = window.setTimeout(() => {
+      setLingerOpen(false)
+    }, 450)
+    return () => {
+      window.clearTimeout(id)
+    }
+  }, [wantOpen])
+
+  const expanded = wantOpen || lingerOpen
 
   useEffect(() => {
     let cancelled = false
@@ -104,7 +121,9 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
         }}
       >
         <div className={styles.peek} aria-hidden={expanded}>
-          <span className={styles.peekIcon}>☰</span>
+          <span className={styles.peekIcon} aria-hidden>
+            ≡
+          </span>
         </div>
 
         <div className={styles.panel}>
