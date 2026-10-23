@@ -361,7 +361,9 @@ export function VideoPlayer({
           hls.recoverMediaError()
           return
         }
-        failOrFallback('Não foi possível reproduzir este stream (HLS).')
+        failOrFallback(
+          'Não foi possível reproduzir este stream. Os players da AnimeFire podem estar em manutenção.',
+        )
       })
     } else if (
       looksLikeHls(activeSrc) &&
@@ -644,7 +646,9 @@ export function VideoPlayer({
             return
           }
           setBuffering(false)
-          setError('Não foi possível reproduzir este vídeo.')
+          setError(
+            'Não foi possível reproduzir este vídeo. Os players da AnimeFire podem estar em manutenção.',
+          )
         }}
         onEnded={() => {
           if (showNext && onNextEpisode) {

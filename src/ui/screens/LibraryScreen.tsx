@@ -1,23 +1,33 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { pushBackHandler } from '@/ui/input/backStack'
-import type { AfAnime, AfAudioFilter, AfEpisode, AfSeason } from '@/domain/animefire'
+import type {
+  AfAnime,
+  AfAudioFilter,
+  AfEpisode,
+  AfSeason,
+  AfStatusNotice,
+} from '@/domain/animefire'
 import {
   AF_AUDIO_FILTERS,
   AF_GENRES,
   pickAfStreamCandidates,
+  streamsAllOffline,
 } from '@/domain/animefire'
 import {
+  AF_VIDEO_MAINTENANCE_BODY,
   fetchAfAnimeDetail,
   fetchAfAnimesCatalog,
   fetchAfEpisodeStreams,
   fetchAfHome,
   fetchAfLancamentos,
   fetchAfSection,
+  fetchAfStatusNotice,
   searchAfAnimes,
 } from '@/services/animefire'
 import { useAnimeHistoryStore } from '@/store/animeHistory'
 import { useUiSessionStore } from '@/store/uiSession'
+import { AfStatusBanner } from '@/ui/anime/AfStatusBanner'
 import { AnimeCatalogHub } from '@/ui/anime/AnimeCatalogHub'
 import { PosterGrid } from '@/ui/anime/AnimeCards'
 import { AnimeDetail } from '@/ui/anime/AnimeDetail'
@@ -44,6 +54,8 @@ export function LibraryScreen() {
   const [phase, setPhase] = useState<Phase>('home')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>()
+  const [statusNotice, setStatusNotice] = useState<AfStatusNotice | null>(null)
+  const [noticeDismissed, setNoticeDismissed] = useState(false)
 
   const [highlights, setHighlights] = useState<AfAnime[]>([])
   const [latest, setLatest] = useState<AfAnime[]>([])
@@ -121,6 +133,14 @@ export function LibraryScreen() {
 
   useEffect(() => {
     void loadHome()
+    void fetchAfStatusNotice()
+      .then((n) => {
+        setStatusNotice(n)
+        if (n) setNoticeDismissed(false)
+      })
+      .catch(() => {
+        setStatusNotice(null)
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -310,10 +330,29 @@ export function LibraryScreen() {
     setError(undefined)
     try {
       const streams = await fetchAfEpisodeStreams(ep.id)
+      if (streamsAllOffline(streams) || streams.length === 0) {
+        const msg =
+          statusNotice?.body ??
+          AF_VIDEO_MAINTENANCE_BODY
+        setError(msg)
+        setStatusNotice(
+          statusNotice ?? {
+            id: 'video-maintenance',
+            body: msg,
+            severity: 'warning',
+          },
+        )
+        setNoticeDismissed(false)
+        return
+      }
       const candidates = pickAfStreamCandidates(streams)
       const src = candidates[0]
       if (!src) {
-        setError('Episódio sem stream disponível')
+        setError(
+          statusNotice?.body ??
+            'Episódio sem stream disponível. Os players podem estar em manutenção.',
+        )
+        setNoticeDismissed(false)
         return
       }
       const list =
@@ -464,6 +503,17 @@ export function LibraryScreen() {
         </header>
 
         <div className={styles.body} data-scroll-y="catalog">
+          {statusNotice && !noticeDismissed ? (
+            <AfStatusBanner
+              notice={statusNotice}
+              onDismiss={() => {
+                setNoticeDismissed(true)
+                window.requestAnimationFrame(() => {
+                  void setFocus(`ANIME_TAB_${tab}`)
+                })
+              }}
+            />
+          ) : null}
           {error ? <p className={styles.error}>{error}</p> : null}
 
           {phase === 'home' ? (
@@ -490,18 +540,49 @@ export function LibraryScreen() {
                       // segue só com o stream salvo
                     }
                   }
+
+                  let src = entry.streamUrl
+                  let fallbackSrcs: string[] = []
+                  if (entry.episodeId) {
+                    try {
+                      const streams = await fetchAfEpisodeStreams(
+                        entry.episodeId,
+                      )
+                      if (streamsAllOffline(streams) || streams.length === 0) {
+                        const msg =
+                          statusNotice?.body ?? AF_VIDEO_MAINTENANCE_BODY
+                        setError(msg)
+                        setStatusNotice(
+                          statusNotice ?? {
+                            id: 'video-maintenance',
+                            body: msg,
+                            severity: 'warning',
+                          },
+                        )
+                        setNoticeDismissed(false)
+                        return
+                      }
+                      const candidates = pickAfStreamCandidates(streams)
+                      if (candidates[0]) {
+                        src = candidates[0]
+                        fallbackSrcs = candidates.slice(1)
+                      }
+                    } catch {
+                      // mantém streamUrl salvo
+                    }
+                  }
+
                   const cover =
                     anime?.posterUrl ||
                     anime?.backdropUrl ||
                     entry.poster
-                  // Corrige capa antiga (still/loading) se o detalhe trouxe poster
                   if (cover && cover !== entry.poster && entry.animeId) {
                     recordWatch({
                       id: entry.animeId,
                       title: entry.title,
                       subtitle: entry.subtitle,
                       poster: cover,
-                      streamUrl: entry.streamUrl,
+                      streamUrl: src,
                       animeId: entry.animeId,
                       episodeId: entry.episodeId,
                       currentTime: entry.currentTime,
@@ -511,7 +592,8 @@ export function LibraryScreen() {
                   setPlaying({
                     title: entry.title,
                     subtitle: entry.subtitle,
-                    src: entry.streamUrl,
+                    src,
+                    fallbackSrcs,
                     poster: cover,
                     watchId: entry.animeId || entry.id,
                     episodeId: entry.episodeId,

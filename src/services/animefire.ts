@@ -2,9 +2,20 @@ import type {
   AfAnime,
   AfEpisode,
   AfSeason,
+  AfStatusNotice,
   AfStream,
 } from '@/domain/animefire'
 import { sessionGet, sessionSet } from '@/services/sessionJsonCache'
+
+/**
+ * Mesmo texto do toaster `video-maintenance` do site AnimeFire (out/2026).
+ * O site injeta isso no frontend; a API pública ainda não expõe o aviso.
+ */
+export const AF_VIDEO_MAINTENANCE_BODY =
+  'O servidor de vídeo está offline devido a uma manutenção na hospedagem, a previsão é que volte tudo ao normal até o final deste mês, por enquanto somente novos episódios estarão disponíveis.'
+
+/** Previsão do site: “até o final deste mês” (outubro/2026). */
+const AF_MAINTENANCE_UNTIL_MS = Date.parse('2026-11-02T03:00:00.000Z')
 
 const PROD_API = 'https://api.animefire.one'
 export const AF_SITE = 'https://animefire.one'
@@ -308,7 +319,63 @@ export async function fetchAfEpisodeStreams(
       qualities: Array.isArray(v.qualities)
         ? v.qualities.filter((q): q is string => typeof q === 'string')
         : [],
+      isOffline: Boolean(v.is_offline),
     })
   }
   return out
+}
+
+/**
+ * Avisos de manutenção / status da plataforma (espelha o site na TV).
+ * Tenta API; se não houver endpoint, usa a janela de manutenção anunciada.
+ */
+export async function fetchAfStatusNotice(): Promise<AfStatusNotice | null> {
+  const cacheKey = 'af:status-notice'
+  const cached = sessionGet<AfStatusNotice | null>(cacheKey)
+  if (cached !== undefined) return cached
+
+  for (const path of ['/notice', '/notices/active', '/status']) {
+    try {
+      const json = await getJson<{
+        data?: {
+          id?: string
+          body?: string
+          message?: string
+          active?: boolean
+        }
+        body?: string
+        message?: string
+        active?: boolean
+      }>(path, { cache: false })
+      const d = json.data ?? json
+      const body =
+        (typeof d.body === 'string' && d.body) ||
+        (typeof d.message === 'string' && d.message) ||
+        ''
+      if (body && d.active !== false) {
+        const notice: AfStatusNotice = {
+          id: (typeof d.id === 'string' && d.id) || path,
+          body,
+          severity: 'warning',
+        }
+        sessionSet(cacheKey, notice, 5 * 60_000)
+        return notice
+      }
+    } catch {
+      // endpoint ainda não existe / 404
+    }
+  }
+
+  if (Date.now() < AF_MAINTENANCE_UNTIL_MS) {
+    const notice: AfStatusNotice = {
+      id: 'video-maintenance',
+      body: AF_VIDEO_MAINTENANCE_BODY,
+      severity: 'warning',
+    }
+    sessionSet(cacheKey, notice, 10 * 60_000)
+    return notice
+  }
+
+  sessionSet(cacheKey, null, 10 * 60_000)
+  return null
 }

@@ -34,6 +34,14 @@ export interface AfStream {
   audio: string
   url: string
   qualities: string[]
+  /** CDN/player marcado offline pela AnimeFire. */
+  isOffline?: boolean
+}
+
+export interface AfStatusNotice {
+  id: string
+  body: string
+  severity: 'info' | 'warning'
 }
 
 export interface AfCatalogSection {
@@ -73,7 +81,7 @@ export function pickAfStream(streams: AfStream[]): string {
   return pickAfStreamCandidates(streams)[0] ?? ''
 }
 
-/** URLs candidatas (dublado primeiro) — player tenta a próxima se uma falhar na TV. */
+/** URLs candidatas (dublado primeiro; ignora is_offline). */
 export function pickAfStreamCandidates(streams: AfStream[]): string[] {
   const seen = new Set<string>()
   const out: string[] = []
@@ -83,9 +91,16 @@ export function pickAfStreamCandidates(streams: AfStream[]): string[] {
     seen.add(u)
     out.push(u)
   }
-  for (const s of streams) {
+  const online = streams.filter((s) => !s.isOffline)
+  const pool = online.length > 0 ? online : streams
+  for (const s of pool) {
     if (/dublado/i.test(s.audio)) push(s.url)
   }
-  for (const s of streams) push(s.url)
+  for (const s of pool) push(s.url)
   return out
+}
+
+export function streamsAllOffline(streams: AfStream[]): boolean {
+  if (streams.length === 0) return false
+  return streams.every((s) => s.isOffline || !s.url?.trim())
 }
