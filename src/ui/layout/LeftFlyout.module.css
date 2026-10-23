@@ -46,8 +46,12 @@
   pointer-events: none;
 }
 
-.peekIcon {
-  font-size: 1.15rem;
+.peekLogo {
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.45rem;
+  object-fit: cover;
+  display: block;
 }
 
 .panel {

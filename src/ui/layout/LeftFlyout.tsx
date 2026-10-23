@@ -133,9 +133,15 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
             void setFocus('FLY_PROFILE')
           }}
         >
-          <span className={styles.peekIcon} aria-hidden>
-            ≡
-          </span>
+          <img
+            className={styles.peekLogo}
+            src="./logo.png"
+            alt=""
+            width={36}
+            height={36}
+            decoding="async"
+            draggable={false}
+          />
         </Focusable>
 
         <div className={styles.panel}>
