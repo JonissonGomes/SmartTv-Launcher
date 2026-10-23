@@ -90,23 +90,82 @@ export async function fetchAfSection(path: string): Promise<AfAnime[]> {
     .filter((a): a is AfAnime => a != null)
 }
 
+/** Lista completa de /animes (página 1 + 2, como o site). */
+export async function fetchAfAnimesCatalog(): Promise<AfAnime[]> {
+  const [p1, p2] = await Promise.all([
+    fetchAfSection('/animes'),
+    fetchAfSection('/animes?page=2'),
+  ])
+  const seen = new Set<string>()
+  const out: AfAnime[] = []
+  for (const a of [...p1, ...p2]) {
+    if (seen.has(a.id)) continue
+    seen.add(a.id)
+    out.push(a)
+  }
+  return out
+}
+
+/**
+ * Página /animes/lancamentos — `{ animes, upcoming }`.
+ * Espelha a estrutura do site AnimeFire.
+ */
+export async function fetchAfLancamentos(): Promise<{
+  animes: AfAnime[]
+  upcomingTitle: string
+  upcomingSub: string
+  upcoming: AfAnime[]
+}> {
+  const json = await getJson<{
+    data?: {
+      animes?: unknown
+      upcoming?: {
+        title?: string
+        sub?: string
+        items?: unknown
+      }
+    }
+  }>('/animes/lancamentos')
+
+  const animes = Array.isArray(json.data?.animes)
+    ? json.data.animes
+        .map(mapListItem)
+        .filter((a): a is AfAnime => a != null)
+    : []
+
+  const up = json.data?.upcoming
+  const upcoming = Array.isArray(up?.items)
+    ? up.items.map(mapListItem).filter((a): a is AfAnime => a != null)
+    : []
+
+  return {
+    animes,
+    upcomingTitle: up?.title ?? 'Em breve',
+    upcomingSub: up?.sub ?? 'Estreias anunciadas',
+    upcoming,
+  }
+}
+
 export async function fetchAfHome(): Promise<{
   highlights: AfAnime[]
   latest: AfAnime[]
   movies: AfAnime[]
   upcoming: AfAnime[]
 }> {
-  const [highlights, latest, movies, upcoming] = await Promise.all([
-    fetchAfSection('/animes'),
-    fetchAfSection('/animes/lancamentos'),
+  const [highlights, lancamentos, movies, upcoming] = await Promise.all([
+    fetchAfAnimesCatalog(),
+    fetchAfLancamentos(),
     fetchAfSection('/animes/filmes'),
     fetchAfSection('/animes/em-breve'),
   ])
   return {
-    highlights: highlights.slice(0, 24),
-    latest: latest.slice(0, 24),
-    movies: movies.slice(0, 24),
-    upcoming: upcoming.slice(0, 24),
+    highlights: highlights.slice(0, 30),
+    latest: lancamentos.animes.slice(0, 30),
+    movies: movies.slice(0, 30),
+    upcoming: (upcoming.length > 0 ? upcoming : lancamentos.upcoming).slice(
+      0,
+      24,
+    ),
   }
 }
 

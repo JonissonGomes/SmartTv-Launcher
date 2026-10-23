@@ -1,0 +1,191 @@
+import {
+  FocusContext,
+  setFocus,
+  useFocusable,
+} from '@noriginmedia/norigin-spatial-navigation'
+import { useEffect, useState, type RefObject } from 'react'
+import { APP_CONFIGS, PLATFORM_ORDER } from '@/config/apps'
+import type { AppView, Platform } from '@/domain/types'
+import { launchApp, listInstalledApps } from '@/services/webos'
+import { useProfilesStore } from '@/store/profiles'
+import { useSettingsStore } from '@/store/settings'
+import { cx } from '@/ui/cx'
+import { Focusable } from '@/ui/focus/Focusable'
+import { PlatformIcon } from '@/ui/icons/Icons'
+import styles from './LeftFlyout.module.css'
+
+const NAV: Array<{ view: AppView; label: string }> = [
+  { view: 'home', label: 'Início' },
+  { view: 'history', label: 'Histórico' },
+  { view: 'categories', label: 'Catálogo' },
+  { view: 'anime', label: 'Animes' },
+  { view: 'search', label: 'Busca' },
+  { view: 'surprise', label: 'Surpresa' },
+  { view: 'games', label: 'Jogos' },
+  { view: 'settings', label: 'Configurações' },
+]
+
+interface LeftFlyoutProps {
+  onOpenProfiles?: () => void
+}
+
+/** Menu lateral oculto — abre com foco/hover (Magic Remote). */
+export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
+  const view = useSettingsStore((s) => s.view)
+  const setView = useSettingsStore((s) => s.setView)
+  const openPlatformCatalog = useSettingsStore((s) => s.openPlatformCatalog)
+  const profiles = useProfilesStore((s) => s.profiles)
+  const activeProfileId = useProfilesStore((s) => s.activeProfileId)
+  const activeProfile =
+    profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
+
+  const [installedPlatforms, setInstalledPlatforms] = useState<Platform[]>([])
+  const [hoverOpen, setHoverOpen] = useState(false)
+
+  const { ref, focused, hasFocusedChild, focusKey } = useFocusable({
+    focusKey: 'LEFT_FLYOUT',
+    trackChildren: true,
+    saveLastFocusedChild: true,
+  })
+
+  const expanded = focused || hasFocusedChild || hoverOpen
+
+  useEffect(() => {
+    let cancelled = false
+    void listInstalledApps()
+      .then((list) => {
+        if (cancelled) return
+        const ids = new Set(list.map((a) => a.id))
+        const found = PLATFORM_ORDER.filter((platform) => {
+          const cfg = APP_CONFIGS[platform]
+          const candidates = [
+            cfg.webosAppId,
+            ...(cfg.webosAppIdCandidates ?? []),
+          ]
+          return candidates.some((id) => ids.has(id))
+        })
+        setInstalledPlatforms(found.length > 0 ? found : [...PLATFORM_ORDER])
+      })
+      .catch(() => {
+        if (!cancelled) setInstalledPlatforms([...PLATFORM_ORDER])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const go = (next: AppView) => {
+    setView(next === 'library' ? 'anime' : next)
+    const focus =
+      next === 'home'
+        ? 'VIEW_home'
+        : next === 'anime' || next === 'library'
+          ? 'VIEW_anime'
+          : `VIEW_${next}`
+    void setFocus(focus)
+  }
+
+  const openPlatform = (platform: Platform) => {
+    openPlatformCatalog(platform)
+    void setFocus('VIEW_platform')
+  }
+
+  return (
+    <FocusContext.Provider value={focusKey}>
+      <aside
+        ref={ref as RefObject<HTMLElement>}
+        className={cx(styles.flyout, expanded && styles.open)}
+        data-expanded={expanded ? 'true' : 'false'}
+        onMouseEnter={() => {
+          setHoverOpen(true)
+        }}
+        onMouseLeave={() => {
+          setHoverOpen(false)
+        }}
+      >
+        <div className={styles.peek} aria-hidden={expanded}>
+          <span className={styles.peekIcon}>☰</span>
+        </div>
+
+        <div className={styles.panel}>
+          <Focusable
+            focusKey="FLY_PROFILE"
+            variant="nav"
+            className={styles.profile}
+            onEnterPress={() => {
+              onOpenProfiles?.()
+            }}
+          >
+            <div
+              className={styles.avatar}
+              style={{ background: activeProfile?.color ?? '#444' }}
+            >
+              {(activeProfile?.name ?? 'U').slice(0, 1).toUpperCase()}
+            </div>
+            <div className={styles.profileMeta}>
+              <strong>{activeProfile?.name ?? 'Perfil'}</strong>
+              <span>Trocar perfil</span>
+            </div>
+          </Focusable>
+
+          <p className={styles.sectionLabel}>Navegação</p>
+          <nav className={styles.navList}>
+            {NAV.map((item) => (
+              <Focusable
+                key={item.view}
+                focusKey={`FLY_NAV_${item.view}`}
+                variant="nav"
+                className={cx(
+                  styles.navItem,
+                  (view === item.view ||
+                    (item.view === 'anime' && view === 'library')) &&
+                    styles.navItemActive,
+                )}
+                onEnterPress={() => {
+                  go(item.view)
+                }}
+              >
+                {item.label}
+              </Focusable>
+            ))}
+          </nav>
+
+          <p className={styles.sectionLabel}>Streamings</p>
+          <div className={styles.platList}>
+            {PLATFORM_ORDER.map((platform) => (
+              <Focusable
+                key={platform}
+                focusKey={`FLY_PLAT_${platform}`}
+                variant="nav"
+                className={styles.platItem}
+                onEnterPress={() => {
+                  openPlatform(platform)
+                }}
+              >
+                <PlatformIcon platform={platform} size={22} />
+                <span>{APP_CONFIGS[platform].label}</span>
+              </Focusable>
+            ))}
+          </div>
+
+          <p className={styles.sectionLabel}>Apps instalados</p>
+          <div className={styles.appList}>
+            {installedPlatforms.map((platform) => (
+              <Focusable
+                key={`app-${platform}`}
+                focusKey={`FLY_APP_${platform}`}
+                variant="nav"
+                className={styles.appItem}
+                onEnterPress={() => {
+                  void launchApp(platform).catch(() => undefined)
+                }}
+              >
+                Abrir {APP_CONFIGS[platform].label}
+              </Focusable>
+            ))}
+          </div>
+        </div>
+      </aside>
+    </FocusContext.Provider>
+  )
+}

@@ -33,11 +33,11 @@ export function AnimeDetail({
   return (
     <>
       <Focusable
-        focusKey="ANIME_BACK"
+        focusKey="ANIME_RAIL_CLOSE"
         className={styles.backBtn}
         onEnterPress={onBack}
       >
-        ← Voltar
+        Fechar
       </Focusable>
       <div className={styles.detail}>
         {anime.posterUrl ? (

@@ -8,8 +8,10 @@ import {
 } from '@/domain/animefire'
 import {
   fetchAfAnimeDetail,
+  fetchAfAnimesCatalog,
   fetchAfEpisodeStreams,
   fetchAfHome,
+  fetchAfLancamentos,
   fetchAfSection,
   searchAfAnimes,
 } from '@/services/animefire'
@@ -25,7 +27,7 @@ import { VideoPlayer } from '@/ui/media/VideoPlayer'
 import styles from './LibraryScreen.module.css'
 
 type Tab = 'home' | 'catalog' | 'search'
-type Phase = Tab | 'category' | 'detail'
+type Phase = Tab | 'category'
 
 /** Catálogo AnimeFire — Início / Catálogo / Busca. */
 export function LibraryScreen() {
@@ -44,6 +46,8 @@ export function LibraryScreen() {
 
   const [sectionTitle, setSectionTitle] = useState('')
   const [sectionItems, setSectionItems] = useState<AfAnime[]>([])
+  const [sectionExtraTitle, setSectionExtraTitle] = useState('')
+  const [sectionExtraItems, setSectionExtraItems] = useState<AfAnime[]>([])
 
   const [query, setQuery] = useState('')
   const [audioFilter, setAudioFilter] = useState<AfAudioFilter>('')
@@ -144,7 +148,6 @@ export function LibraryScreen() {
 
   const openAnime = async (anime: AfAnime) => {
     setDetailAnime(anime)
-    setPhase('detail')
     setDetailLoading(true)
     setDetailEps([])
     setSeasons([])
@@ -156,7 +159,7 @@ export function LibraryScreen() {
       setDetailEps(detail.episodes)
       setSeasons(detail.seasons)
       window.requestAnimationFrame(() => {
-        void setFocus('ANIME_BACK')
+        void setFocus('ANIME_RAIL_CLOSE')
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha no detalhe')
@@ -165,16 +168,37 @@ export function LibraryScreen() {
     }
   }
 
+  const closeDetail = () => {
+    setDetailAnime(null)
+    setDetailEps([])
+    setSeasons([])
+  }
+
   const openSection = async (path: string, title: string) => {
     setSectionTitle(title)
+    setSectionExtraTitle('')
+    setSectionExtraItems([])
     setPhase('category')
     setLoading(true)
     setError(undefined)
+    closeDetail()
     try {
-      const items = await fetchAfSection(path)
-      setSectionItems(items)
+      if (path === '/animes' || path.endsWith('/animes')) {
+        // Igual https://animefire.one/animes
+        setSectionItems(await fetchAfAnimesCatalog())
+      } else if (path.includes('lancamentos')) {
+        // Igual https://animefire.one/animes/lancamentos
+        const lanc = await fetchAfLancamentos()
+        setSectionItems(lanc.animes)
+        setSectionExtraTitle(
+          `${lanc.upcomingTitle} — ${lanc.upcomingSub}`,
+        )
+        setSectionExtraItems(lanc.upcoming)
+      } else {
+        setSectionItems(await fetchAfSection(path))
+      }
       window.requestAnimationFrame(() => {
-        void setFocus('ANIME_BACK')
+        void setFocus('ANIME_CAT_BACK')
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha na categoria')
@@ -185,14 +209,17 @@ export function LibraryScreen() {
 
   const openGenre = async (genre: string) => {
     setSectionTitle(genre)
+    setSectionExtraTitle('')
+    setSectionExtraItems([])
     setPhase('category')
     setLoading(true)
     setError(undefined)
+    closeDetail()
     try {
       const items = await searchAfAnimes({ genre })
       setSectionItems(items)
       window.requestAnimationFrame(() => {
-        void setFocus('ANIME_BACK')
+        void setFocus('ANIME_CAT_BACK')
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha no gênero')
@@ -237,208 +264,227 @@ export function LibraryScreen() {
         poster={playing.poster}
         onClose={() => {
           setPlaying(null)
-          void setFocus('ANIME_BACK')
+          void setFocus(
+            detailAnime ? 'ANIME_RAIL_CLOSE' : 'ANIME_TAB_home',
+          )
         }}
       />
     )
   }
 
+  const detailOpen = Boolean(detailAnime)
+
   return (
     <Focusable
       focusKey="VIEW_anime"
-      className={styles.screen}
+      className={cx(styles.screen, detailOpen && styles.screenWithRail)}
       saveLastFocusedChild
     >
-      <header className={styles.topNav}>
-        <span className={styles.brand}>AnimeFire</span>
-        <nav className={styles.tabs}>
-          {(
-            [
-              ['home', 'Início'],
-              ['catalog', 'Catálogo'],
-              ['search', 'Busca'],
-            ] as const
-          ).map(([id, label]) => (
-            <Focusable
-              key={id}
-              focusKey={`ANIME_TAB_${id}`}
-              className={cx(styles.tab, tab === id && styles.tabActive)}
-              onEnterPress={() => {
-                goTab(id)
-              }}
-            >
-              {label}
-            </Focusable>
-          ))}
-        </nav>
-        <Focusable
-          focusKey="ANIME_REFRESH"
-          className={styles.btnGhost}
-          onEnterPress={() => {
-            void loadHome()
-          }}
-        >
-          Atualizar
-        </Focusable>
-      </header>
-
-      <div className={styles.body} data-scroll-y="catalog">
-        {error ? <p className={styles.error}>{error}</p> : null}
-
-        {phase === 'home' ? (
-          <AnimeHome
-            loading={loading}
-            hero={highlights[0]}
-            highlights={highlights}
-            latest={latest}
-            movies={movies}
-            upcoming={upcoming}
-            continueItems={continueItems}
-            onOpenAnime={(a) => {
-              void openAnime(a)
-            }}
-            onPlayContinue={(entry) => {
-              setPlaying({
-                title: entry.title,
-                subtitle: entry.subtitle,
-                src: entry.streamUrl,
-                poster: entry.poster,
-              })
-            }}
-          />
-        ) : null}
-
-        {phase === 'catalog' ? (
-          <AnimeCatalogHub
-            onOpenSection={(path, title) => {
-              void openSection(path, title)
-            }}
-            onOpenGenre={(genre) => {
-              void openGenre(genre)
-            }}
-          />
-        ) : null}
-
-        {phase === 'search' ? (
-          <>
-            <div className={styles.searchBar}>
-              <TvTextField
-                focusKey="ANIME_SEARCH"
-                label="Buscar animes"
-                value={query}
-                onChange={setQuery}
-                placeholder="Nome do anime…"
-                inputType="search"
-                maxLength={80}
-              />
-            </div>
-            <div className={styles.chips}>
-              {AF_AUDIO_FILTERS.map((f) => (
-                <Focusable
-                  key={`audio-${f.id || 'all'}`}
-                  focusKey={`ANIME_AUDIO_${f.id || 'all'}`}
-                  className={cx(
-                    styles.chip,
-                    audioFilter === f.id && styles.chipActive,
-                  )}
-                  onEnterPress={() => {
-                    setAudioFilter(f.id)
-                  }}
-                >
-                  {f.label}
-                </Focusable>
-              ))}
-            </div>
-            <div className={styles.chips}>
+      <div className={styles.mainCol}>
+        <header className={styles.topNav}>
+          <span className={styles.brand}>AnimeFire</span>
+          <nav className={styles.tabs}>
+            {(
+              [
+                ['home', 'Início'],
+                ['catalog', 'Catálogo'],
+                ['search', 'Busca'],
+              ] as const
+            ).map(([id, label]) => (
               <Focusable
-                focusKey="ANIME_GENRE_clear"
-                className={cx(
-                  styles.chip,
-                  !genreFilter && styles.chipActive,
-                )}
+                key={id}
+                focusKey={`ANIME_TAB_${id}`}
+                className={cx(styles.tab, tab === id && styles.tabActive)}
                 onEnterPress={() => {
-                  setGenreFilter('')
+                  goTab(id)
+                  closeDetail()
                 }}
               >
-                Todos gêneros
+                {label}
               </Focusable>
-              {AF_GENRES.map((g) => (
+            ))}
+          </nav>
+          <Focusable
+            focusKey="ANIME_REFRESH"
+            className={styles.btnGhost}
+            onEnterPress={() => {
+              void loadHome()
+            }}
+          >
+            Atualizar
+          </Focusable>
+        </header>
+
+        <div className={styles.body} data-scroll-y="catalog">
+          {error ? <p className={styles.error}>{error}</p> : null}
+
+          {phase === 'home' ? (
+            <AnimeHome
+              loading={loading}
+              hero={highlights[0]}
+              highlights={highlights}
+              latest={latest}
+              movies={movies}
+              upcoming={upcoming}
+              continueItems={continueItems}
+              onOpenAnime={(a) => {
+                void openAnime(a)
+              }}
+              onPlayContinue={(entry) => {
+                setPlaying({
+                  title: entry.title,
+                  subtitle: entry.subtitle,
+                  src: entry.streamUrl,
+                  poster: entry.poster,
+                })
+              }}
+            />
+          ) : null}
+
+          {phase === 'catalog' ? (
+            <AnimeCatalogHub
+              onOpenSection={(path, title) => {
+                void openSection(path, title)
+              }}
+              onOpenGenre={(genre) => {
+                void openGenre(genre)
+              }}
+            />
+          ) : null}
+
+          {phase === 'search' ? (
+            <>
+              <div className={styles.searchBar}>
+                <TvTextField
+                  focusKey="ANIME_SEARCH"
+                  label="Buscar animes"
+                  value={query}
+                  onChange={setQuery}
+                  placeholder="Nome do anime…"
+                  inputType="search"
+                  maxLength={80}
+                />
+              </div>
+              <div className={styles.chips}>
+                {AF_AUDIO_FILTERS.map((f) => (
+                  <Focusable
+                    key={`audio-${f.id || 'all'}`}
+                    focusKey={`ANIME_AUDIO_${f.id || 'all'}`}
+                    className={cx(
+                      styles.chip,
+                      audioFilter === f.id && styles.chipActive,
+                    )}
+                    onEnterPress={() => {
+                      setAudioFilter(f.id)
+                    }}
+                  >
+                    {f.label}
+                  </Focusable>
+                ))}
+              </div>
+              <div className={styles.chips}>
                 <Focusable
-                  key={g}
-                  focusKey={`ANIME_SFILTER_${g}`}
+                  focusKey="ANIME_GENRE_clear"
                   className={cx(
                     styles.chip,
-                    genreFilter === g && styles.chipActive,
+                    !genreFilter && styles.chipActive,
                   )}
                   onEnterPress={() => {
-                    setGenreFilter(g)
+                    setGenreFilter('')
                   }}
                 >
-                  {g}
+                  Todos gêneros
                 </Focusable>
-              ))}
-            </div>
-            {searching ? (
-              <p className={styles.hint}>Buscando…</p>
-            ) : (
-              <p className={styles.hint}>
-                {query.trim().length < 2 && !audioFilter && !genreFilter
-                  ? 'Digite ao menos 2 letras ou escolha um filtro'
-                  : `${String(searchItems.length)} resultado(s)`}
-              </p>
-            )}
-            <PosterGrid
-              id="search"
-              items={searchItems}
-              onSelect={(a) => {
-                void openAnime(a)
-              }}
-            />
-          </>
-        ) : null}
+                {AF_GENRES.map((g) => (
+                  <Focusable
+                    key={g}
+                    focusKey={`ANIME_SFILTER_${g}`}
+                    className={cx(
+                      styles.chip,
+                      genreFilter === g && styles.chipActive,
+                    )}
+                    onEnterPress={() => {
+                      setGenreFilter(g)
+                    }}
+                  >
+                    {g}
+                  </Focusable>
+                ))}
+              </div>
+              {searching ? (
+                <p className={styles.hint}>Buscando…</p>
+              ) : (
+                <p className={styles.hint}>
+                  {query.trim().length < 2 && !audioFilter && !genreFilter
+                    ? 'Digite ao menos 2 letras ou escolha um filtro'
+                    : `${String(searchItems.length)} resultado(s)`}
+                </p>
+              )}
+              <PosterGrid
+                id="search"
+                items={searchItems}
+                onSelect={(a) => {
+                  void openAnime(a)
+                }}
+              />
+            </>
+          ) : null}
 
-        {phase === 'category' ? (
-          <>
-            <Focusable
-              focusKey="ANIME_BACK"
-              className={styles.backBtn}
-              onEnterPress={() => {
-                goTab('catalog')
-              }}
-            >
-              ← Catálogo
-            </Focusable>
-            <h2 className={styles.sectionTitle}>
-              {sectionTitle} · {sectionItems.length}
-            </h2>
-            {loading ? <p className={styles.hint}>Carregando…</p> : null}
-            <PosterGrid
-              id="category"
-              items={sectionItems}
-              onSelect={(a) => {
-                void openAnime(a)
-              }}
-            />
-          </>
-        ) : null}
+          {phase === 'category' ? (
+            <>
+              <Focusable
+                focusKey="ANIME_CAT_BACK"
+                className={styles.backBtn}
+                onEnterPress={() => {
+                  goTab('catalog')
+                }}
+              >
+                ← Catálogo
+              </Focusable>
+              <h2 className={styles.sectionTitle}>
+                {sectionTitle} · {sectionItems.length}
+              </h2>
+              {loading ? <p className={styles.hint}>Carregando…</p> : null}
+              <PosterGrid
+                id="category"
+                items={sectionItems}
+                onSelect={(a) => {
+                  void openAnime(a)
+                }}
+              />
+              {sectionExtraItems.length > 0 ? (
+                <>
+                  <h2 className={styles.sectionTitle}>{sectionExtraTitle}</h2>
+                  <PosterGrid
+                    id="category-extra"
+                    items={sectionExtraItems}
+                    onSelect={(a) => {
+                      void openAnime(a)
+                    }}
+                  />
+                </>
+              ) : null}
+            </>
+          ) : null}
+        </div>
+      </div>
 
-        {phase === 'detail' && detailAnime ? (
+      {detailAnime ? (
+        <aside className={styles.detailRail} data-scroll-y="detail">
           <AnimeDetail
             anime={detailAnime}
             episodes={detailEps}
             seasons={seasons}
             seasonFilter={seasonFilter}
             loading={detailLoading}
-            onBack={() => {
-              goTab(tab)
-            }}
+            onBack={closeDetail}
             onSeasonFilter={setSeasonFilter}
             onPlayEpisode={(ep) => {
               void playEpisode(ep, detailAnime)
             }}
           />
-        ) : null}
-      </div>
+        </aside>
+      ) : null}
     </Focusable>
   )
 }

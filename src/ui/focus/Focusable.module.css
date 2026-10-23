@@ -1,24 +1,26 @@
 .root {
   position: relative;
-  /* Sem transform no estado normal: evita que position:fixed
-     dos modais fique preso/clipado dentro do MAIN. */
+  /* scale(1) explícito: evita zoom “preso” após blur no Chromium/webOS */
+  transform: scale(1);
+  transform-origin: center center;
   transition:
     transform var(--transition-med),
     box-shadow var(--transition-med),
     opacity var(--transition-fast),
     background-color var(--transition-fast),
-    color var(--transition-fast);
+    color var(--transition-fast),
+    outline-color var(--transition-fast);
   border-radius: var(--radius-md);
   outline: 2px solid transparent;
   outline-offset: 2px;
+  will-change: auto;
 }
 
 .focused {
   transform: scale(var(--focus-scale));
   outline-color: var(--color-focus);
   box-shadow: 0 0 0 2px var(--color-accent-soft);
-  will-change: transform;
-  z-index: 1;
+  z-index: 2;
 }
 
 /* Tabs / textos do topo: sem cápsula arredondada */
@@ -26,11 +28,11 @@
   border-radius: 0 !important;
   outline: none !important;
   box-shadow: none !important;
-  transform: none !important;
+  transform: scale(1) !important;
 }
 
 .plain.focused {
-  transform: none !important;
+  transform: scale(1) !important;
   outline: none !important;
   box-shadow: none !important;
   color: var(--color-accent);
@@ -40,12 +42,12 @@
 .nav {
   outline: none !important;
   box-shadow: none !important;
-  transform: none !important;
+  transform: scale(1) !important;
   border-radius: var(--radius-sm);
 }
 
 .nav.focused {
-  transform: none !important;
+  transform: scale(1) !important;
   outline: none !important;
   box-shadow: none !important;
   background: var(--color-accent-soft);
