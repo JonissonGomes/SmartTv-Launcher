@@ -49,6 +49,14 @@ export const AF_SECTIONS: AfCatalogSection[] = [
   { id: 'em-breve', title: 'Em breve', path: '/animes/em-breve' },
 ]
 
+export type AfAudioFilter = '' | 'dublado' | 'legendado'
+
+export const AF_AUDIO_FILTERS: Array<{ id: AfAudioFilter; label: string }> = [
+  { id: '', label: 'Todos' },
+  { id: 'dublado', label: 'Dublado' },
+  { id: 'legendado', label: 'Legendado' },
+]
+
 export const AF_GENRES = [
   'Ação',
   'Aventura',

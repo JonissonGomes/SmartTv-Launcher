@@ -1,7 +1,11 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useEffect, useMemo, useState } from 'react'
-import type { AfAnime, AfEpisode, AfSeason } from '@/domain/animefire'
-import { pickAfStream } from '@/domain/animefire'
+import type { AfAnime, AfAudioFilter, AfEpisode, AfSeason } from '@/domain/animefire'
+import {
+  AF_AUDIO_FILTERS,
+  AF_GENRES,
+  pickAfStream,
+} from '@/domain/animefire'
 import {
   fetchAfAnimeDetail,
   fetchAfEpisodeStreams,
@@ -36,11 +40,14 @@ export function LibraryScreen() {
   const [highlights, setHighlights] = useState<AfAnime[]>([])
   const [latest, setLatest] = useState<AfAnime[]>([])
   const [movies, setMovies] = useState<AfAnime[]>([])
+  const [upcoming, setUpcoming] = useState<AfAnime[]>([])
 
   const [sectionTitle, setSectionTitle] = useState('')
   const [sectionItems, setSectionItems] = useState<AfAnime[]>([])
 
   const [query, setQuery] = useState('')
+  const [audioFilter, setAudioFilter] = useState<AfAudioFilter>('')
+  const [genreFilter, setGenreFilter] = useState('')
   const [searchItems, setSearchItems] = useState<AfAnime[]>([])
   const [searching, setSearching] = useState(false)
 
@@ -77,6 +84,7 @@ export function LibraryScreen() {
       setHighlights(home.highlights)
       setLatest(home.latest)
       setMovies(home.movies)
+      setUpcoming(home.upcoming)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar')
     } finally {
@@ -94,14 +102,19 @@ export function LibraryScreen() {
   useEffect(() => {
     if (phase !== 'search') return
     const q = query.trim()
-    if (q.length < 2) {
+    const hasFilter = Boolean(audioFilter || genreFilter)
+    if (q.length < 2 && !hasFilter) {
       setSearchItems([])
       return
     }
     let cancelled = false
     setSearching(true)
     const timer = window.setTimeout(() => {
-      void searchAfAnimes(q)
+      void searchAfAnimes({
+        q: q.length >= 2 ? q : undefined,
+        audio: audioFilter || undefined,
+        genre: genreFilter || undefined,
+      })
         .then((items) => {
           if (!cancelled) setSearchItems(items)
         })
@@ -118,7 +131,7 @@ export function LibraryScreen() {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [query, phase])
+  }, [query, audioFilter, genreFilter, phase])
 
   const goTab = (next: Tab) => {
     setTab(next)
@@ -176,7 +189,7 @@ export function LibraryScreen() {
     setLoading(true)
     setError(undefined)
     try {
-      const items = await searchAfAnimes(genre)
+      const items = await searchAfAnimes({ genre })
       setSectionItems(items)
       window.requestAnimationFrame(() => {
         void setFocus('ANIME_BACK')
@@ -279,6 +292,7 @@ export function LibraryScreen() {
             highlights={highlights}
             latest={latest}
             movies={movies}
+            upcoming={upcoming}
             continueItems={continueItems}
             onOpenAnime={(a) => {
               void openAnime(a)
@@ -318,12 +332,58 @@ export function LibraryScreen() {
                 maxLength={80}
               />
             </div>
+            <div className={styles.chips}>
+              {AF_AUDIO_FILTERS.map((f) => (
+                <Focusable
+                  key={`audio-${f.id || 'all'}`}
+                  focusKey={`ANIME_AUDIO_${f.id || 'all'}`}
+                  className={cx(
+                    styles.chip,
+                    audioFilter === f.id && styles.chipActive,
+                  )}
+                  onEnterPress={() => {
+                    setAudioFilter(f.id)
+                  }}
+                >
+                  {f.label}
+                </Focusable>
+              ))}
+            </div>
+            <div className={styles.chips}>
+              <Focusable
+                focusKey="ANIME_GENRE_clear"
+                className={cx(
+                  styles.chip,
+                  !genreFilter && styles.chipActive,
+                )}
+                onEnterPress={() => {
+                  setGenreFilter('')
+                }}
+              >
+                Todos gêneros
+              </Focusable>
+              {AF_GENRES.map((g) => (
+                <Focusable
+                  key={g}
+                  focusKey={`ANIME_SFILTER_${g}`}
+                  className={cx(
+                    styles.chip,
+                    genreFilter === g && styles.chipActive,
+                  )}
+                  onEnterPress={() => {
+                    setGenreFilter(g)
+                  }}
+                >
+                  {g}
+                </Focusable>
+              ))}
+            </div>
             {searching ? (
               <p className={styles.hint}>Buscando…</p>
             ) : (
               <p className={styles.hint}>
-                {query.trim().length < 2
-                  ? 'Digite ao menos 2 letras'
+                {query.trim().length < 2 && !audioFilter && !genreFilter
+                  ? 'Digite ao menos 2 letras ou escolha um filtro'
                   : `${String(searchItems.length)} resultado(s)`}
               </p>
             )}

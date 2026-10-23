@@ -11,6 +11,7 @@ interface AnimeHomeProps {
   highlights: AfAnime[]
   latest: AfAnime[]
   movies: AfAnime[]
+  upcoming: AfAnime[]
   continueItems: AnimeWatchEntry[]
   onOpenAnime: (anime: AfAnime) => void
   onPlayContinue: (entry: AnimeWatchEntry) => void
@@ -22,6 +23,7 @@ export function AnimeHome({
   highlights,
   latest,
   movies,
+  upcoming,
   continueItems,
   onOpenAnime,
   onPlayContinue,
@@ -120,6 +122,19 @@ export function AnimeHome({
         }))}
         onSelect={(a) => {
           const full = movies.find((h) => h.id === a.id)
+          if (full) onOpenAnime(full)
+        }}
+      />
+      <AnimeRow
+        id="em-breve"
+        title="Em breve"
+        items={upcoming.map((a) => ({
+          id: a.id,
+          name: a.name,
+          posterUrl: a.posterUrl,
+        }))}
+        onSelect={(a) => {
+          const full = upcoming.find((h) => h.id === a.id)
           if (full) onOpenAnime(full)
         }}
       />

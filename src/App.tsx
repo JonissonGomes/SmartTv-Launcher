@@ -372,7 +372,6 @@ export default function App() {
         onOpenProfiles={() => {
           setShowProfiles(true)
         }}
-        showRail={false}
       >
         {view === 'home' ? (
           <HomeScreen

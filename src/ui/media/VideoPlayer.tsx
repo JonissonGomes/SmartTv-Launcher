@@ -1,4 +1,5 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
+import Hls from 'hls.js'
 import { useEffect, useRef, useState } from 'react'
 import { Focusable } from '@/ui/focus/Focusable'
 import styles from './VideoPlayer.module.css'
@@ -11,7 +12,18 @@ interface VideoPlayerProps {
   onClose: () => void
 }
 
-/** Player fullscreen nativo do launcher (sem browser / ads). */
+function looksLikeHls(url: string): boolean {
+  const u = url.toLowerCase()
+  return (
+    u.includes('.m3u8') ||
+    u.includes('mpegurl') ||
+    u.includes('/h.jpg') ||
+    u.includes('akumast.') ||
+    u.includes('application/vnd.apple.mpegurl')
+  )
+}
+
+/** Player fullscreen — HTML5 + HLS.js para streams AnimeFire. */
 export function VideoPlayer({
   title,
   subtitle,
@@ -20,6 +32,7 @@ export function VideoPlayer({
   onClose,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const hlsRef = useRef<Hls | null>(null)
   const [paused, setPaused] = useState(false)
   const [error, setError] = useState<string>()
   const [tick, setTick] = useState(0)
@@ -28,9 +41,52 @@ export function VideoPlayer({
     void setFocus('PLAYER_PLAY')
     const video = videoRef.current
     if (!video) return
-    void video.play().catch(() => {
-      setPaused(true)
-    })
+
+    setError(undefined)
+    hlsRef.current?.destroy()
+    hlsRef.current = null
+
+    const play = () => {
+      void video.play().catch(() => {
+        setPaused(true)
+      })
+    }
+
+    if (looksLikeHls(src) && Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        maxBufferLength: 30,
+      })
+      hlsRef.current = hls
+      hls.loadSource(src)
+      hls.attachMedia(video)
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        play()
+      })
+      hls.on(Hls.Events.ERROR, (_evt, data) => {
+        if (!data.fatal) return
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          hls.startLoad()
+          return
+        }
+        setError('Não foi possível reproduzir este stream (HLS).')
+      })
+    } else if (
+      looksLikeHls(src) &&
+      video.canPlayType('application/vnd.apple.mpegurl')
+    ) {
+      video.src = src
+      play()
+    } else {
+      video.src = src
+      play()
+    }
+
+    return () => {
+      hlsRef.current?.destroy()
+      hlsRef.current = null
+    }
   }, [src])
 
   useEffect(() => {
@@ -57,10 +113,10 @@ export function VideoPlayer({
   }, [])
 
   const video = videoRef.current
-  const duration = video?.duration && Number.isFinite(video.duration) ? video.duration : 0
+  const duration =
+    video?.duration && Number.isFinite(video.duration) ? video.duration : 0
   const current = video?.currentTime ?? 0
   const progress = duration > 0 ? current / duration : 0
-
   void tick
 
   const togglePlay = () => {
@@ -78,7 +134,10 @@ export function VideoPlayer({
   const seekBy = (delta: number) => {
     const el = videoRef.current
     if (!el) return
-    el.currentTime = Math.max(0, Math.min(el.duration || 0, el.currentTime + delta))
+    el.currentTime = Math.max(
+      0,
+      Math.min(el.duration || 0, el.currentTime + delta),
+    )
     setTick((t) => t + 1)
   }
 
@@ -87,10 +146,8 @@ export function VideoPlayer({
       <video
         ref={videoRef}
         className={styles.video}
-        src={src}
         poster={poster}
         playsInline
-        autoPlay
         onPlay={() => {
           setPaused(false)
         }}

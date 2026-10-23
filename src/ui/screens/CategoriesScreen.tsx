@@ -5,7 +5,8 @@ import {
   CATEGORY_GENRES,
   discoverByGenres,
   discoverByOriginCountry,
-  getRelatedTitles,
+  getPopularMovies,
+  getPopularTv,
   getTrending,
   NATIONAL_MOVIES_CATEGORY_ID,
 } from '@/services/tmdb'
@@ -14,12 +15,51 @@ import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import styles from './CategoriesScreen.module.css'
 
-type Mode = 'isolated' | 'mixed' | 'similar'
 type Phase = 'browse' | 'results'
 
 interface CategoriesScreenProps {
   onOpenItem: (item: CatalogItem) => void
 }
+
+const HUB_TILES: Array<{
+  id: string
+  label: string
+  tone: number
+  run: () => Promise<CatalogItem[]>
+}> = [
+  {
+    id: 'filmes',
+    label: 'Filmes',
+    tone: 0,
+    run: async () => getPopularMovies(),
+  },
+  {
+    id: 'series',
+    label: 'Séries',
+    tone: 1,
+    run: async () => getPopularTv(),
+  },
+  {
+    id: 'trending',
+    label: 'Em alta',
+    tone: 2,
+    run: async () => getTrending('all', 'week'),
+  },
+  {
+    id: 'nacionais',
+    label: 'Nacionais',
+    tone: 3,
+    run: async () =>
+      discoverByOriginCountry('BR', 'movie', { pages: 3 }),
+  },
+]
+
+const TILE_BG = [
+  'linear-gradient(135deg,#7c2d12 0%,#1c1917 100%)',
+  'linear-gradient(135deg,#1e3a8a 0%,#0f172a 100%)',
+  'linear-gradient(135deg,#581c87 0%,#111827 100%)',
+  'linear-gradient(135deg,#065f46 0%,#022c22 100%)',
+]
 
 function uniqueItems(items: CatalogItem[]): CatalogItem[] {
   const map = new Map<string, CatalogItem>()
@@ -30,313 +70,122 @@ function uniqueItems(items: CatalogItem[]): CatalogItem[] {
   return [...map.values()]
 }
 
+/** Catálogo estilo Globoplay: tiles de categoria + fileira de gêneros. */
 export function CategoriesScreen({ onOpenItem }: CategoriesScreenProps) {
-  const [mode, setMode] = useState<Mode>('isolated')
   const [phase, setPhase] = useState<Phase>('browse')
-  const [selected, setSelected] = useState<number[]>([])
-  const [seed, setSeed] = useState<CatalogItem | null>(null)
-  const [seeds, setSeeds] = useState<CatalogItem[]>([])
+  const [title, setTitle] = useState('Catálogo')
   const [results, setResults] = useState<CatalogItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>()
 
   useEffect(() => {
-    void setFocus(phase === 'browse' ? 'CAT_MODE_isolated' : 'CAT_BACK')
+    void setFocus(phase === 'browse' ? 'CAT_TILE_filmes' : 'CAT_BACK')
   }, [phase])
 
-  useEffect(() => {
-    if (mode !== 'similar' || phase !== 'browse') return
-    let cancelled = false
-    void (async () => {
-      try {
-        const trending = await getTrending('all', 'week')
-        if (!cancelled) setSeeds(uniqueItems(trending).slice(0, 36))
-      } catch {
-        if (!cancelled) setSeeds([])
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [mode, phase])
-
-  const runIsolated = async (genreId: number) => {
+  const openResults = async (label: string, loader: () => Promise<CatalogItem[]>) => {
     setLoading(true)
     setError(undefined)
-    setSeed(null)
+    setTitle(label)
     setPhase('results')
     try {
+      const items = uniqueItems(await loader()).slice(0, 72)
+      setResults(items)
+      void setFocus('CAT_BACK')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao carregar')
+      setResults([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const openGenre = async (genreId: number, label: string) => {
+    await openResults(label, async () => {
       if (genreId === NATIONAL_MOVIES_CATEGORY_ID) {
-        const movies = await discoverByOriginCountry('BR', 'movie', {
-          pages: 3,
-        })
-        setResults(uniqueItems(movies).slice(0, 72))
-      } else {
-        const [movies, series] = await Promise.all([
-          discoverByGenres([genreId], 'movie', { match: 'and', pages: 3 }),
-          discoverByGenres([genreId], 'tv', { match: 'and', pages: 3 }),
-        ])
-        setResults(uniqueItems([...movies, ...series]).slice(0, 72))
+        return discoverByOriginCountry('BR', 'movie', { pages: 3 })
       }
-      void setFocus('CAT_BACK')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao filtrar')
-      setResults([])
-    } finally {
-      setLoading(false)
-    }
+      const [movies, series] = await Promise.all([
+        discoverByGenres([genreId], 'movie', { match: 'and', pages: 2 }),
+        discoverByGenres([genreId], 'tv', { match: 'and', pages: 2 }),
+      ])
+      return [...movies, ...series]
+    })
   }
-
-  const runMixed = async () => {
-    if (selected.length === 0) return
-    setLoading(true)
-    setError(undefined)
-    setSeed(null)
-    setPhase('results')
-    try {
-      const wantsNational = selected.includes(NATIONAL_MOVIES_CATEGORY_ID)
-      const genreIds = selected.filter((id) => id !== NATIONAL_MOVIES_CATEGORY_ID)
-      const batches: CatalogItem[][] = []
-
-      if (wantsNational) {
-        batches.push(
-          await discoverByOriginCountry('BR', 'movie', { pages: 2 }),
-        )
-      }
-      if (genreIds.length > 0) {
-        const [movies, series] = await Promise.all([
-          discoverByGenres(genreIds, 'movie', { match: 'or', pages: 3 }),
-          discoverByGenres(genreIds, 'tv', { match: 'or', pages: 3 }),
-        ])
-        batches.push(movies, series)
-      }
-
-      setResults(uniqueItems(batches.flat()).slice(0, 72))
-      void setFocus('CAT_BACK')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao filtrar')
-      setResults([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const runSimilar = async (item: CatalogItem) => {
-    setSeed(item)
-    setSelected([])
-    setLoading(true)
-    setError(undefined)
-    setPhase('results')
-    try {
-      const related = await getRelatedTitles(item.mediaType, item.tmdbId)
-      setResults(uniqueItems(related).slice(0, 48))
-      void setFocus('CAT_BACK')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao buscar semelhantes')
-      setResults([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const changeMode = (next: Mode) => {
-    setMode(next)
-    setSelected([])
-    setResults([])
-    setSeed(null)
-    setError(undefined)
-    setPhase('browse')
-  }
-
-  const backToBrowse = () => {
-    setPhase('browse')
-    setResults([])
-    setSeed(null)
-    setError(undefined)
-    if (mode === 'isolated') setSelected([])
-  }
-
-  const selectedLabels = CATEGORY_GENRES.filter((g) =>
-    selected.includes(g.id),
-  )
-    .map((g) => g.label)
-    .join(' · ')
-
-  const resultsTitle = seed
-    ? `Semelhantes a ${seed.title}`
-    : mode === 'mixed'
-      ? `Misto · ${selectedLabels || 'categorias'}`
-      : selectedLabels || 'Resultado'
 
   return (
-    <Focusable focusKey="VIEW_categories" className={styles.screen} saveLastFocusedChild>
-      <header className={cx(styles.header, phase === 'results' && styles.headerCompact)}>
-        <div>
-          <p className={styles.kicker}>Explorar</p>
-          <h1 className={styles.title}>Categorias</h1>
-        </div>
-        <div className={styles.modes}>
-          {(
-            [
-              ['isolated', 'Isolada'],
-              ['mixed', 'Mista'],
-              ['similar', 'Semelhantes'],
-            ] as const
-          ).map(([id, label]) => (
-            <Focusable
-              key={id}
-              focusKey={`CAT_MODE_${id}`}
-              className={cx(styles.modeBtn, mode === id && styles.modeActive)}
-              onEnterPress={() => {
-                changeMode(id)
-              }}
-            >
-              {label}
-            </Focusable>
-          ))}
-        </div>
-      </header>
-
+    <Focusable
+      focusKey="VIEW_categories"
+      className={styles.screen}
+      saveLastFocusedChild
+    >
       {phase === 'browse' ? (
         <>
-          <p className={styles.hint}>
-            {mode === 'isolated'
-              ? 'Toque em uma categoria do mosaico para abrir o catálogo.'
-              : mode === 'mixed'
-                ? 'Selecione até 4 categorias e aplique o filtro misto.'
-                : 'Escolha um título base no mosaico para achar semelhantes.'}
-          </p>
+          <header className={styles.header}>
+            <p className={styles.kicker}>Explorar</p>
+            <h1 className={styles.title}>Catálogo</h1>
+          </header>
 
-          {mode === 'similar' ? (
-            <div className={styles.browsePane} data-scroll-y="catalog">
-              <CatalogGrid
-                id="cat-seeds"
-                items={seeds}
-                onSelect={(item) => {
-                  void runSimilar(item)
-                }}
-              />
-            </div>
-          ) : (
-            <div className={styles.mosaic}>
-              {CATEGORY_GENRES.map((genre, index) => {
-                const accents = [
-                  styles.accent0,
-                  styles.accent1,
-                  styles.accent2,
-                  styles.accent3,
-                  styles.accent4,
-                  styles.accent5,
-                ]
-                return (
-                  <Focusable
-                    key={genre.id}
-                    focusKey={`CAT_GENRE_${String(genre.id)}`}
-                    variant="nav"
-                    className={cx(
-                      styles.tile,
-                      accents[index % accents.length],
-                      selected.includes(genre.id) && styles.tileActive,
-                    )}
-                    onEnterPress={() => {
-                      if (mode === 'isolated') {
-                        setSelected([genre.id])
-                        void runIsolated(genre.id)
-                        return
-                      }
-                      setSelected((prev) =>
-                        prev.includes(genre.id)
-                          ? prev.filter((g) => g !== genre.id)
-                          : [...prev, genre.id].slice(0, 4),
-                      )
-                    }}
-                  >
-                    <span className={styles.tileLabel}>{genre.label}</span>
-                  </Focusable>
-                )
-              })}
-            </div>
-          )}
-
-          {mode === 'mixed' ? (
-            <Focusable
-              focusKey="CAT_APPLY_MIXED"
-              className={cx(
-                styles.applyBtn,
-                selected.length === 0 && styles.applyDisabled,
-              )}
-              onEnterPress={() => {
-                void runMixed()
-              }}
-            >
-              Ver catálogo misto
-              {selected.length > 0 ? ` (${String(selected.length)})` : ''}
-            </Focusable>
-          ) : null}
-        </>
-      ) : (
-        <>
-          <div className={styles.resultsBar}>
-            <Focusable
-              focusKey="CAT_BACK"
-              className={styles.backBtn}
-              onEnterPress={backToBrowse}
-            >
-              ← Categorias
-            </Focusable>
-            <p className={styles.resultsLabel}>{resultsTitle}</p>
-            {mode === 'mixed' && selected.length > 0 ? (
-              <Focusable
-                focusKey="CAT_APPLY_AGAIN"
-                className={styles.applyBtn}
-                onEnterPress={() => {
-                  void runMixed()
-                }}
-              >
-                Atualizar
-              </Focusable>
-            ) : null}
-          </div>
-
-          {mode === 'mixed' ? (
-            <div className={styles.miniMosaic}>
-              {CATEGORY_GENRES.map((genre) => (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Categorias</h2>
+            <div className={styles.hubGrid}>
+              {HUB_TILES.map((tile) => (
                 <Focusable
-                  key={genre.id}
-                  focusKey={`CAT_MINI_${String(genre.id)}`}
-                  className={cx(
-                    styles.miniChip,
-                    selected.includes(genre.id) && styles.miniChipActive,
-                  )}
+                  key={tile.id}
+                  focusKey={`CAT_TILE_${tile.id}`}
+                  className={styles.hubTile}
+                  style={{ background: TILE_BG[tile.tone % TILE_BG.length] }}
                   onEnterPress={() => {
-                    setSelected((prev) =>
-                      prev.includes(genre.id)
-                        ? prev.filter((g) => g !== genre.id)
-                        : [...prev, genre.id].slice(0, 4),
-                    )
+                    void openResults(tile.label, tile.run)
                   }}
                 >
-                  {genre.label}
+                  <span className={styles.hubLabel}>{tile.label}</span>
                 </Focusable>
               ))}
             </div>
-          ) : null}
+          </section>
 
-          <div className={styles.resultsPane} data-scroll-y="catalog">
-            {loading ? <p className="empty-state">Carregando catálogo…</p> : null}
-            {error ? <p className="error-state">{error}</p> : null}
-            {!loading && results.length > 0 ? (
-              <CatalogGrid
-                id="cat-results"
-                title="Catálogo"
-                items={results}
-                onSelect={onOpenItem}
-              />
-            ) : null}
-            {!loading && !error && results.length === 0 ? (
-              <p className="empty-state">Nenhum título encontrado.</p>
-            ) : null}
-          </div>
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Gêneros</h2>
+            <div className={styles.genreRow} data-scroll-x="row">
+              <div className={styles.genreScroller}>
+                {CATEGORY_GENRES.map((g) => (
+                  <Focusable
+                    key={g.id}
+                    focusKey={`CAT_GENRE_${String(g.id)}`}
+                    className={styles.genreTile}
+                    onEnterPress={() => {
+                      void openGenre(g.id, g.label)
+                    }}
+                  >
+                    {g.label}
+                  </Focusable>
+                ))}
+              </div>
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <header className={cx(styles.header, styles.headerCompact)}>
+            <Focusable
+              focusKey="CAT_BACK"
+              className={styles.backBtn}
+              onEnterPress={() => {
+                setPhase('browse')
+                setResults([])
+                void setFocus('CAT_TILE_filmes')
+              }}
+            >
+              ← Catálogo
+            </Focusable>
+            <h1 className={styles.title}>{title}</h1>
+          </header>
+          {loading ? <p className={styles.hint}>Carregando…</p> : null}
+          {error ? <p className="error-state">{error}</p> : null}
+          {!loading && results.length === 0 ? (
+            <p className={styles.hint}>Nenhum título encontrado.</p>
+          ) : null}
+          <CatalogGrid id="cat-results" items={results} onSelect={onOpenItem} />
         </>
       )}
     </Focusable>

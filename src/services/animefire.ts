@@ -94,23 +94,46 @@ export async function fetchAfHome(): Promise<{
   highlights: AfAnime[]
   latest: AfAnime[]
   movies: AfAnime[]
+  upcoming: AfAnime[]
 }> {
-  const [highlights, latest, movies] = await Promise.all([
+  const [highlights, latest, movies, upcoming] = await Promise.all([
     fetchAfSection('/animes'),
     fetchAfSection('/animes/lancamentos'),
     fetchAfSection('/animes/filmes'),
+    fetchAfSection('/animes/em-breve'),
   ])
   return {
     highlights: highlights.slice(0, 24),
     latest: latest.slice(0, 24),
     movies: movies.slice(0, 24),
+    upcoming: upcoming.slice(0, 24),
   }
 }
 
-export async function searchAfAnimes(query: string): Promise<AfAnime[]> {
-  const q = query.trim()
-  if (q.length < 2) return []
-  return fetchAfSection(`/animes/pesquisar?q=${encodeURIComponent(q)}`)
+export interface AfSearchFilters {
+  q?: string
+  audio?: 'dublado' | 'legendado' | ''
+  genre?: string
+  page?: number
+}
+
+/** Busca/listagem com filtros do site (q, audio, genre, page). */
+export async function searchAfAnimes(
+  filters: AfSearchFilters | string,
+): Promise<AfAnime[]> {
+  const f: AfSearchFilters =
+    typeof filters === 'string' ? { q: filters } : filters
+  const params = new URLSearchParams()
+  const q = f.q?.trim() ?? ''
+  if (q) params.set('q', q)
+  if (f.audio) params.set('audio', f.audio)
+  if (f.genre) params.set('genre', f.genre)
+  if (f.page && f.page > 1) params.set('page', String(f.page))
+
+  const qs = params.toString()
+  // Com texto usa /pesquisar; só filtro usa /animes (como no site)
+  const base = q.length >= 1 ? '/animes/pesquisar' : '/animes'
+  return fetchAfSection(qs ? `${base}?${qs}` : base)
 }
 
 export async function fetchAfAnimeDetail(id: string): Promise<{
