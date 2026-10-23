@@ -2,6 +2,7 @@ import type { IncomingMessage } from 'node:http'
 import type { Duplex } from 'node:stream'
 import type { Plugin, PreviewServer, ViteDevServer } from 'vite'
 import { WebSocketServer, type WebSocket } from 'ws'
+import { isSafeGameRoomId } from '../src/services/launchSafety'
 
 interface ClientMeta {
   roomId: string
@@ -62,7 +63,9 @@ function attachGameRelay(
       }
 
       if (msg.type === 'join' && msg.roomId && msg.playerId && msg.role) {
-        const roomId = msg.roomId.toUpperCase()
+        if (!isSafeGameRoomId(msg.roomId)) return
+        if (msg.role !== 'host' && msg.role !== 'pad') return
+        const roomId = msg.roomId.trim().toUpperCase()
         let set = rooms.get(roomId)
         if (!set) {
           set = new Set()

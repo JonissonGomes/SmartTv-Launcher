@@ -75,6 +75,15 @@ function focusHome(hasHero: boolean): void {
   void setFocus(hasHero ? 'HERO' : 'VIEW_home')
 }
 
+/** Após desmontar modal/botão focado, o spatial-nav precisa de 1–2 frames. */
+function scheduleFocusHome(hasHero: boolean): void {
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      focusHome(hasHero)
+    })
+  })
+}
+
 function entryToCatalog(entry: WatchEntry): CatalogItem {
   return {
     tmdbId: entry.tmdbId ?? 0,
@@ -194,9 +203,16 @@ export default function App() {
         }),
       )
 
-      await launchPlatformTitle(data.platform, data.title, data.tmdbId)
-      setPending(null)
-      setDetails(null)
+      try {
+        await launchPlatformTitle(data.platform, data.title, data.tmdbId)
+      } catch (err) {
+        console.warn('[launch]', err)
+      } finally {
+        setPending(null)
+        setDetails(null)
+        // Assistir desmonta o botão focado (HERO_CONTINUE / DETAILS_WATCH).
+        scheduleFocusHome(true)
+      }
     },
     [addEntry],
   )
@@ -228,6 +244,7 @@ export default function App() {
         voteAverage: item.voteAverage,
       }
 
+      // Fecha o drawer antes do launch para o focus boundary não prender o cursor.
       setDetails(null)
 
       if (item.mediaType === 'tv') {

@@ -1,7 +1,15 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { Platform, WatchEntry } from '@/domain/types'
+import { clampHistoryEntries } from '@/services/launchSafety'
 import { idbStorage } from '@/store/idbStorage'
+
+function sameWatchTarget(a: WatchEntry, b: Omit<WatchEntry, 'id'>): boolean {
+  if (a.platform !== b.platform) return false
+  if ((a.profileId ?? '') !== (b.profileId ?? '')) return false
+  if (a.tmdbId && b.tmdbId) return a.tmdbId === b.tmdbId
+  return a.title.toLowerCase() === b.title.toLowerCase()
+}
 
 interface HistoryState {
   entries: WatchEntry[]
@@ -29,13 +37,34 @@ export const useHistoryStore = create<HistoryState>()(
       setHydrated: (value) => set({ hydrated: value }),
 
       addEntry: (entry) => {
-        const full: WatchEntry = {
+        let saved: WatchEntry = {
           ...entry,
           id: entry.id ?? createId(),
           lastWatchedAt: entry.lastWatchedAt,
         }
-        set((state) => ({ entries: [full, ...state.entries] }))
-        return full
+
+        set((state) => {
+          const existing = state.entries.find((e) => sameWatchTarget(e, saved))
+          if (existing) {
+            saved = {
+              ...existing,
+              ...saved,
+              id: existing.id,
+            }
+            return {
+              entries: clampHistoryEntries([
+                saved,
+                ...state.entries.filter((e) => e.id !== existing.id),
+              ]),
+            }
+          }
+
+          return {
+            entries: clampHistoryEntries([saved, ...state.entries]),
+          }
+        })
+
+        return saved
       },
 
       updateEntry: (id, patch) => {

@@ -1,5 +1,9 @@
-import { getAppConfig } from '@/config/apps'
+import { APP_CONFIGS, getAppConfig } from '@/config/apps'
 import type { Platform } from '@/domain/types'
+import {
+  buildSafeLaunchParameters,
+  isAllowedLunaMethod,
+} from '@/services/launchSafety'
 
 export interface WebOsInstalledApp {
   id: string
@@ -35,6 +39,10 @@ declare global {
 
 const APP_MANAGER = 'luna://com.webos.applicationManager'
 
+const ALLOWED_APP_IDS: readonly string[] = Object.values(APP_CONFIGS).map(
+  (c) => c.webosAppId,
+)
+
 function isWebOsRuntime(): boolean {
   if (typeof window === 'undefined') return false
   const webOS = window.webOS
@@ -43,6 +51,11 @@ function isWebOsRuntime(): boolean {
 
 function lunaRequest(options: LunaRequestOptions): Promise<LunaResponse> {
   return new Promise((resolve, reject) => {
+    if (!isAllowedLunaMethod(options.method)) {
+      reject(new Error(`Método Luna não permitido: ${options.method}`))
+      return
+    }
+
     if (!isWebOsRuntime() || !window.webOS) {
       reject(new Error('webOS service indisponível'))
       return
@@ -82,10 +95,11 @@ export async function launchApp(
   params?: Record<string, unknown>,
 ): Promise<void> {
   const config = getAppConfig(platform)
-  const parameters: Record<string, unknown> = {
-    id: config.webosAppId,
-    ...(params ?? {}),
-  }
+  const parameters = buildSafeLaunchParameters(
+    config.webosAppId,
+    ALLOWED_APP_IDS,
+    params,
+  )
 
   if (!isWebOsRuntime()) {
     console.info('[webOS mock] launchApp', platform, parameters)
@@ -105,5 +119,9 @@ export function launchPlatformTitle(
 ): Promise<void> {
   const config = getAppConfig(platform)
   const deep = config.deepLink?.({ title, tmdbId }) ?? undefined
-  return launchApp(platform, deep)
+  return launchApp(platform, deep ?? undefined)
+}
+
+export function getAllowedWebOsAppIds(): readonly string[] {
+  return ALLOWED_APP_IDS
 }
