@@ -10,5 +10,6 @@ type CachedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
  */
 export function CachedImage({ src, ...rest }: CachedImageProps) {
   if (!src) return null
-  return <img src={src} {...rest} />
+  // no-referrer: CDNs de poster que bloqueiam origem webOS/app://
+  return <img src={src} referrerPolicy="no-referrer" {...rest} />
 }

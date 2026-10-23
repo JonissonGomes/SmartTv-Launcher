@@ -31,6 +31,8 @@ interface VideoPlayerProps {
   title: string
   subtitle?: string
   src: string
+  /** Outras URLs se a principal falhar (comum na TV). */
+  fallbackSrcs?: string[]
   poster?: string
   onClose: () => void
   /** Retoma em segundos (continuar assistindo). */
@@ -47,6 +49,7 @@ interface VideoPlayerProps {
 }
 
 const HIDE_MS = 4200
+const EMPTY_FALLBACKS: string[] = []
 
 function looksLikeHls(url: string): boolean {
   const u = url.toLowerCase()
@@ -88,6 +91,7 @@ export function VideoPlayer({
   title,
   subtitle,
   src,
+  fallbackSrcs,
   poster,
   onClose,
   startAt = 0,
@@ -110,6 +114,13 @@ export function VideoPlayer({
   const fillRef = useRef<HTMLDivElement>(null)
   const timeCurRef = useRef<HTMLSpanElement>(null)
   const timeDurRef = useRef<HTMLSpanElement>(null)
+  const extras = fallbackSrcs ?? EMPTY_FALLBACKS
+  const srcQueue = useMemo(
+    () => [src, ...extras].filter(Boolean),
+    [src, extras],
+  )
+  const [srcIndex, setSrcIndex] = useState(0)
+  const activeSrc = srcQueue[Math.min(srcIndex, srcQueue.length - 1)] ?? src
 
   const [paused, setPaused] = useState(false)
   const [buffering, setBuffering] = useState(true)
@@ -241,12 +252,25 @@ export function VideoPlayer({
     [captionTracks],
   )
 
+  // Nova fila de URLs (outro episódio) → volta para a primeira candidata
+  useEffect(() => {
+    setSrcIndex(0)
+  }, [src])
+
+  const tryNextSrc = useCallback(() => {
+    setSrcIndex((i) => {
+      if (i + 1 < srcQueue.length) return i + 1
+      return i
+    })
+  }, [srcQueue.length])
+
   useEffect(() => {
     void setFocus('PLAYER_PLAY')
     const video = videoRef.current
-    if (!video) return
+    if (!video || !activeSrc) return
 
     let cancelled = false
+    let networkRetries = 0
     setError(undefined)
     setBuffering(true)
     setCaptionTracks([])
@@ -268,6 +292,16 @@ export function VideoPlayer({
     video.removeAttribute('src')
     video.load()
 
+    const failOrFallback = (msg: string) => {
+      if (cancelled) return
+      if (srcIndex + 1 < srcQueue.length) {
+        tryNextSrc()
+        return
+      }
+      setError(msg)
+      setBuffering(false)
+    }
+
     const play = () => {
       if (cancelled) return
       void video.play().then(
@@ -288,16 +322,24 @@ export function VideoPlayer({
     }
     video.textTracks.addEventListener('addtrack', onAddTrack)
 
-    if (looksLikeHls(src) && Hls.isSupported()) {
+    if (looksLikeHls(activeSrc) && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: false,
         lowLatencyMode: false,
         maxBufferLength: 24,
         maxMaxBufferLength: 48,
         startLevel: -1,
+        xhrSetup: (xhr) => {
+          // Alguns CDNs exigem referer do site; try/catch se o browser bloquear
+          try {
+            xhr.setRequestHeader('Referer', 'https://animefire.one/')
+          } catch {
+            /* ignore */
+          }
+        },
       })
       hlsRef.current = hls
-      hls.loadSource(src)
+      hls.loadSource(activeSrc)
       hls.attachMedia(video)
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (cancelled) return
@@ -309,28 +351,29 @@ export function VideoPlayer({
       })
       hls.on(Hls.Events.ERROR, (_evt, data) => {
         if (cancelled || !data.fatal) return
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && networkRetries < 2) {
+          networkRetries += 1
           hls.startLoad()
           return
         }
-        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR && networkRetries < 2) {
+          networkRetries += 1
           hls.recoverMediaError()
           return
         }
-        setError('Não foi possível reproduzir este stream (HLS).')
-        setBuffering(false)
+        failOrFallback('Não foi possível reproduzir este stream (HLS).')
       })
     } else if (
-      looksLikeHls(src) &&
+      looksLikeHls(activeSrc) &&
       video.canPlayType('application/vnd.apple.mpegurl')
     ) {
-      video.src = src
+      video.src = activeSrc
       play()
       window.setTimeout(() => {
         if (!cancelled) refreshTracks()
       }, 800)
     } else {
-      video.src = src
+      video.src = activeSrc
       play()
       window.setTimeout(() => {
         if (!cancelled) refreshTracks()
@@ -355,7 +398,7 @@ export function VideoPlayer({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src])
+  }, [activeSrc, srcIndex])
 
   useEffect(() => {
     const video = videoRef.current
@@ -447,7 +490,7 @@ export function VideoPlayer({
     return () => {
       el.removeEventListener('loadedmetadata', onMeta)
     }
-  }, [src, startAt])
+  }, [activeSrc, startAt])
 
   useEffect(() => {
     if (!onProgress) return
@@ -461,7 +504,7 @@ export function VideoPlayer({
     return () => {
       window.clearInterval(id)
     }
-  }, [onProgress, src])
+  }, [onProgress, activeSrc])
 
   useEffect(() => {
     return pushBackHandler(() => {
@@ -525,7 +568,7 @@ export function VideoPlayer({
     return () => {
       window.clearInterval(id)
     }
-  }, [src])
+  }, [activeSrc])
 
   const togglePlay = () => {
     const el = videoRef.current
@@ -596,6 +639,10 @@ export function VideoPlayer({
           setChrome(true)
         }}
         onError={() => {
+          if (srcIndex + 1 < srcQueue.length) {
+            tryNextSrc()
+            return
+          }
           setBuffering(false)
           setError('Não foi possível reproduzir este vídeo.')
         }}

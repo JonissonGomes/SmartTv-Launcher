@@ -5,7 +5,7 @@ import type { AfAnime, AfAudioFilter, AfEpisode, AfSeason } from '@/domain/anime
 import {
   AF_AUDIO_FILTERS,
   AF_GENRES,
-  pickAfStream,
+  pickAfStreamCandidates,
 } from '@/domain/animefire'
 import {
   fetchAfAnimeDetail,
@@ -71,6 +71,7 @@ export function LibraryScreen() {
     title: string
     subtitle?: string
     src: string
+    fallbackSrcs?: string[]
     poster?: string
     anime?: AfAnime
     episodeId?: string
@@ -309,7 +310,8 @@ export function LibraryScreen() {
     setError(undefined)
     try {
       const streams = await fetchAfEpisodeStreams(ep.id)
-      const src = pickAfStream(streams)
+      const candidates = pickAfStreamCandidates(streams)
+      const src = candidates[0]
       if (!src) {
         setError('Episódio sem stream disponível')
         return
@@ -337,6 +339,7 @@ export function LibraryScreen() {
         title: anime.name,
         subtitle: `T${ep.season} E${ep.number} — ${ep.title}`,
         src,
+        fallbackSrcs: candidates.slice(1),
         poster: cover,
         anime,
         episodeId: ep.id,
@@ -367,6 +370,7 @@ export function LibraryScreen() {
         title={playing.title}
         subtitle={playing.subtitle}
         src={playing.src}
+        fallbackSrcs={playing.fallbackSrcs}
         poster={playing.poster}
         startAt={playing.startAt}
         episodeId={playing.episodeId}

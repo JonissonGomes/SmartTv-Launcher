@@ -70,7 +70,22 @@ export const AF_GENRES = [
 ] as const
 
 export function pickAfStream(streams: AfStream[]): string {
-  const dub = streams.find((s) => /dublado/i.test(s.audio) && s.url)
-  const any = streams.find((s) => s.url)
-  return (dub ?? any)?.url?.trim() ?? ''
+  return pickAfStreamCandidates(streams)[0] ?? ''
+}
+
+/** URLs candidatas (dublado primeiro) — player tenta a próxima se uma falhar na TV. */
+export function pickAfStreamCandidates(streams: AfStream[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  const push = (url?: string) => {
+    const u = url?.trim()
+    if (!u || seen.has(u)) return
+    seen.add(u)
+    out.push(u)
+  }
+  for (const s of streams) {
+    if (/dublado/i.test(s.audio)) push(s.url)
+  }
+  for (const s of streams) push(s.url)
+  return out
 }

@@ -16,29 +16,45 @@ function apiRoot(): string {
   return PROD_API
 }
 
-async function getJson<T>(path: string): Promise<T> {
+async function getJson<T>(
+  path: string,
+  opts?: { cache?: boolean; ttlMs?: number },
+): Promise<T> {
+  const useCache = opts?.cache !== false
   const cacheKey = `af:${path}`
-  const cached = sessionGet<T>(cacheKey)
-  if (cached !== undefined) return cached
-
-  const ctrl = new AbortController()
-  const timer = window.setTimeout(() => ctrl.abort(), 15_000)
-  try {
-    const res = await fetch(`${apiRoot()}${path}`, {
-      headers: {
-        Accept: 'application/json',
-        Origin: AF_SITE,
-        Referer: `${AF_SITE}/`,
-      },
-      signal: ctrl.signal,
-    })
-    if (!res.ok) throw new Error(`AnimeFire HTTP ${String(res.status)}`)
-    const data = (await res.json()) as T
-    sessionSet(cacheKey, data)
-    return data
-  } finally {
-    window.clearTimeout(timer)
+  if (useCache) {
+    const cached = sessionGet<T>(cacheKey)
+    if (cached !== undefined) return cached
   }
+
+  let lastErr: unknown
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const ctrl = new AbortController()
+    // TV / Wi‑Fi lento: 30s (antes 15s abortava títulos “pesados”)
+    const timer = window.setTimeout(() => ctrl.abort(), 30_000)
+    try {
+      // Não forçar Origin/Referer — no webOS isso quebra CORS em alguns títulos.
+      const res = await fetch(`${apiRoot()}${path}`, {
+        headers: { Accept: 'application/json' },
+        signal: ctrl.signal,
+        credentials: 'omit',
+        cache: 'no-store',
+      })
+      if (!res.ok) throw new Error(`AnimeFire HTTP ${String(res.status)}`)
+      const data = (await res.json()) as T
+      if (useCache) sessionSet(cacheKey, data, opts?.ttlMs)
+      return data
+    } catch (err) {
+      lastErr = err
+      // breve pausa antes do retry
+      await new Promise((r) => window.setTimeout(r, 400 * (attempt + 1)))
+    } finally {
+      window.clearTimeout(timer)
+    }
+  }
+  throw lastErr instanceof Error
+    ? lastErr
+    : new Error('Falha ao falar com a AnimeFire')
 }
 
 function titleOf(titles: unknown): string {
@@ -126,11 +142,7 @@ export async function fetchAfLancamentos(): Promise<{
   const json = await getJson<{
     data?: {
       animes?: unknown
-      upcoming?: {
-        title?: string
-        sub?: string
-        items?: unknown
-      }
+      upcoming?: { title?: string; sub?: string; items?: unknown }
     }
   }>('/animes/lancamentos')
 
@@ -278,8 +290,10 @@ export async function fetchAfAnimeDetail(id: string): Promise<{
 export async function fetchAfEpisodeStreams(
   episodeId: string,
 ): Promise<AfStream[]> {
+  // Streams / CDN instáveis — não cachear na TV
   const json = await getJson<{ data?: { streams?: unknown } }>(
     `/episode/${encodeURIComponent(episodeId)}`,
+    { cache: false },
   )
   const raw = json.data?.streams
   if (!Array.isArray(raw)) return []
