@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import styles from './TvTextField.module.css'
@@ -16,8 +16,8 @@ interface TvTextFieldProps {
 }
 
 /**
- * Campo que abre o teclado virtual da TV ao receber foco (webOS).
- * Enter no Focusable foca o <input>; Escape/blur devolve o foco espacial.
+ * Campo TV: Enter/clique abre o teclado; Back/sair do foco fecha.
+ * O ponteiro só destaca o shell — não prende o cursor no <input>.
  */
 export function TvTextField({
   focusKey,
@@ -30,15 +30,28 @@ export function TvTextField({
   label,
 }: TvTextFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const [editing, setEditing] = useState(false)
+
+  const startEditing = () => {
+    setEditing(true)
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus()
+    })
+  }
+
+  const stopEditing = () => {
+    setEditing(false)
+    inputRef.current?.blur()
+  }
 
   useEffect(() => {
     const input = inputRef.current
     if (!input) return
 
     const onKeyDown = (event: KeyboardEvent) => {
-      // Back webOS / Escape: sai do campo sem fechar a tela inteira
       if (event.keyCode === 461 || event.key === 'Escape') {
-        input.blur()
+        stopEditing()
+        event.preventDefault()
         event.stopPropagation()
       }
     }
@@ -54,9 +67,9 @@ export function TvTextField({
       {label ? <span className={styles.label}>{label}</span> : null}
       <Focusable
         focusKey={focusKey}
-        className={styles.focusShell}
+        className={cx(styles.focusShell, editing && styles.editing)}
         onEnterPress={() => {
-          inputRef.current?.focus()
+          startEditing()
         }}
       >
         <input
@@ -70,15 +83,28 @@ export function TvTextField({
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
+          tabIndex={-1}
+          readOnly={!editing}
           onChange={(event) => {
             onChange(event.target.value.slice(0, maxLength))
           }}
           onFocus={(event) => {
-            // Seleciona texto para facilitar edição no teclado virtual
+            if (!editing) {
+              event.currentTarget.blur()
+              return
+            }
             event.currentTarget.select()
+          }}
+          onBlur={() => {
+            setEditing(false)
           }}
         />
       </Focusable>
+      <span className={styles.hintInline}>
+        {editing
+          ? 'Back fecha o teclado · setas saem do campo'
+          : 'Enter ou clique para digitar / voz no teclado da TV'}
+      </span>
     </label>
   )
 }

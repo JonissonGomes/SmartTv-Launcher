@@ -58,7 +58,8 @@ export function SearchScreen({ onSelect }: SearchScreenProps) {
         maxLength={64}
       />
       <p className={styles.hint}>
-        Enter no campo abre o teclado virtual da TV. Digite e aguarde os resultados.
+        Enter/clique no campo abre o teclado (e o mic do controle). Back ou
+        apontar para um resultado libera o ponteiro.
       </p>
       {loading ? <p className="empty-state">Buscando…</p> : null}
       {error ? <p className="error-state">{error}</p> : null}

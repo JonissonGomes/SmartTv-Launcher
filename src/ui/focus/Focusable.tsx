@@ -55,11 +55,28 @@ export function Focusable({
         onMouseEnter={() => {
           // Ponteiro Magic Remote ↔ foco espacial (obrigatório no guia LG).
           if (config.focusable === false) return
+          // Libera input/textarea ativos fora deste nó (evita ponteiro preso na busca).
+          const active = document.activeElement
+          if (
+            (active instanceof HTMLInputElement ||
+              active instanceof HTMLTextAreaElement) &&
+            ref.current &&
+            !ref.current.contains(active)
+          ) {
+            active.blur()
+          }
           void setFocus(focusKey)
         }}
         onClick={(event) => {
           // Clique do ponteiro Magic Remote não dispara onEnterPress sozinho.
           if (config.focusable === false || !onEnterPress) return
+          // Clique veio do <input> interno — o próprio campo trata.
+          if (
+            event.target instanceof HTMLInputElement ||
+            event.target instanceof HTMLTextAreaElement
+          ) {
+            return
+          }
           event.preventDefault()
           event.stopPropagation()
           void setFocus(focusKey)

@@ -1,6 +1,6 @@
 import { APP_CONFIGS, getAllKnownWebOsAppIds, getAppConfig } from '@/config/apps'
 import type { Platform } from '@/domain/types'
-import { buildDeepLinkAttempts } from '@/services/deepLink'
+import { pickBestDeepLink } from '@/services/deepLink'
 import {
   buildSafeLaunchParameters,
   isAllowedLunaMethod,
@@ -154,26 +154,42 @@ async function lunaLaunch(
     return
   }
 
-  const nested =
-    (parameters.params as Record<string, unknown> | undefined) ?? undefined
+  const nested = {
+    ...((parameters.params as Record<string, unknown> | undefined) ?? {}),
+  }
+  // contentId no topo (LG) também vai dentro de params p/ webOSDev.
+  if (typeof parameters.contentId === 'string') {
+    nested.contentId = parameters.contentId
+  }
 
-  if (typeof window.webOSDev?.launch === 'function') {
+  // Preferir applicationManager/launch: aceita contentId no payload raiz
+  // (melhor p/ Netflix). webOSDev.launch como fallback.
+  try {
+    await lunaRequest({
+      method: 'launch',
+      parameters,
+    })
+    return
+  } catch (primaryError) {
+    if (typeof window.webOSDev?.launch !== 'function') throw primaryError
+
     await new Promise<void>((resolve, reject) => {
       window.webOSDev.launch({
         id: String(parameters.id),
-        params: nested ?? {},
+        params: nested,
         onSuccess: () => resolve(),
         onFailure: (err) =>
-          reject(new Error(err.errorText ?? 'webOSDev.launch falhou')),
+          reject(
+            new Error(
+              err.errorText ??
+                (primaryError instanceof Error
+                  ? primaryError.message
+                  : 'webOSDev.launch falhou'),
+            ),
+          ),
       })
     })
-    return
   }
-
-  await lunaRequest({
-    method: 'launch',
-    parameters,
-  })
 }
 
 export async function launchApp(
@@ -204,7 +220,8 @@ export async function launchPlatformTitle(
   },
 ): Promise<void> {
   const appId = await resolvePlatformAppId(platform)
-  const attempts = buildDeepLinkAttempts(platform, {
+  // Um único launch — tentativas em série reiniciavam o app “do zero”.
+  const deep = pickBestDeepLink(platform, {
     title,
     tmdbId,
     netflixId: extras?.netflixId,
@@ -212,19 +229,18 @@ export async function launchPlatformTitle(
     providerUrl: extras?.providerUrl,
   })
 
-  let lastError: unknown
-  for (const attempt of attempts) {
-    try {
-      await lunaLaunch(appId, attempt)
+  try {
+    await lunaLaunch(appId, deep)
+  } catch (err) {
+    if (deep) {
+      console.warn('[webOS] deep link falhou, abrindo app', err)
+      await lunaLaunch(appId)
       return
-    } catch (err) {
-      lastError = err
     }
+    throw err instanceof Error
+      ? err
+      : new Error(`Falha ao abrir ${getAppConfig(platform).label}`)
   }
-
-  throw lastError instanceof Error
-    ? lastError
-    : new Error(`Falha ao abrir ${getAppConfig(platform).label}`)
 }
 
 export function getAllowedWebOsAppIds(): readonly string[] {

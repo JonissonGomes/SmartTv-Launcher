@@ -17,6 +17,11 @@
   border-radius: var(--radius-sm);
 }
 
+.editing {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 .input {
   width: 100%;
   box-sizing: border-box;
@@ -26,9 +31,23 @@
   background: var(--color-surface-2);
   color: var(--color-text);
   font: inherit;
+  /* Evita o browser/TV focar o input só com o ponteiro passando */
+  caret-color: transparent;
+  pointer-events: none;
+}
+
+.editing .input {
+  caret-color: auto;
+  pointer-events: auto;
+  border-color: var(--color-accent);
 }
 
 .input:focus {
   border-color: var(--color-accent);
   outline: none;
+}
+
+.hintInline {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
