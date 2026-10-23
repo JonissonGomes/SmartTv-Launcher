@@ -46,7 +46,7 @@ interface VideoPlayerProps {
   hasNextEpisode?: boolean
 }
 
-const HIDE_MS = 3500
+const HIDE_MS = 4200
 
 function looksLikeHls(url: string): boolean {
   const u = url.toLowerCase()
@@ -83,7 +83,7 @@ function collectNativeTracks(video: HTMLVideoElement): CaptionTrack[] {
   return out
 }
 
-/** Player fullscreen — Lucide + auto-hide + legendas sem sair do vídeo. */
+/** Player fullscreen — Lucide + auto-hide estável + episódios/CC. */
 export function VideoPlayer({
   title,
   subtitle,
@@ -103,16 +103,23 @@ export function VideoPlayer({
   const setPlayerOpen = useUiSessionStore((s) => s.setPlayerOpen)
   const videoRef = useRef<HTMLVideoElement>(null)
   const hlsRef = useRef<Hls | null>(null)
-  const hideTimer = useRef<number>(0)
+  const hideTimer = useRef(0)
   const startApplied = useRef(false)
+  const panelOpenRef = useRef(false)
+  const chromeVisibleRef = useRef(true)
+  const fillRef = useRef<HTMLDivElement>(null)
+  const timeCurRef = useRef<HTMLSpanElement>(null)
+  const timeDurRef = useRef<HTMLSpanElement>(null)
+
   const [paused, setPaused] = useState(false)
+  const [buffering, setBuffering] = useState(true)
   const [error, setError] = useState<string>()
-  const [tick, setTick] = useState(0)
   const [chromeVisible, setChromeVisible] = useState(true)
   const [epListOpen, setEpListOpen] = useState(false)
   const [capListOpen, setCapListOpen] = useState(false)
   const [captionTracks, setCaptionTracks] = useState<CaptionTrack[]>([])
   const [activeCaptionId, setActiveCaptionId] = useState<string | null>(null)
+  const [cueText, setCueText] = useState('')
   const audioKinds = useMemo(() => availableAudioKinds(episodes), [episodes])
   const [epAudioFilter, setEpAudioFilter] = useState<
     'dublado' | 'legendado' | 'all'
@@ -135,10 +142,44 @@ export function VideoPlayer({
     return list
   }, [episodes, epAudioFilter, epSeasonFilter])
 
+  const panelOpen = epListOpen || capListOpen
+  panelOpenRef.current = panelOpen
+
+  const setChrome = useCallback((visible: boolean) => {
+    chromeVisibleRef.current = visible
+    setChromeVisible(visible)
+  }, [])
+
+  /** Só agenda o hide — não reabre o chrome. */
+  const armHide = useCallback(() => {
+    window.clearTimeout(hideTimer.current)
+    if (panelOpenRef.current) return
+    const el = videoRef.current
+    if (!el || el.paused) return
+    hideTimer.current = window.setTimeout(() => {
+      if (panelOpenRef.current) return
+      const v = videoRef.current
+      if (v && !v.paused) setChrome(false)
+    }, HIDE_MS)
+  }, [setChrome])
+
+  /** Mostra controles (ação explícita do usuário). */
+  const revealChrome = useCallback(() => {
+    setChrome(true)
+    armHide()
+  }, [armHide, setChrome])
+
+  /** Com chrome já visível, só renova o timer (mousemove no painel). */
+  const bumpChrome = useCallback(() => {
+    if (!chromeVisibleRef.current) return
+    armHide()
+  }, [armHide])
+
   useEffect(() => {
     setPlayerOpen(true)
     return () => {
       setPlayerOpen(false)
+      window.clearTimeout(hideTimer.current)
     }
   }, [setPlayerOpen])
 
@@ -146,19 +187,6 @@ export function VideoPlayer({
     if (audioKinds.length === 1) setEpAudioFilter(audioKinds[0]!)
     else setEpAudioFilter('all')
   }, [audioKinds])
-  const [cueText, setCueText] = useState('')
-
-  const panelOpen = epListOpen || capListOpen
-
-  const showChrome = useCallback(() => {
-    setChromeVisible(true)
-    window.clearTimeout(hideTimer.current)
-    if (panelOpen) return
-    hideTimer.current = window.setTimeout(() => {
-      const el = videoRef.current
-      if (el && !el.paused) setChromeVisible(false)
-    }, HIDE_MS)
-  }, [panelOpen])
 
   const refreshTracks = useCallback(() => {
     const video = videoRef.current
@@ -218,54 +246,41 @@ export function VideoPlayer({
     const video = videoRef.current
     if (!video) return
 
+    let cancelled = false
     setError(undefined)
+    setBuffering(true)
     setCaptionTracks([])
     setActiveCaptionId(null)
     setCueText('')
-    hlsRef.current?.destroy()
+    setPaused(false)
+    startApplied.current = false
+    setChrome(true)
+    armHide()
+
+    // Limpa mídia anterior (troca de ep / remount) — evita travar no webOS
+    try {
+      hlsRef.current?.destroy()
+    } catch {
+      /* ignore */
+    }
     hlsRef.current = null
+    video.pause()
+    video.removeAttribute('src')
+    video.load()
 
     const play = () => {
-      void video.play().catch(() => {
-        setPaused(true)
-      })
-    }
-
-    if (looksLikeHls(src) && Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: false,
-        maxBufferLength: 30,
-      })
-      hlsRef.current = hls
-      hls.loadSource(src)
-      hls.attachMedia(video)
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        play()
-        refreshTracks()
-      })
-      hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
-        refreshTracks()
-      })
-      hls.on(Hls.Events.ERROR, (_evt, data) => {
-        if (!data.fatal) return
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          hls.startLoad()
-          return
-        }
-        setError('Não foi possível reproduzir este stream (HLS).')
-      })
-    } else if (
-      looksLikeHls(src) &&
-      video.canPlayType('application/vnd.apple.mpegurl')
-    ) {
-      video.src = src
-      play()
-      window.setTimeout(refreshTracks, 800)
-    } else {
-      video.src = src
-      play()
-      window.setTimeout(refreshTracks, 400)
+      if (cancelled) return
+      void video.play().then(
+        () => {
+          if (!cancelled) {
+            setPaused(false)
+            setBuffering(false)
+          }
+        },
+        () => {
+          if (!cancelled) setPaused(true)
+        },
+      )
     }
 
     const onAddTrack = () => {
@@ -273,12 +288,74 @@ export function VideoPlayer({
     }
     video.textTracks.addEventListener('addtrack', onAddTrack)
 
-    return () => {
-      video.textTracks.removeEventListener('addtrack', onAddTrack)
-      hlsRef.current?.destroy()
-      hlsRef.current = null
+    if (looksLikeHls(src) && Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: false,
+        lowLatencyMode: false,
+        maxBufferLength: 24,
+        maxMaxBufferLength: 48,
+        startLevel: -1,
+      })
+      hlsRef.current = hls
+      hls.loadSource(src)
+      hls.attachMedia(video)
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (cancelled) return
+        play()
+        refreshTracks()
+      })
+      hls.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
+        if (!cancelled) refreshTracks()
+      })
+      hls.on(Hls.Events.ERROR, (_evt, data) => {
+        if (cancelled || !data.fatal) return
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          hls.startLoad()
+          return
+        }
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hls.recoverMediaError()
+          return
+        }
+        setError('Não foi possível reproduzir este stream (HLS).')
+        setBuffering(false)
+      })
+    } else if (
+      looksLikeHls(src) &&
+      video.canPlayType('application/vnd.apple.mpegurl')
+    ) {
+      video.src = src
+      play()
+      window.setTimeout(() => {
+        if (!cancelled) refreshTracks()
+      }, 800)
+    } else {
+      video.src = src
+      play()
+      window.setTimeout(() => {
+        if (!cancelled) refreshTracks()
+      }, 400)
     }
-  }, [src, refreshTracks])
+
+    return () => {
+      cancelled = true
+      video.textTracks.removeEventListener('addtrack', onAddTrack)
+      try {
+        hlsRef.current?.destroy()
+      } catch {
+        /* ignore */
+      }
+      hlsRef.current = null
+      video.pause()
+      video.removeAttribute('src')
+      try {
+        video.load()
+      } catch {
+        /* ignore */
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src])
 
   useEffect(() => {
     const video = videoRef.current
@@ -302,7 +379,11 @@ export function VideoPlayer({
       const parts: string[] = []
       for (let i = 0; i < cues.length; i++) {
         const c = cues[i]
-        if (c && 'text' in c && typeof (c as TextTrackCue & { text?: string }).text === 'string') {
+        if (
+          c &&
+          'text' in c &&
+          typeof (c as TextTrackCue & { text?: string }).text === 'string'
+        ) {
           parts.push((c as TextTrackCue & { text: string }).text)
         }
       }
@@ -315,49 +396,48 @@ export function VideoPlayer({
     }
   }, [activeCaptionId, captionTracks])
 
-  useEffect(() => {
-    showChrome()
-    return () => {
-      window.clearTimeout(hideTimer.current)
-    }
-  }, [showChrome, src])
-
+  // Abrir/fechar painéis — sem rearmar chrome a cada mudança de lista
   useEffect(() => {
     if (epListOpen) {
-      setChromeVisible(true)
       window.clearTimeout(hideTimer.current)
+      setChrome(true)
       const el = videoRef.current
       if (el && !el.paused) {
         el.pause()
         setPaused(true)
       }
-      void setFocus(
-        episodeId && filteredEpisodes.some((e) => e.id === episodeId)
-          ? `PLAYER_EP_${episodeId}`
-          : 'PLAYER_EP_CLOSE',
-      )
+      window.requestAnimationFrame(() => {
+        void setFocus(
+          episodeId && filteredEpisodes.some((e) => e.id === episodeId)
+            ? `PLAYER_EP_${episodeId}`
+            : 'PLAYER_EP_CLOSE',
+        )
+      })
       return
     }
     if (capListOpen) {
-      setChromeVisible(true)
       window.clearTimeout(hideTimer.current)
-      void setFocus('PLAYER_CAP_OFF')
+      setChrome(true)
+      window.requestAnimationFrame(() => {
+        void setFocus('PLAYER_CAP_OFF')
+      })
       return
     }
-    showChrome()
-  }, [epListOpen, capListOpen, episodeId, showChrome, filteredEpisodes])
-
-  // Resume + progresso
-  useEffect(() => {
-    startApplied.current = false
-  }, [src])
+    armHide()
+    // Só reage a abrir/fechar painéis
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [epListOpen, capListOpen])
 
   useEffect(() => {
     const el = videoRef.current
     if (!el) return
     const onMeta = () => {
       if (startApplied.current) return
-      if (startAt > 5 && Number.isFinite(el.duration) && startAt < el.duration - 5) {
+      if (
+        startAt > 5 &&
+        Number.isFinite(el.duration) &&
+        startAt < el.duration - 5
+      ) {
         el.currentTime = startAt
       }
       startApplied.current = true
@@ -400,6 +480,8 @@ export function VideoPlayer({
     })
   }, [capListOpen, epListOpen, onClose])
 
+  // Entrada explícita: teclado / clique. NÃO escuta mousemove global
+  // (Magic Remote dispara move contínuo e faz o chrome piscar).
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.keyCode === 461 || event.key === 'Escape') return
@@ -408,39 +490,42 @@ export function VideoPlayer({
         event.key === 'Enter' ||
         event.key === ' ' ||
         event.keyCode === 13 ||
-        event.keyCode === 32
+        event.keyCode === 32 ||
+        event.keyCode === 412 ||
+        event.keyCode === 417 ||
+        event.keyCode === 19
       ) {
-        showChrome()
+        revealChrome()
       }
     }
-    const onMove = () => {
-      showChrome()
+    const onPointer = () => {
+      revealChrome()
     }
     window.addEventListener('keydown', onKey, true)
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('pointerdown', onMove)
+    window.addEventListener('pointerdown', onPointer)
     return () => {
       window.removeEventListener('keydown', onKey, true)
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('pointerdown', onMove)
+      window.removeEventListener('pointerdown', onPointer)
     }
-  }, [showChrome])
+  }, [revealChrome])
 
+  // Progresso via DOM (sem setState/s — evita re-render a 1Hz)
   useEffect(() => {
     const id = window.setInterval(() => {
-      setTick((t) => t + 1)
-    }, 1000)
+      const el = videoRef.current
+      if (!el) return
+      const dur =
+        el.duration && Number.isFinite(el.duration) ? el.duration : 0
+      const cur = el.currentTime || 0
+      const pct = dur > 0 ? Math.round((cur / dur) * 100) : 0
+      if (fillRef.current) fillRef.current.style.width = `${String(pct)}%`
+      if (timeCurRef.current) timeCurRef.current.textContent = formatTime(cur)
+      if (timeDurRef.current) timeDurRef.current.textContent = formatTime(dur)
+    }, 500)
     return () => {
       window.clearInterval(id)
     }
-  }, [])
-
-  const video = videoRef.current
-  const duration =
-    video?.duration && Number.isFinite(video.duration) ? video.duration : 0
-  const current = video?.currentTime ?? 0
-  const progress = duration > 0 ? current / duration : 0
-  void tick
+  }, [src])
 
   const togglePlay = () => {
     const el = videoRef.current
@@ -448,12 +533,12 @@ export function VideoPlayer({
     if (el.paused) {
       void el.play()
       setPaused(false)
-      showChrome()
+      revealChrome()
     } else {
       el.pause()
       setPaused(true)
-      setChromeVisible(true)
       window.clearTimeout(hideTimer.current)
+      setChrome(true)
     }
   }
 
@@ -464,41 +549,54 @@ export function VideoPlayer({
       0,
       Math.min(el.duration || 0, el.currentTime + delta),
     )
-    setTick((t) => t + 1)
-    showChrome()
+    revealChrome()
   }
 
   const canEpNav = episodes.length > 1
-  const showPrev = Boolean(onPrevEpisode && (hasPrevEpisode ?? canEpNav))
-  const showNext = Boolean(onNextEpisode && (hasNextEpisode ?? canEpNav))
-  // Mostra lista sempre que houver episódios (mesmo 1) + callback
-  const showList = episodes.length > 0 && typeof onSelectEpisode === 'function'
+  const showPrev = Boolean(
+    onPrevEpisode && (hasPrevEpisode !== undefined ? hasPrevEpisode : canEpNav),
+  )
+  const showNext = Boolean(
+    onNextEpisode && (hasNextEpisode !== undefined ? hasNextEpisode : canEpNav),
+  )
+  const showList =
+    episodes.length > 0 && typeof onSelectEpisode === 'function'
   const showCc = captionTracks.length > 0
   const ccOn = activeCaptionId !== null
 
   return (
     <div
-      className={cx(
-        styles.overlay,
-        chromeVisible && styles.chromeVisible,
-      )}
+      className={cx(styles.overlay, chromeVisible && styles.chromeVisible)}
     >
       <video
         ref={videoRef}
         className={styles.video}
         poster={poster}
         playsInline
-        crossOrigin="anonymous"
+        preload="auto"
         onPlay={() => {
           setPaused(false)
-          showChrome()
+          setBuffering(false)
+          // Não chama revealChrome: play automático/HLS não deve piscar o chrome.
+          armHide()
+        }}
+        onPlaying={() => {
+          setBuffering(false)
+          setPaused(false)
+        }}
+        onWaiting={() => {
+          setBuffering(true)
+        }}
+        onCanPlay={() => {
+          setBuffering(false)
         }}
         onPause={() => {
           setPaused(true)
-          setChromeVisible(true)
           window.clearTimeout(hideTimer.current)
+          setChrome(true)
         }}
         onError={() => {
+          setBuffering(false)
           setError('Não foi possível reproduzir este vídeo.')
         }}
         onEnded={() => {
@@ -509,6 +607,13 @@ export function VideoPlayer({
           onClose()
         }}
       />
+
+      {buffering && !error ? (
+        <div className={styles.buffering} aria-live="polite">
+          <div className={styles.spinner} />
+          <span>Carregando…</span>
+        </div>
+      ) : null}
 
       {cueText ? (
         <div className={styles.cueBox} aria-live="polite">
@@ -521,13 +626,13 @@ export function VideoPlayer({
           type="button"
           className={styles.tapCatcher}
           aria-label="Mostrar controles"
-          onClick={showChrome}
+          onClick={revealChrome}
         />
       ) : null}
 
       <div
         className={cx(styles.chrome, chromeVisible && styles.visible)}
-        onMouseMove={showChrome}
+        onMouseMove={bumpChrome}
       >
         <div className={styles.topMeta}>
           <h2 className={styles.title}>{title}</h2>
@@ -552,25 +657,24 @@ export function VideoPlayer({
             }}
           >
             <div className={styles.progressTrack}>
-              <div
-                className={styles.progressFill}
-                style={{ width: `${String(Math.round(progress * 100))}%` }}
-              />
+              <div ref={fillRef} className={styles.progressFill} style={{ width: '0%' }} />
             </div>
           </Focusable>
           <div className={styles.timeRow}>
-            <span>{formatTime(current)}</span>
-            <span>{formatTime(duration)}</span>
+            <span ref={timeCurRef}>0:00</span>
+            <span ref={timeDurRef}>0:00</span>
           </div>
 
           <div className={styles.controls}>
-            {showPrev ? (
+            {canEpNav ? (
               <Focusable
                 focusKey="PLAYER_PREV_EP"
-                className={styles.iconBtn}
+                className={cx(styles.iconBtn, !showPrev && styles.iconBtnDisabled)}
+                focusable={showPrev}
                 onEnterPress={() => {
+                  if (!showPrev) return
                   onPrevEpisode?.()
-                  showChrome()
+                  revealChrome()
                 }}
               >
                 <MediaIcons.PrevEp />
@@ -595,7 +699,11 @@ export function VideoPlayer({
               className={styles.iconBtnPrimary}
               onEnterPress={togglePlay}
             >
-              {paused ? <MediaIcons.Play size={26} /> : <MediaIcons.Pause size={26} />}
+              {paused ? (
+                <MediaIcons.Play size={26} />
+              ) : (
+                <MediaIcons.Pause size={26} />
+              )}
             </Focusable>
 
             <Focusable
@@ -611,13 +719,15 @@ export function VideoPlayer({
               </span>
             </Focusable>
 
-            {showNext ? (
+            {canEpNav ? (
               <Focusable
                 focusKey="PLAYER_NEXT_EP"
-                className={styles.iconBtn}
+                className={cx(styles.iconBtn, !showNext && styles.iconBtnDisabled)}
+                focusable={showNext}
                 onEnterPress={() => {
+                  if (!showNext) return
                   onNextEpisode?.()
-                  showChrome()
+                  revealChrome()
                 }}
               >
                 <MediaIcons.NextEp />
@@ -656,7 +766,7 @@ export function VideoPlayer({
       {epListOpen && showList ? (
         <div className={styles.epModalBackdrop}>
           <div className={styles.epModal} data-scroll-y="player-eps">
-            <p className={styles.sidePanelTitle}>Capítulos</p>
+            <p className={styles.sidePanelTitle}>Episódios</p>
 
             {audioKinds.length > 1 ? (
               <div className={styles.epFilters}>
@@ -734,7 +844,7 @@ export function VideoPlayer({
                   onEnterPress={() => {
                     onSelectEpisode?.(ep.id)
                     setEpListOpen(false)
-                    showChrome()
+                    revealChrome()
                   }}
                 >
                   {ep.label}
@@ -772,7 +882,7 @@ export function VideoPlayer({
                 applyCaption(null)
                 setCapListOpen(false)
                 void setFocus('PLAYER_CC')
-                showChrome()
+                revealChrome()
               }}
             >
               Desligadas
@@ -789,7 +899,7 @@ export function VideoPlayer({
                   applyCaption(t.id)
                   setCapListOpen(false)
                   void setFocus('PLAYER_CC')
-                  showChrome()
+                  revealChrome()
                 }}
               >
                 {t.label}

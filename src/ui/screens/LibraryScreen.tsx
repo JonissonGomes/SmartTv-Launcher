@@ -79,17 +79,22 @@ export function LibraryScreen() {
     startAt?: number
   } | null>(null)
 
-  const continueItems = useMemo(
-    () =>
-      [...entries]
-        .sort(
-          (a, b) =>
-            new Date(b.lastWatchedAt).getTime() -
-            new Date(a.lastWatchedAt).getTime(),
-        )
-        .slice(0, 12),
-    [entries],
-  )
+  const continueItems = useMemo(() => {
+    const seen = new Set<string>()
+    return [...entries]
+      .sort(
+        (a, b) =>
+          new Date(b.lastWatchedAt).getTime() -
+          new Date(a.lastWatchedAt).getTime(),
+      )
+      .filter((e) => {
+        const key = e.animeId || e.id
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+      .slice(0, 12)
+  }, [entries])
 
   const loadHome = async (opts?: { soft?: boolean }) => {
     const soft = opts?.soft ?? highlights.length > 0
@@ -309,24 +314,33 @@ export function LibraryScreen() {
         setError('Episódio sem stream disponível')
         return
       }
-      const watchId = `${anime.id}-${ep.id}`
+      const list =
+        playlist.length > 0
+          ? playlist
+          : detailEps.length > 0
+            ? detailEps
+            : [ep]
+      // Um card por anime no Continuar; capa = poster do título
+      const watchId = anime.id
+      const cover = anime.posterUrl || anime.backdropUrl || ep.stillUrl
       recordWatch({
         id: watchId,
         title: anime.name,
         subtitle: `T${ep.season} E${ep.number} — ${ep.title}`,
-        poster: ep.stillUrl || anime.posterUrl,
+        poster: cover,
         streamUrl: src,
         animeId: anime.id,
         episodeId: ep.id,
+        currentTime: 0,
       })
       setPlaying({
         title: anime.name,
         subtitle: `T${ep.season} E${ep.number} — ${ep.title}`,
         src,
-        poster: ep.stillUrl || anime.posterUrl,
+        poster: cover,
         anime,
         episodeId: ep.id,
-        episodes: playlist.length > 0 ? playlist : [ep],
+        episodes: list,
         watchId,
         startAt: 0,
       })
@@ -337,9 +351,16 @@ export function LibraryScreen() {
 
   if (playing) {
     const playlist = playing.episodes ?? []
+    const animeCtx = playing.anime ?? detailAnime
     const epIndex = playlist.findIndex((e) => e.id === playing.episodeId)
     const hasPrev = epIndex > 0
     const hasNext = epIndex >= 0 && epIndex < playlist.length - 1
+    const playerEps = playlist.map((e) => ({
+      id: e.id,
+      label: `T${e.season} E${e.number} — ${e.title}`,
+      audio: e.audio,
+      season: e.season,
+    }))
 
     return (
       <VideoPlayer
@@ -349,12 +370,7 @@ export function LibraryScreen() {
         poster={playing.poster}
         startAt={playing.startAt}
         episodeId={playing.episodeId}
-        episodes={playlist.map((e) => ({
-          id: e.id,
-          label: `T${e.season} E${e.number} — ${e.title}`,
-          audio: e.audio,
-          season: e.season,
-        }))}
+        episodes={playerEps}
         hasPrevEpisode={hasPrev}
         hasNextEpisode={hasNext}
         onProgress={
@@ -365,24 +381,16 @@ export function LibraryScreen() {
             : undefined
         }
         onPrevEpisode={
-          hasPrev && playing.anime
+          hasPrev && animeCtx
             ? () => {
-                void playEpisode(
-                  playlist[epIndex - 1]!,
-                  playing.anime!,
-                  playlist,
-                )
+                void playEpisode(playlist[epIndex - 1]!, animeCtx, playlist)
               }
             : undefined
         }
         onNextEpisode={
-          hasNext && playing.anime
+          hasNext && animeCtx
             ? () => {
-                void playEpisode(
-                  playlist[epIndex + 1]!,
-                  playing.anime!,
-                  playlist,
-                )
+                void playEpisode(playlist[epIndex + 1]!, animeCtx, playlist)
               }
             : undefined
         }
@@ -390,8 +398,7 @@ export function LibraryScreen() {
           playlist.length > 0
             ? (id) => {
                 const ep = playlist.find((e) => e.id === id)
-                const anime = playing.anime ?? detailAnime
-                if (ep && anime) void playEpisode(ep, anime, playlist)
+                if (ep && animeCtx) void playEpisode(ep, animeCtx, playlist)
               }
             : undefined
         }
@@ -479,12 +486,30 @@ export function LibraryScreen() {
                       // segue só com o stream salvo
                     }
                   }
+                  const cover =
+                    anime?.posterUrl ||
+                    anime?.backdropUrl ||
+                    entry.poster
+                  // Corrige capa antiga (still/loading) se o detalhe trouxe poster
+                  if (cover && cover !== entry.poster && entry.animeId) {
+                    recordWatch({
+                      id: entry.animeId,
+                      title: entry.title,
+                      subtitle: entry.subtitle,
+                      poster: cover,
+                      streamUrl: entry.streamUrl,
+                      animeId: entry.animeId,
+                      episodeId: entry.episodeId,
+                      currentTime: entry.currentTime,
+                      duration: entry.duration,
+                    })
+                  }
                   setPlaying({
                     title: entry.title,
                     subtitle: entry.subtitle,
                     src: entry.streamUrl,
-                    poster: entry.poster,
-                    watchId: entry.id,
+                    poster: cover,
+                    watchId: entry.animeId || entry.id,
                     episodeId: entry.episodeId,
                     startAt: entry.currentTime ?? 0,
                     anime,
@@ -662,7 +687,7 @@ export function LibraryScreen() {
             onBack={closeDetail}
             onSeasonFilter={setSeasonFilter}
             onPlayEpisode={(ep) => {
-              void playEpisode(ep, detailAnime)
+              void playEpisode(ep, detailAnime, detailEps)
             }}
           />
         </aside>

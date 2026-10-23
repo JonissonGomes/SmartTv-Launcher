@@ -93,8 +93,26 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
     }
   }, [])
 
+  const contentFocusKey = (): string => {
+    if (view === 'home') return 'VIEW_home'
+    if (view === 'anime' || view === 'library') return 'VIEW_anime'
+    if (view === 'platform') return 'VIEW_platform'
+    return `VIEW_${view}`
+  }
+
+  /** Direita no menu = sai pro conteúdo e fecha o flyout na hora. */
+  const exitFlyoutOnRight = (direction: string): boolean => {
+    if (direction !== 'right') return true
+    setHoverOpen(false)
+    setLingerOpen(false)
+    void setFocus(contentFocusKey())
+    return false
+  }
+
   const go = (next: AppView) => {
     setView(next === 'library' ? 'anime' : next)
+    setHoverOpen(false)
+    setLingerOpen(false)
     const focus =
       next === 'home'
         ? 'VIEW_home'
@@ -106,6 +124,8 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
 
   const openPlatform = (platform: Platform) => {
     openPlatformCatalog(platform)
+    setHoverOpen(false)
+    setLingerOpen(false)
     void setFocus('VIEW_platform')
   }
 
@@ -132,11 +152,12 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
           onEnterPress={() => {
             void setFocus('FLY_PROFILE')
           }}
+          onArrowPress={exitFlyoutOnRight}
         >
           <img
             className={styles.peekLogo}
             src="./logo.png"
-            alt=""
+            alt="PINTV"
             width={36}
             height={36}
             decoding="async"
@@ -152,6 +173,7 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
             onEnterPress={() => {
               onOpenProfiles?.()
             }}
+            onArrowPress={exitFlyoutOnRight}
           >
             <div
               className={styles.avatar}
@@ -181,6 +203,7 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
                 onEnterPress={() => {
                   go(item.view)
                 }}
+                onArrowPress={exitFlyoutOnRight}
               >
                 {item.label}
               </Focusable>
@@ -198,6 +221,7 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
                 onEnterPress={() => {
                   openPlatform(platform)
                 }}
+                onArrowPress={exitFlyoutOnRight}
               >
                 <PlatformIcon platform={platform} size={22} />
                 <span>{APP_CONFIGS[platform].label}</span>
@@ -216,6 +240,7 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
                 onEnterPress={() => {
                   void launchApp(platform).catch(() => undefined)
                 }}
+                onArrowPress={exitFlyoutOnRight}
               >
                 Abrir {APP_CONFIGS[platform].label}
               </Focusable>
