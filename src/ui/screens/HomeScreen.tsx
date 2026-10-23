@@ -1,3 +1,4 @@
+import { useCallback, useRef, useState } from 'react'
 import type { CatalogItem, ContentRow, WatchEntry } from '@/domain/types'
 import { useHistoryStore } from '@/store/history'
 import { Hero } from '@/ui/Hero/Hero'
@@ -15,6 +16,9 @@ interface HomeScreenProps {
   onMoreInfoEntry: (entry: WatchEntry) => void
 }
 
+/** Distância de scroll (px) para recolher o banner por completo. */
+const HERO_COLLAPSE_RANGE = 280
+
 export function HomeScreen({
   rows,
   loading,
@@ -25,6 +29,10 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const markFinished = useHistoryStore((s) => s.markFinished)
   const entries = useHistoryStore((s) => s.entries)
+  const rowsRef = useRef<HTMLDivElement>(null)
+  const [collapse, setCollapse] = useState(0)
+  const rafRef = useRef(0)
+
   const hero = entries
     .filter((e) => !e.finished)
     .sort(
@@ -34,11 +42,35 @@ export function HomeScreen({
 
   const catalogRows = rows.filter((row) => row.id !== 'continue' || Boolean(hero))
 
+  const syncCollapse = useCallback(() => {
+    const el = rowsRef.current
+    if (!el) return
+    const next = Math.min(1, Math.max(0, el.scrollTop / HERO_COLLAPSE_RANGE))
+    setCollapse((prev) => (Math.abs(prev - next) < 0.008 ? prev : next))
+  }, [])
+
+  const onRowsScroll = () => {
+    if (rafRef.current) return
+    rafRef.current = window.requestAnimationFrame(() => {
+      rafRef.current = 0
+      syncCollapse()
+    })
+  }
+
+  const expandHero = () => {
+    const el = rowsRef.current
+    if (!el) return
+    el.scrollTo({ top: 0, behavior: 'smooth' })
+    setCollapse(0)
+  }
+
   return (
     <Focusable focusKey="VIEW_home" className={styles.home} saveLastFocusedChild>
       {hero ? (
         <Hero
           entry={hero}
+          collapse={collapse}
+          onFocusHero={expandHero}
           onContinue={onContinueEntry}
           onMoreInfo={onMoreInfoEntry}
           onMarkFinished={(entry) => {
@@ -47,7 +79,11 @@ export function HomeScreen({
         />
       ) : null}
 
-      <div className={styles.rows}>
+      <div
+        ref={rowsRef}
+        className={styles.rows}
+        onScroll={onRowsScroll}
+      >
         {loading ? (
           <div className={styles.skeletons}>
             {Array.from({ length: 8 }).map((_, i) => (

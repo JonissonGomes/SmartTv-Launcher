@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import type { WatchEntry } from '@/domain/types'
 import { getTrailerYoutubeKey } from '@/services/tmdb'
 import { cx } from '@/ui/cx'
@@ -11,6 +11,9 @@ interface HeroProps {
   onContinue: (entry: WatchEntry) => void
   onMarkFinished: (entry: WatchEntry) => void
   onMoreInfo: (entry: WatchEntry) => void
+  /** 0 = totalmente visível, 1 = recolhido */
+  collapse?: number
+  onFocusHero?: () => void
 }
 
 export function Hero({
@@ -18,6 +21,8 @@ export function Hero({
   onContinue,
   onMarkFinished,
   onMoreInfo,
+  collapse = 0,
+  onFocusHero,
 }: HeroProps) {
   const [trailerKey, setTrailerKey] = useState<string>()
   const episodeLabel =
@@ -28,6 +33,9 @@ export function Hero({
     entry.voteAverage && entry.voteAverage > 0
       ? entry.voteAverage.toFixed(1)
       : null
+
+  const clamped = Math.min(1, Math.max(0, collapse))
+  const collapsedAway = clamped >= 0.92
 
   useEffect(() => {
     let cancelled = false
@@ -48,7 +56,19 @@ export function Hero({
   }, [entry.mediaType, entry.tmdbId])
 
   return (
-    <Focusable focusKey="HERO" className={styles.hero} saveLastFocusedChild>
+    <Focusable
+      focusKey="HERO"
+      className={cx(styles.hero, collapsedAway && styles.heroGone)}
+      style={
+        {
+          '--hero-collapse': String(clamped),
+        } as CSSProperties
+      }
+      saveLastFocusedChild
+      onFocus={() => {
+        onFocusHero?.()
+      }}
+    >
       <TrailerArt
         className={styles.backdrop}
         backdropPath={entry.backdropPath}

@@ -1,14 +1,25 @@
 .hero {
+  --hero-collapse: 0;
   position: relative;
-  height: var(--hero-height);
+  flex-shrink: 0;
+  height: calc(var(--hero-height) * (1 - var(--hero-collapse)));
+  max-height: var(--hero-height);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  margin-bottom: var(--space-5);
+  margin-bottom: calc(var(--space-5) * (1 - var(--hero-collapse)));
   background: var(--color-surface);
+  opacity: calc(1 - (var(--hero-collapse) * 0.85));
+  will-change: height, opacity, margin-bottom;
+}
+
+.heroGone {
+  pointer-events: none;
+  opacity: 0;
+  margin-bottom: 0;
 }
 
 .backdrop {
-  opacity: 0.78;
+  opacity: calc(0.78 * (1 - var(--hero-collapse)));
   pointer-events: none;
 }
 
@@ -21,6 +32,7 @@
     rgba(8, 10, 14, 0.45) 48%,
     rgba(8, 10, 14, 0.2) 100%
   );
+  opacity: calc(1 - var(--hero-collapse));
 }
 
 .rating {
@@ -34,6 +46,7 @@
   color: #fff;
   font-weight: 700;
   font-size: 0.95rem;
+  opacity: calc(1 - min(1, var(--hero-collapse) * 1.6));
 }
 
 .body {
@@ -46,6 +59,8 @@
   padding: var(--space-6);
   max-width: 42rem;
   gap: var(--space-3);
+  opacity: calc(1 - min(1, var(--hero-collapse) * 1.45));
+  transform: translateY(calc(var(--hero-collapse) * 1.25rem));
 }
 
 .kicker {
@@ -103,4 +118,10 @@
   color: var(--color-text-muted);
   padding: var(--space-6);
   text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body {
+    transform: none;
+  }
 }
