@@ -4,7 +4,14 @@ import { pickBestDeepLink } from '@/services/deepLink'
 import {
   buildSafeLaunchParameters,
   isAllowedLunaMethod,
+  isSafeWebOsAppId,
 } from '@/services/launchSafety'
+import { normalizeHttpsUrl } from '@/services/urlSafety'
+
+const BROWSER_APP_IDS = [
+  'com.webos.app.browser',
+  'com.webos.app.bridgebrowser',
+] as const
 
 export interface WebOsInstalledApp {
   id: string
@@ -245,4 +252,40 @@ export async function launchPlatformTitle(
 
 export function getAllowedWebOsAppIds(): readonly string[] {
   return allowedAppIds()
+}
+
+/** Abre URL no navegador nativo da TV (site próprio / fallback de iframe). */
+export async function launchBrowser(url: string): Promise<void> {
+  const safe = normalizeHttpsUrl(url)
+  if (!safe) throw new Error('URL inválida')
+
+  if (!isWebOsRuntime()) {
+    console.info('[webOS mock] launchBrowser', safe)
+    window.open(safe, '_blank', 'noopener,noreferrer')
+    return
+  }
+
+  let lastError: unknown
+  for (const appId of BROWSER_APP_IDS) {
+    if (!isSafeWebOsAppId(appId)) continue
+    try {
+      await lunaRequest({
+        method: 'launch',
+        parameters: {
+          id: appId,
+          params: {
+            target: safe,
+            url: safe,
+          },
+        },
+      })
+      return
+    } catch (err) {
+      lastError = err
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('Não foi possível abrir o navegador da TV')
 }

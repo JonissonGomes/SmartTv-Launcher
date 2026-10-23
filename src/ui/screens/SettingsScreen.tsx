@@ -10,17 +10,26 @@ import {
   listInstalledApps,
   type WebOsInstalledApp,
 } from '@/services/webos'
+import { normalizeHttpsUrl } from '@/services/urlSafety'
 import { useHistoryStore } from '@/store/history'
 import { useSettingsStore } from '@/store/settings'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
+import { TvTextField } from '@/ui/input/TvTextField'
 import styles from './SettingsScreen.module.css'
 
 export function SettingsScreen() {
   const ownedPlatforms = useSettingsStore((s) => s.ownedPlatforms)
   const togglePlatform = useSettingsStore((s) => s.togglePlatform)
+  const libraryBaseUrl = useSettingsStore((s) => s.libraryBaseUrl)
+  const setLibraryBaseUrl = useSettingsStore((s) => s.setLibraryBaseUrl)
   const importEntries = useHistoryStore((s) => s.importEntries)
   const clearHistory = useHistoryStore((s) => s.clear)
+  const [libraryDraft, setLibraryDraft] = useState(libraryBaseUrl)
+
+  useEffect(() => {
+    setLibraryDraft(libraryBaseUrl)
+  }, [libraryBaseUrl])
 
   const [apps, setApps] = useState<WebOsInstalledApp[]>([])
   const [csvText, setCsvText] = useState(
@@ -54,6 +63,39 @@ export function SettingsScreen() {
             )
           })}
         </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Biblioteca web (seu site)</h2>
+        <p>
+          URL base usada em Biblioteca. Apenas esse domínio (e subdomínios) pode
+          ser aberto no launcher.
+        </p>
+        <TvTextField
+          focusKey="SETTINGS_LIBRARY_URL"
+          label="URL do site"
+          value={libraryDraft}
+          onChange={setLibraryDraft}
+          placeholder="https://seu-site.com"
+          inputType="url"
+          maxLength={120}
+        />
+        <Focusable
+          focusKey="SETTINGS_LIBRARY_SAVE"
+          className={styles.btn}
+          onEnterPress={() => {
+            const next = normalizeHttpsUrl(libraryDraft)
+            if (!next) {
+              setMessage('URL inválida. Use https://…')
+              return
+            }
+            setLibraryBaseUrl(next)
+            setLibraryDraft(next)
+            setMessage(`Biblioteca: ${next}`)
+          }}
+        >
+          Salvar URL da biblioteca
+        </Focusable>
       </section>
 
       <section className={styles.section}>

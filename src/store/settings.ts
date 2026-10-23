@@ -11,11 +11,14 @@ interface SettingsState {
   activeTheme: Platform | null
   /** Streaming cujo catálogo está aberto em `view === 'platform'`. */
   catalogPlatform: Platform | null
+  /** Site próprio (biblioteca web) — https obrigatório em prod. */
+  libraryBaseUrl: string
   reducedMotion: boolean
   setView: (view: AppView) => void
   setActiveTheme: (platform: Platform | null) => void
   openPlatformCatalog: (platform: Platform) => void
   togglePlatform: (platform: Platform) => void
+  setLibraryBaseUrl: (url: string) => void
   setReducedMotion: (value: boolean) => void
 }
 
@@ -26,6 +29,7 @@ export const useSettingsStore = create<SettingsState>()(
       ownedPlatforms: [...PLATFORM_ORDER],
       activeTheme: null,
       catalogPlatform: null,
+      libraryBaseUrl: 'https://assistiranimesonline.net',
       reducedMotion: false,
 
       setView: (view) => set({ view }),
@@ -48,6 +52,8 @@ export const useSettingsStore = create<SettingsState>()(
         }
       },
 
+      setLibraryBaseUrl: (url) => set({ libraryBaseUrl: url }),
+
       setReducedMotion: (value) => set({ reducedMotion: value }),
     }),
     {
@@ -56,6 +62,7 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (state) => ({
         ownedPlatforms: state.ownedPlatforms,
         activeTheme: state.activeTheme,
+        libraryBaseUrl: state.libraryBaseUrl,
         reducedMotion: state.reducedMotion,
       }),
     },

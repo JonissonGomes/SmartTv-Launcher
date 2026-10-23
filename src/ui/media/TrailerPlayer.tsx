@@ -1,4 +1,7 @@
+import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useEffect, useState } from 'react'
+import { youtubeThumbUrl } from '@/services/tmdb'
+import { isWebOsRuntime } from '@/services/webos'
 import { Focusable } from '@/ui/focus/Focusable'
 import styles from './TrailerPlayer.module.css'
 
@@ -6,13 +9,12 @@ interface TrailerPlayerProps {
   youtubeKey: string
   title: string
   onClose: () => void
-  /** Fallback: abrir no app YouTube da TV. */
   onOpenYoutubeApp: () => void
 }
 
 /**
- * Player embutido via youtube-nocookie.
- * Em webOS antigo pode falhar (erro 153) — aí oferecemos abrir o app YouTube.
+ * webOS: embed YouTube falha (erro 153) → thumbnail + app YouTube.
+ * Dev/browser: tenta iframe; fallback igual.
  */
 export function TrailerPlayer({
   youtubeKey,
@@ -20,45 +22,61 @@ export function TrailerPlayer({
   onClose,
   onOpenYoutubeApp,
 }: TrailerPlayerProps) {
-  const [failed, setFailed] = useState(false)
+  const onTv = isWebOsRuntime()
+  const [mode, setMode] = useState<'tv' | 'embed' | 'failed'>(
+    onTv ? 'tv' : 'embed',
+  )
 
   useEffect(() => {
+    void setFocus(mode === 'embed' ? 'TRAILER_CLOSE' : 'TRAILER_PLAY_YT')
+  }, [mode])
+
+  useEffect(() => {
+    if (mode !== 'embed') return
     const timer = window.setTimeout(() => {
-      // Se o iframe não “acordar”, após 12s sugerimos fallback.
-      // (não há onError confiável no embed do YouTube)
-    }, 12_000)
+      setMode('failed')
+    }, 10_000)
     return () => {
       window.clearTimeout(timer)
     }
-  }, [youtubeKey])
+  }, [mode, youtubeKey])
 
-  const src =
+  const thumb = youtubeThumbUrl(youtubeKey)
+  const embedSrc =
     `https://www.youtube-nocookie.com/embed/${youtubeKey}` +
-    `?autoplay=1&rel=0&modestbranding=1&playsinline=1&fs=1`
+    `?autoplay=1&rel=0&modestbranding=1&playsinline=1`
 
   return (
     <div className={styles.wrap}>
-      {!failed ? (
+      {mode === 'embed' ? (
         <iframe
           className={styles.frame}
-          src={src}
+          src={embedSrc}
           title={`Trailer — ${title}`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           referrerPolicy="strict-origin-when-cross-origin"
           onError={() => {
-            setFailed(true)
+            setMode('failed')
           }}
         />
       ) : (
         <div className={styles.fallback}>
-          <p>O player embutido não está disponível neste aparelho.</p>
+          {thumb ? (
+            <img className={styles.thumb} src={thumb} alt="" />
+          ) : null}
+          <p className={styles.fallbackTitle}>{title}</p>
+          <p>
+            {onTv || mode === 'tv'
+              ? 'Na TV o trailer abre no app YouTube (embed bloqueado pela LG).'
+              : 'Player embutido indisponível. Use o app YouTube.'}
+          </p>
           <Focusable
-            focusKey="TRAILER_FALLBACK_YT"
+            focusKey="TRAILER_PLAY_YT"
             className={styles.fallbackBtn}
             onEnterPress={onOpenYoutubeApp}
           >
-            Abrir no YouTube
+            Reproduzir trailer no YouTube
           </Focusable>
         </div>
       )}
@@ -69,18 +87,17 @@ export function TrailerPlayer({
           className={styles.closeBtn}
           onEnterPress={onClose}
         >
-          Fechar trailer
+          Fechar
         </Focusable>
-        <Focusable
-          focusKey="TRAILER_YT_APP"
-          className={styles.ghostBtn}
-          onEnterPress={() => {
-            setFailed(true)
-            onOpenYoutubeApp()
-          }}
-        >
-          Abrir no app YouTube
-        </Focusable>
+        {mode === 'embed' ? (
+          <Focusable
+            focusKey="TRAILER_YT_APP"
+            className={styles.ghostBtn}
+            onEnterPress={onOpenYoutubeApp}
+          >
+            Abrir no app YouTube
+          </Focusable>
+        ) : null}
       </div>
     </div>
   )

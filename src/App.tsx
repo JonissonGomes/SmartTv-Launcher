@@ -26,6 +26,7 @@ import { ControllerScreen } from '@/ui/screens/ControllerScreen'
 import { GamesScreen } from '@/ui/screens/GamesScreen'
 import { HistoryScreen } from '@/ui/screens/HistoryScreen'
 import { HomeScreen } from '@/ui/screens/HomeScreen'
+import { LibraryScreen } from '@/ui/screens/LibraryScreen'
 import { PlatformScreen } from '@/ui/screens/PlatformScreen'
 import { SearchScreen } from '@/ui/screens/SearchScreen'
 import { SettingsScreen } from '@/ui/screens/SettingsScreen'
@@ -400,6 +401,7 @@ export default function App() {
           <HistoryScreen onContinueId={continueById} />
         ) : null}
         {view === 'search' ? <SearchScreen onSelect={openDetails} /> : null}
+        {view === 'library' ? <LibraryScreen /> : null}
         {view === 'settings' ? <SettingsScreen /> : null}
       </Shell>
 

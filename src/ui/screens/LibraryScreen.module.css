@@ -1,0 +1,96 @@
+.screen {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.sub {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.pathRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.btn {
+  padding: 0.75rem 1.1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 700;
+  align-self: end;
+}
+
+.btnGhost {
+  padding: 0.75rem 1.1rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.message {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: 0.9rem;
+}
+
+.stage {
+  flex: 1;
+  min-height: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--color-border);
+}
+
+.frame,
+.video {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+}
+
+.blocked {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.footer {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
