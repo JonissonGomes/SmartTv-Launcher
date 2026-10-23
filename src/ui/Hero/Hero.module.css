@@ -4,10 +4,11 @@
   flex-shrink: 0;
   height: calc(var(--hero-height) * (1 - var(--hero-collapse)));
   max-height: var(--hero-height);
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   overflow: hidden;
+  margin: 0 calc(-1 * clamp(0.5rem, 1vw, 1rem));
   margin-bottom: calc(var(--space-5) * (1 - var(--hero-collapse)));
-  background: var(--color-surface);
+  background: #111;
   opacity: calc(1 - (var(--hero-collapse) * 0.85));
   /* Evita will-change em height (caro na TV); anima só opacity/transform no body. */
 }
@@ -28,9 +29,9 @@
   inset: 0;
   background: linear-gradient(
     90deg,
-    rgba(8, 10, 14, 0.92) 0%,
-    rgba(8, 10, 14, 0.45) 48%,
-    rgba(8, 10, 14, 0.2) 100%
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.45) 48%,
+    rgba(0, 0, 0, 0.15) 100%
   );
   opacity: calc(1 - var(--hero-collapse));
 }

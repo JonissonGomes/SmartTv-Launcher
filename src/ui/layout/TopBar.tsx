@@ -5,10 +5,14 @@ import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import styles from './TopBar.module.css'
 
-const TABS: Array<{ id: string; label: string; view?: 'home' | 'search' | 'history' }> = [
+const TABS: Array<{
+  id: string
+  label: string
+  view: 'home' | 'search' | 'history' | 'categories' | 'anime'
+}> = [
   { id: 'home', label: 'Início', view: 'home' },
-  { id: 'movies', label: 'Filmes', view: 'home' },
-  { id: 'series', label: 'Séries', view: 'home' },
+  { id: 'categories', label: 'Catálogo', view: 'categories' },
+  { id: 'anime', label: 'Animes', view: 'anime' },
   { id: 'history', label: 'Recentes', view: 'history' },
 ]
 
@@ -16,7 +20,6 @@ export function TopBar() {
   const view = useSettingsStore((s) => s.view)
   const setView = useSettingsStore((s) => s.setView)
   const [now, setNow] = useState(() => new Date())
-  const [activeTab, setActiveTab] = useState('home')
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -32,9 +35,15 @@ export function TopBar() {
     minute: '2-digit',
   })
 
+  const activeView = view === 'library' ? 'anime' : view
+
   return (
     <header className={styles.topbar}>
-      <div className={styles.tabs}>
+      <div className={styles.brandBlock}>
+        <span className={styles.brand}>Meu Launcher</span>
+      </div>
+
+      <nav className={styles.tabs}>
         {TABS.map((tab) => (
           <Focusable
             key={tab.id}
@@ -42,24 +51,23 @@ export function TopBar() {
             variant="plain"
             className={cx(
               styles.tab,
-              (activeTab === tab.id ||
-                (tab.view === view && tab.id !== 'movies' && tab.id !== 'series')) &&
-                styles.tabActive,
+              activeView === tab.view && styles.tabActive,
             )}
             onEnterPress={() => {
-              setActiveTab(tab.id)
-              if (tab.view) {
-                setView(tab.view)
-                void setFocus(
-                  tab.view === 'home' ? 'VIEW_home' : `VIEW_${tab.view}`,
-                )
-              }
+              setView(tab.view)
+              void setFocus(
+                tab.view === 'home'
+                  ? 'VIEW_home'
+                  : tab.view === 'anime'
+                    ? 'VIEW_anime'
+                    : `VIEW_${tab.view}`,
+              )
             }}
           >
             {tab.label}
           </Focusable>
         ))}
-      </div>
+      </nav>
 
       <div className={styles.meta}>
         <Focusable

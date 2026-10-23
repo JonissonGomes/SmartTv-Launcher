@@ -68,8 +68,8 @@ export function SettingsScreen() {
       <section className={styles.section}>
         <h2>Player de Animes</h2>
         <p>
-          Padrão: animesonlinecc.to. O app lê o catálogo do site (HTML) ou{' '}
-          <code>/launcher/catalog.json</code> se existir (streamUrl mp4/m3u8).
+          Catálogo via API do AnimeFire (padrão:{' '}
+          <code>https://animefire.one</code>).
         </p>
         <TvTextField
           focusKey="SETTINGS_LIBRARY_URL"

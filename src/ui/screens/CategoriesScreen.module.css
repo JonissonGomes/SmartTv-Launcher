@@ -83,14 +83,14 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
-  text-align: center;
+  align-items: flex-end;
+  justify-content: flex-start;
+  border-radius: 12px;
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
   border: 2px solid transparent;
   overflow: hidden;
-  /* Nav variant remove scale; reforça aqui */
+  background: linear-gradient(145deg, #262626, #111);
   transform: none !important;
 }
 

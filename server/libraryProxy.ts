@@ -1,33 +1,50 @@
 import type { Plugin } from 'vite'
 
+const AF_API = 'https://api.animefire.one'
+
 /**
- * Proxy DEV → site do catálogo (evita CORS no Simulator/browser).
- * GET /api/library-site/<path> → https://animesonlinecc.to/<path>
+ * Proxy DEV → API AnimeFire (evita CORS no Simulator/browser).
+ * POST/GET /api/animefire/* → https://api.animefire.one/*
  */
-export function libraryProxyPlugin(
-  target = 'https://animesonlinecc.to',
-): Plugin {
+export function libraryProxyPlugin(): Plugin {
   return {
-    name: 'library-site-proxy',
+    name: 'animefire-proxy',
     configureServer(server) {
-      server.middlewares.use('/api/library-site', (req, res, next) => {
-        if (req.method !== 'GET' && req.method !== 'HEAD') {
+      server.middlewares.use('/api/animefire', (req, res, next) => {
+        if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'POST') {
           next()
           return
         }
         void (async () => {
           try {
             const url = new URL(req.url ?? '/', 'http://localhost')
-            const path = url.pathname.replace(/^\/api\/library-site\/?/, '')
+            const path = url.pathname.replace(/^\/api\/animefire\/?/, '')
             const upstream = new URL(
-              path + url.search,
-              target.endsWith('/') ? target : `${target}/`,
+              `/${path}${url.search}`.replace(/\/{2,}/g, '/'),
+              `${AF_API}/`,
             )
+
+            const chunks: Buffer[] = []
+            if (req.method === 'POST') {
+              for await (const chunk of req) {
+                chunks.push(
+                  typeof chunk === 'string' ? Buffer.from(chunk) : chunk,
+                )
+              }
+            }
+
             const upstreamRes = await fetch(upstream.toString(), {
+              method: req.method,
               headers: {
-                Accept: req.headers.accept ?? 'text/html,application/json',
+                Accept: 'application/json',
+                Origin: 'https://animefire.one',
+                Referer: 'https://animefire.one/',
                 'User-Agent': 'SmartTv-Launcher-DevProxy/1.0',
+                ...(req.method === 'POST'
+                  ? { 'Content-Type': 'application/json' }
+                  : {}),
               },
+              body: req.method === 'POST' ? Buffer.concat(chunks) : undefined,
             })
             const buf = Buffer.from(await upstreamRes.arrayBuffer())
             res.statusCode = upstreamRes.status
@@ -40,7 +57,7 @@ export function libraryProxyPlugin(
             res.setHeader('Content-Type', 'application/json')
             res.end(
               JSON.stringify({
-                error: err instanceof Error ? err.message : 'proxy failed',
+                message: err instanceof Error ? err.message : 'proxy failed',
               }),
             )
           }

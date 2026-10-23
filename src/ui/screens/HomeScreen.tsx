@@ -88,8 +88,18 @@ export function HomeScreen({
       >
         {loading ? (
           <div className={styles.skeletons}>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className={cx('skeleton', styles.skeletonCard)} />
+            {Array.from({ length: 4 }).map((_, row) => (
+              <div key={row} className={styles.skeletonRow}>
+                <div className={cx('skeleton', styles.skeletonTitle)} />
+                <div className={styles.skeletonCards}>
+                  {Array.from({ length: 7 }).map((__, i) => (
+                    <div
+                      key={i}
+                      className={cx('skeleton', styles.skeletonCard)}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         ) : null}

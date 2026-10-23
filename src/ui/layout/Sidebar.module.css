@@ -9,8 +9,8 @@
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-5) var(--sidebar-pad);
-  background: color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-tint));
-  border-right: 1px solid var(--color-border);
+  background: #0a0a0a;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
   overflow: hidden;
   transition: background-color var(--transition-med);
 }

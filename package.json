@@ -15,7 +15,7 @@
     "sim": "powershell -ExecutionPolicy Bypass -File scripts/sim.ps1",
     "deploy": "bash scripts/deploy.sh",
     "catalog:refresh": "node scripts/refreshAnimeCatalog.mjs",
-    "package:ipk": "npm run catalog:refresh && npm run build && ares-package dist"
+    "package:ipk": "npm run build && ares-package dist"
   },
   "dependencies": {
     "@noriginmedia/norigin-spatial-navigation": "^3.3.0",

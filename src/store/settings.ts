@@ -29,7 +29,7 @@ export const useSettingsStore = create<SettingsState>()(
       ownedPlatforms: [...PLATFORM_ORDER],
       activeTheme: null,
       catalogPlatform: null,
-      libraryBaseUrl: 'https://animesonlinecc.to',
+      libraryBaseUrl: 'https://animefire.one',
       reducedMotion: false,
 
       setView: (view) =>
@@ -70,12 +70,14 @@ export const useSettingsStore = create<SettingsState>()(
         const p = (persisted ?? {}) as Partial<SettingsState>
         let libraryBaseUrl =
           p.libraryBaseUrl ?? current.libraryBaseUrl
-        // Migra site antigo → animesonlinecc.to
+        // Migra sites antigos → animefire.one
         if (
+          !libraryBaseUrl ||
           libraryBaseUrl.includes('assistiranimesonline.net') ||
-          !libraryBaseUrl
+          libraryBaseUrl.includes('animesonlinecc.to') ||
+          libraryBaseUrl.includes('otakulogia.com')
         ) {
-          libraryBaseUrl = 'https://animesonlinecc.to'
+          libraryBaseUrl = 'https://animefire.one'
         }
         return {
           ...current,

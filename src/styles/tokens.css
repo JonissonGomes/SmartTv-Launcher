@@ -1,22 +1,23 @@
 :root {
-  --color-bg: #0d0f14;
-  --color-bg-elevated: #12151c;
-  --color-surface: #171b24;
-  --color-surface-2: #1e2430;
+  /* Catálogo escuro estilo streaming (Globoplay-like) */
+  --color-bg: #0a0a0a;
+  --color-bg-elevated: #111111;
+  --color-surface: #171717;
+  --color-surface-2: #222222;
   --color-border: rgba(255, 255, 255, 0.08);
-  --color-text: #f5f5f7;
-  --color-text-muted: #8b93a7;
-  --color-danger: #f87171;
+  --color-text: #f5f5f5;
+  --color-text-muted: #a1a1a1;
+  --color-danger: #ff4a4a;
 
   /* Tema dinâmico (sobrescrito por ThemeRoot) */
-  --color-accent: #e21221;
-  --color-accent-soft: rgba(226, 18, 33, 0.2);
-  --color-tint: rgba(226, 18, 33, 0.12);
-  --color-glow: rgba(226, 18, 33, 0.28);
+  --color-accent: #e50914;
+  --color-accent-soft: rgba(229, 9, 20, 0.22);
+  --color-tint: rgba(229, 9, 20, 0.08);
+  --color-glow: rgba(229, 9, 20, 0.25);
   --color-focus: #ff4d57;
 
-  --radius-md: 8px;
-  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
   --radius-lg: 12px;
 
   --sidebar-width-collapsed: 5.5rem;
@@ -31,7 +32,7 @@
   --card-width: clamp(9rem, 10vw, 11.5rem);
   --card-height: clamp(13.5rem, 15vw, 17rem);
 
-  --font-sans: 'Segoe UI', 'Trebuchet MS', sans-serif;
+  --font-sans: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 
   --focus-scale: 1.06;
   --transition-fast: 120ms cubic-bezier(0.22, 1, 0.36, 1);

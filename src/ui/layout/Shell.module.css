@@ -39,6 +39,5 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  /* Folga para o scale de foco não “entrar” nas laterais */
-  padding: 0 clamp(0.85rem, 1.4vw, 1.5rem) var(--space-5);
+  padding: 0 clamp(0.5rem, 1vw, 1rem) var(--space-5);
 }
