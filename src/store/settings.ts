@@ -2,6 +2,11 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { AppView, Platform } from '@/domain/types'
 import { PLATFORM_ORDER } from '@/config/apps'
+import {
+  defaultRecompUrls,
+  type RecompGameId,
+  type RecompUrlMap,
+} from '@/config/recompGames'
 import { idbStorage } from '@/store/idbStorage'
 
 interface SettingsState {
@@ -15,6 +20,8 @@ interface SettingsState {
   catalogPlatform: Platform | null
   /** Site próprio (biblioteca web) — https obrigatório em prod. */
   libraryBaseUrl: string
+  /** URLs dos builds web-recomp locais (sem ISO no launcher). */
+  recompUrls: Record<RecompGameId, string>
   reducedMotion: boolean
   setView: (view: AppView) => void
   /** Volta à tela anterior; false se já estava no início. */
@@ -23,6 +30,7 @@ interface SettingsState {
   openPlatformCatalog: (platform: Platform) => void
   togglePlatform: (platform: Platform) => void
   setLibraryBaseUrl: (url: string) => void
+  setRecompUrl: (id: RecompGameId, url: string) => void
   setReducedMotion: (value: boolean) => void
 }
 
@@ -35,6 +43,7 @@ export const useSettingsStore = create<SettingsState>()(
       activeTheme: null,
       catalogPlatform: null,
       libraryBaseUrl: 'https://animefire.one',
+      recompUrls: defaultRecompUrls(),
       reducedMotion: false,
 
       setView: (view) => {
@@ -89,6 +98,11 @@ export const useSettingsStore = create<SettingsState>()(
 
       setLibraryBaseUrl: (url) => set({ libraryBaseUrl: url }),
 
+      setRecompUrl: (id, url) =>
+        set((state) => ({
+          recompUrls: { ...state.recompUrls, [id]: url },
+        })),
+
       setReducedMotion: (value) => set({ reducedMotion: value }),
     }),
     {
@@ -103,6 +117,7 @@ export const useSettingsStore = create<SettingsState>()(
               ? state.activeTheme
               : null,
           libraryBaseUrl: state.libraryBaseUrl,
+          recompUrls: state.recompUrls,
           reducedMotion: state.reducedMotion,
         }
       },
@@ -128,10 +143,16 @@ export const useSettingsStore = create<SettingsState>()(
         )
         const activeTheme =
           p.activeTheme && known.has(p.activeTheme) ? p.activeTheme : null
+        const defaults = defaultRecompUrls()
+        const recompUrls: Record<RecompGameId, string> = {
+          ...defaults,
+          ...(p.recompUrls as RecompUrlMap | undefined),
+        }
         return {
           ...current,
           ...p,
           libraryBaseUrl,
+          recompUrls,
           ownedPlatforms:
             ownedPlatforms.length > 0 ? ownedPlatforms : [...PLATFORM_ORDER],
           activeTheme,

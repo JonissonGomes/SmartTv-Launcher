@@ -24,9 +24,41 @@ import {
 } from '@/games/types'
 import { useGameSocket } from '@/games/useGameSocket'
 import { isLoopbackHost, resolvePublicOrigin } from '@/services/publicOrigin'
+import { useUiSessionStore } from '@/store/uiSession'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
+import { pushBackHandler } from '@/ui/input/backStack'
 import styles from './GamesScreen.module.css'
+
+const PLAY_KEYS = new Set([
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'Enter',
+  ' ',
+  'Spacebar',
+  'w',
+  'W',
+  'a',
+  'A',
+  's',
+  'S',
+  'd',
+  'D',
+  'f',
+  'F',
+  'g',
+  'G',
+  'h',
+  'H',
+  'j',
+  'J',
+  '1',
+  '2',
+  '3',
+  '4',
+])
 
 type Phase = 'lobby' | 'play'
 
@@ -48,6 +80,7 @@ export function GamesScreen() {
   const [inputs, setInputs] = useState<Record<string, PadInput>>({})
   const [running, setRunning] = useState(false)
   const [scoreLabel, setScoreLabel] = useState('')
+  const setGamePlayOpen = useUiSessionStore((s) => s.setGamePlayOpen)
 
   const [publicOrigin, setPublicOrigin] = useState(window.location.origin)
   const inviteUrl = controllerUrl(roomId, publicOrigin)
@@ -100,8 +133,24 @@ export function GamesScreen() {
   }, [])
 
   useEffect(() => {
+    const playing = phase === 'play'
+    setGamePlayOpen(playing)
+    return () => {
+      setGamePlayOpen(false)
+    }
+  }, [phase, setGamePlayOpen])
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (phase !== 'play') return
+      // Escape/Back sobe para o App (lobby / view stack)
+      if (event.key === 'Escape' || event.keyCode === 461) return
+      if (!PLAY_KEYS.has(event.key)) return
+
+      // Impede spatial-nav / flyout de roubar setas e Enter
+      event.preventDefault()
+      event.stopPropagation()
+
       const code = event.key
       const at = performance.now()
       const p1: PadInput = { x: 0, y: 0, action: false, at }
@@ -111,7 +160,7 @@ export function GamesScreen() {
       if (code === 'ArrowDown') p1.y = 1
       if (code === 'ArrowLeft') p1.x = -1
       if (code === 'ArrowRight') p1.x = 1
-      if (code === 'Enter' || code === ' ') {
+      if (code === 'Enter' || code === ' ' || code === 'Spacebar') {
         p1.action = true
         p1.choice = 'A'
       }
@@ -139,9 +188,10 @@ export function GamesScreen() {
         return next
       })
     }
-    window.addEventListener('keydown', onKey)
+    // capture: antes do spatial-nav
+    window.addEventListener('keydown', onKey, true)
     return () => {
-      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keydown', onKey, true)
     }
   }, [hostId, phase])
 
@@ -180,11 +230,19 @@ export function GamesScreen() {
     void setFocus('GAME_BACK')
   }
 
-  const backLobby = () => {
+  const backLobby = useCallback(() => {
     setPhase('lobby')
     setRunning(false)
     void setFocus('GAME_START')
-  }
+  }, [])
+
+  useEffect(() => {
+    if (phase !== 'play') return
+    return pushBackHandler(() => {
+      backLobby()
+      return true
+    })
+  }, [backLobby, phase])
 
   const playMeta = [
     difficultyLabel(difficulty),
@@ -195,7 +253,12 @@ export function GamesScreen() {
     .join(' · ')
 
   return (
-    <Focusable focusKey="VIEW_games" className={styles.screen} saveLastFocusedChild>
+    <Focusable
+      focusKey="VIEW_games"
+      className={styles.screen}
+      saveLastFocusedChild
+      isFocusBoundary={phase === 'play'}
+    >
       {phase === 'lobby' ? (
         <>
           <header className={styles.header}>

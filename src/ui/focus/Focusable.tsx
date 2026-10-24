@@ -10,6 +10,7 @@ import type {
   ReactNode,
   RefObject,
 } from 'react'
+import { useUiSessionStore } from '@/store/uiSession'
 import { cx } from '@/ui/cx'
 import { scrollFocusedIntoView } from '@/ui/input/magicRemoteScroll'
 import styles from './Focusable.module.css'
@@ -39,6 +40,9 @@ export function Focusable({
   onClick,
   ...config
 }: FocusableProps) {
+  const chromeLocked = useUiSessionStore(
+    (s) => s.playerOpen || s.gamePlayOpen,
+  )
   const { ref, focused, focusKey } = useFocusable({
     ...config,
     onEnterPress,
@@ -55,8 +59,9 @@ export function Focusable({
     onArrowPress: (direction, props, details) => {
       if (onArrowPress?.(direction, props, details) === false) return false
 
-      // D-pad esquerda na borda → abre menu lateral
+      // D-pad esquerda na borda → abre menu lateral (exceto player/partida)
       if (
+        !chromeLocked &&
         direction === 'left' &&
         variant !== 'nav' &&
         !focusKey.startsWith('FLY_') &&
@@ -64,7 +69,8 @@ export function Focusable({
         !focusKey.startsWith('PROFILE_') &&
         !focusKey.startsWith('DETAILS_') &&
         !focusKey.startsWith('TITLE_') &&
-        !focusKey.startsWith('ANIME_HERO')
+        !focusKey.startsWith('ANIME_HERO') &&
+        !focusKey.startsWith('GAME_')
       ) {
         const el = ref.current as HTMLElement | null
         if (el && el.getBoundingClientRect().left <= LEFT_EDGE_PX) {

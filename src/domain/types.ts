@@ -19,6 +19,8 @@ export type AppView =
   | 'categories'
   | 'surprise'
   | 'games'
+  /** Portes web-recomp (PSP/PS2) — abre build local no browser. */
+  | 'recomp'
   /** Espelhamento WebRTC do celular (dev/LAN). */
   | 'cast'
   /** Player de animes (catálogo nativo + vídeo). */

@@ -11,6 +11,10 @@ import {
   type WebOsInstalledApp,
 } from '@/services/webos'
 import { normalizeHttpsUrl } from '@/services/urlSafety'
+import {
+  probeGraphicsApis,
+  type GraphicsProbeResult,
+} from '@/services/webGpuProbe'
 import { useHistoryStore } from '@/store/history'
 import { useSettingsStore } from '@/store/settings'
 import { cx } from '@/ui/cx'
@@ -36,6 +40,7 @@ export function SettingsScreen() {
     'Title,Date\nStranger Things: Season 1: Chapter 1,1/1/2026\nInterestelar,2/1/2026',
   )
   const [message, setMessage] = useState<string>()
+  const [gfx, setGfx] = useState<GraphicsProbeResult | null>(null)
 
   useEffect(() => {
     void listInstalledApps().then(setApps)
@@ -186,6 +191,35 @@ export function SettingsScreen() {
           Importar
         </Focusable>
         {message ? <p>{message}</p> : null}
+      </section>
+
+      <section className={styles.section}>
+        <h2>Gráficos (WebGL / WebGPU)</h2>
+        <p>
+          Checagem antes de qualquer experimento pesado (emulação/recomp). Rode
+          no Simulator e na TV real.
+        </p>
+        <Focusable
+          focusKey="SETTINGS_GFX_PROBE"
+          className={styles.btn}
+          onEnterPress={() => {
+            void probeGraphicsApis().then((r) => {
+              setGfx(r)
+              setMessage(r.note)
+            })
+          }}
+        >
+          Testar WebGL2 / WebGPU
+        </Focusable>
+        {gfx ? (
+          <p>
+            WebGL2: <strong>{gfx.webgl2 ? 'sim' : 'não'}</strong>
+            {gfx.webgl2Renderer ? ` (${gfx.webgl2Renderer})` : ''}
+            {' · '}
+            WebGPU: <strong>{gfx.webgpu ? 'sim' : 'não'}</strong>
+            {gfx.webgpuAdapter ? ` (${gfx.webgpuAdapter})` : ''}
+          </p>
+        ) : null}
       </section>
 
       <section className={styles.section}>

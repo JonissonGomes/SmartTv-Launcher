@@ -28,6 +28,7 @@ import { CastPhoneScreen } from '@/ui/screens/CastPhoneScreen'
 import { CastScreen } from '@/ui/screens/CastScreen'
 import { ControllerScreen } from '@/ui/screens/ControllerScreen'
 import { GamesScreen } from '@/ui/screens/GamesScreen'
+import { RecompGamesScreen } from '@/ui/screens/RecompGamesScreen'
 import { HistoryScreen } from '@/ui/screens/HistoryScreen'
 import { HomeScreen } from '@/ui/screens/HomeScreen'
 import { LibraryScreen } from '@/ui/screens/LibraryScreen'
@@ -497,6 +498,7 @@ export default function App() {
           <SurpriseScreen onOpenItem={openDetails} onWatch={watchFromDetails} />
         ) : null}
         {view === 'games' ? <GamesScreen /> : null}
+        {view === 'recomp' ? <RecompGamesScreen /> : null}
         {view === 'cast' ? <CastScreen /> : null}
         {view === 'history' ? (
           <HistoryScreen onContinueId={continueById} />

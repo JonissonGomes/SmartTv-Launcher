@@ -23,6 +23,7 @@ const NAV: Array<{ view: AppView; label: string }> = [
   { view: 'search', label: 'Busca' },
   { view: 'surprise', label: 'Surpresa' },
   { view: 'games', label: 'Jogos' },
+  { view: 'recomp', label: 'Clássicos' },
   { view: 'cast', label: 'Espelhar' },
   { view: 'account', label: 'Conta' },
   { view: 'settings', label: 'Configurações' },
@@ -42,6 +43,7 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
   const activeProfile =
     profiles.find((p) => p.id === activeProfileId) ?? profiles[0]
   const playerOpen = useUiSessionStore((s) => s.playerOpen)
+  const gamePlayOpen = useUiSessionStore((s) => s.gamePlayOpen)
 
   const [installedPlatforms, setInstalledPlatforms] = useState<Platform[]>([])
   const [hoverOpen, setHoverOpen] = useState(false)
@@ -131,7 +133,7 @@ export function LeftFlyout({ onOpenProfiles }: LeftFlyoutProps) {
     void setFocus('VIEW_platform')
   }
 
-  if (playerOpen) return null
+  if (playerOpen || gamePlayOpen) return null
 
   return (
     <FocusContext.Provider value={focusKey}>
