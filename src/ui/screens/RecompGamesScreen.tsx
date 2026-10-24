@@ -2,9 +2,11 @@ import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useEffect, useState } from 'react'
 import {
   RECOMP_GAMES,
+  hostFromOrigin,
   resolveRecompUrl,
   type RecompGameId,
 } from '@/config/recompGames'
+import { isLoopbackHost, resolvePublicOrigin } from '@/services/publicOrigin'
 import { launchBrowser } from '@/services/webos'
 import { normalizeHttpsUrl } from '@/services/urlSafety'
 import {
@@ -20,6 +22,10 @@ import styles from './RecompGamesScreen.module.css'
 export function RecompGamesScreen() {
   const recompUrls = useSettingsStore((s) => s.recompUrls)
   const setRecompUrl = useSettingsStore((s) => s.setRecompUrl)
+  const clearRecompUrl = useSettingsStore((s) => s.clearRecompUrl)
+  const [lanHost, setLanHost] = useState(() =>
+    hostFromOrigin(window.location.origin),
+  )
   const [drafts, setDrafts] = useState(recompUrls)
   const [message, setMessage] = useState<string>()
   const [gfx, setGfx] = useState<GraphicsProbeResult | null>(null)
@@ -34,11 +40,18 @@ export function RecompGamesScreen() {
   }, [recompUrls])
 
   useEffect(() => {
+    void resolvePublicOrigin().then((origin) => {
+      setLanHost(hostFromOrigin(origin))
+    })
+  }, [])
+
+  useEffect(() => {
     void probeGraphicsApis().then(setGfx)
   }, [])
 
   const openGame = (id: RecompGameId) => {
-    const raw = resolveRecompUrl(id, drafts)
+    const override = drafts[id]?.trim() ? { [id]: drafts[id]! } : {}
+    const raw = resolveRecompUrl(id, lanHost, { ...recompUrls, ...override })
     const safe = normalizeHttpsUrl(raw)
     if (!safe) {
       setMessage('URL inválida. Use http(s)://IP:porta/')
@@ -77,10 +90,18 @@ export function RecompGamesScreen() {
       setMessage('URL inválida.')
       return
     }
-    setRecompUrl(id, next.replace(/\/$/, ''))
+    setRecompUrl(id, next)
     setDrafts((d) => ({ ...d, [id]: next.replace(/\/$/, '') }))
-    setMessage('URL salva.')
+    setMessage('Override salvo (não usa mais o IP LAN automático).')
   }
+
+  const resetUrl = (id: RecompGameId) => {
+    clearRecompUrl(id)
+    setDrafts((d) => ({ ...d, [id]: '' }))
+    setMessage('Voltou ao host LAN automático.')
+  }
+
+  const loopbackWarn = isLoopbackHost(lanHost)
 
   return (
     <Focusable
@@ -97,19 +118,30 @@ export function RecompGamesScreen() {
           {gfx
             ? `WebGL2 ${gfx.webgl2 ? 'ok' : 'não'} · WebGPU ${gfx.webgpu ? 'ok' : 'não'}`
             : 'Detectando GPU…'}
+          <br />
+          LAN: {lanHost}
         </p>
       </header>
 
       <p className={styles.legal}>
-        Incluímos os títulos do porte comunitário (PSP/PS2 web-recomp). O launcher
-        só abre a URL do <strong>build que você gerou</strong> a partir da ISO que
-        você já possui — nenhum jogo/ROM é distribuído aqui. Sirva com{' '}
-        <code>scripts/serve</code> do projeto e aponte o IP:porta da rede.
+        Host detectado automaticamente (mesma LAN do launcher). O launcher só
+        abre o <strong>build que você gerou</strong> — nenhum jogo/ROM é
+        distribuído. Sirva com <code>scripts/serve</code> nas portas padrão; use
+        override só se precisar de outro endereço.
       </p>
+
+      {loopbackWarn ? (
+        <p className={styles.msg}>
+          Host ainda é loopback — abra o launcher pelo IP da LAN na TV, ou
+          preencha um override.
+        </p>
+      ) : null}
 
       <div className={styles.grid}>
         {RECOMP_GAMES.map((game) => {
-          const url = drafts[game.id] ?? ''
+          const autoUrl = resolveRecompUrl(game.id, lanHost).replace(/\/$/, '')
+          const hasOverride = Boolean(drafts[game.id]?.trim())
+          const url = hasOverride ? (drafts[game.id] ?? '') : autoUrl
           const blocked =
             (game.needs === 'webgl2' && gfx && !gfx.webgl2) ||
             (game.needs === 'webgpu' && gfx && !gfx.webgpu)
@@ -124,15 +156,18 @@ export function RecompGamesScreen() {
                 </span>
               </div>
               <h2>{game.title}</h2>
-              <p className={styles.sub}>{game.subtitle}</p>
+              <p className={styles.sub}>
+                {game.subtitle} · porta {game.defaultPort}
+                {hasOverride ? ' · override' : ' · automático'}
+              </p>
               <TvTextField
                 focusKey={`RECOMP_URL_${game.id}`}
-                label="URL do build local"
+                label={hasOverride ? 'URL (override)' : 'URL (LAN + porta)'}
                 value={url}
                 onChange={(v) => {
                   setDrafts((d) => ({ ...d, [game.id]: v }))
                 }}
-                placeholder={`http://192.168.x.x:${String(game.defaultPort)}`}
+                placeholder={autoUrl}
                 inputType="url"
                 maxLength={180}
               />
@@ -144,8 +179,19 @@ export function RecompGamesScreen() {
                     saveUrl(game.id)
                   }}
                 >
-                  Salvar URL
+                  Salvar override
                 </Focusable>
+                {hasOverride ? (
+                  <Focusable
+                    focusKey={`RECOMP_RESET_${game.id}`}
+                    className={styles.btnGhost}
+                    onEnterPress={() => {
+                      resetUrl(game.id)
+                    }}
+                  >
+                    Automático
+                  </Focusable>
+                ) : null}
                 <Focusable
                   focusKey={`RECOMP_OPEN_${game.id}`}
                   className={cx(

@@ -1,6 +1,6 @@
 /**
  * Catálogo de portes web-recomp (PSP/PS2).
- * Só metadata + URL do build local — nunca inclui ISO/ROM.
+ * Só metadata + porta do serve local — host LAN é resolvido em runtime.
  * Projetos: snuri00/psp-web-recomp e snuri00/ps2-web-recomp.
  */
 
@@ -66,28 +66,70 @@ export const RECOMP_GAMES: RecompGame[] = [
 
 export type RecompUrlMap = Partial<Record<RecompGameId, string>>
 
-function envDefault(id: RecompGameId, port: number): string {
-  const key = `VITE_RECOMP_URL_${id.replace(/-/g, '_').toUpperCase()}`
-  const fromEnv = (import.meta.env as Record<string, string | undefined>)[key]
-  if (fromEnv?.trim()) return fromEnv.trim().replace(/\/$/, '')
-  // LAN-friendly placeholder — usuário ajusta na UI ou .env
-  return `http://127.0.0.1:${String(port)}`
-}
-
-export function defaultRecompUrls(): Record<RecompGameId, string> {
+/** Overrides vazios — host vem da LAN em runtime. */
+export function emptyRecompUrls(): Record<RecompGameId, string> {
   const out = {} as Record<RecompGameId, string>
-  for (const g of RECOMP_GAMES) {
-    out[g.id] = envDefault(g.id, g.defaultPort)
-  }
+  for (const g of RECOMP_GAMES) out[g.id] = ''
   return out
 }
 
+export function hostFromOrigin(origin: string): string {
+  try {
+    return new URL(origin.includes('://') ? origin : `http://${origin}`)
+      .hostname
+  } catch {
+    return '127.0.0.1'
+  }
+}
+
+/** Monta URL a partir do host LAN + porta do catálogo (ou override manual). */
 export function resolveRecompUrl(
   id: RecompGameId,
-  overrides: RecompUrlMap,
+  lanHost: string,
+  overrides: RecompUrlMap = {},
 ): string {
+  const custom = overrides[id]?.trim()
+  if (custom) {
+    const base = custom.replace(/\/$/, '')
+    const game = RECOMP_GAMES.find((g) => g.id === id)
+    if (game?.path) {
+      return `${base}${game.path.startsWith('/') ? '' : '/'}${game.path}`
+    }
+    return `${base}/`
+  }
+
   const game = RECOMP_GAMES.find((g) => g.id === id)
-  const base = (overrides[id] || defaultRecompUrls()[id]).replace(/\/$/, '')
-  if (game?.path) return `${base}${game.path.startsWith('/') ? '' : '/'}${game.path}`
+  const port = game?.defaultPort ?? 8613
+  const host = lanHost.trim() || '127.0.0.1'
+  const base = `http://${host}:${String(port)}`
+  if (game?.path) {
+    return `${base}${game.path.startsWith('/') ? '' : '/'}${game.path}`
+  }
   return `${base}/`
+}
+
+/** URL só com porta padrão (sem override) — migração limpa do IDB. */
+export function isAutoPortUrl(
+  id: RecompGameId,
+  url: string | undefined,
+): boolean {
+  if (!url?.trim()) return true
+  const game = RECOMP_GAMES.find((g) => g.id === id)
+  if (!game) return true
+  try {
+    const u = new URL(url.includes('://') ? url : `http://${url}`)
+    const port = u.port
+      ? Number(u.port)
+      : u.protocol === 'https:'
+        ? 443
+        : 80
+    const pathOk =
+      !game.path ||
+      u.pathname === '/' ||
+      u.pathname === game.path ||
+      u.pathname === `${game.path}/`
+    return port === game.defaultPort && pathOk
+  } catch {
+    return true
+  }
 }

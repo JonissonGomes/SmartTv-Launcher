@@ -3,7 +3,8 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import type { AppView, Platform } from '@/domain/types'
 import { PLATFORM_ORDER } from '@/config/apps'
 import {
-  defaultRecompUrls,
+  emptyRecompUrls,
+  isAutoPortUrl,
   type RecompGameId,
   type RecompUrlMap,
 } from '@/config/recompGames'
@@ -20,7 +21,9 @@ interface SettingsState {
   catalogPlatform: Platform | null
   /** Site próprio (biblioteca web) — https obrigatório em prod. */
   libraryBaseUrl: string
-  /** URLs dos builds web-recomp locais (sem ISO no launcher). */
+  /**
+   * Overrides manuais de URL recomp (vazio = host LAN dinâmico + porta do catálogo).
+   */
   recompUrls: Record<RecompGameId, string>
   reducedMotion: boolean
   setView: (view: AppView) => void
@@ -31,6 +34,7 @@ interface SettingsState {
   togglePlatform: (platform: Platform) => void
   setLibraryBaseUrl: (url: string) => void
   setRecompUrl: (id: RecompGameId, url: string) => void
+  clearRecompUrl: (id: RecompGameId) => void
   setReducedMotion: (value: boolean) => void
 }
 
@@ -43,7 +47,7 @@ export const useSettingsStore = create<SettingsState>()(
       activeTheme: null,
       catalogPlatform: null,
       libraryBaseUrl: 'https://animefire.one',
-      recompUrls: defaultRecompUrls(),
+      recompUrls: emptyRecompUrls(),
       reducedMotion: false,
 
       setView: (view) => {
@@ -100,7 +104,15 @@ export const useSettingsStore = create<SettingsState>()(
 
       setRecompUrl: (id, url) =>
         set((state) => ({
-          recompUrls: { ...state.recompUrls, [id]: url },
+          recompUrls: {
+            ...state.recompUrls,
+            [id]: url.trim().replace(/\/$/, ''),
+          },
+        })),
+
+      clearRecompUrl: (id) =>
+        set((state) => ({
+          recompUrls: { ...state.recompUrls, [id]: '' },
         })),
 
       setReducedMotion: (value) => set({ reducedMotion: value }),
@@ -110,6 +122,14 @@ export const useSettingsStore = create<SettingsState>()(
       storage: createJSONStorage(() => idbStorage),
       partialize: (state) => {
         const known = new Set<string>([...PLATFORM_ORDER, 'animefire'])
+        const recompUrls = emptyRecompUrls()
+        for (const id of Object.keys(recompUrls) as RecompGameId[]) {
+          const v = state.recompUrls[id]?.trim()
+          // Só persiste override real (não URL auto com porta padrão)
+          if (v && !isAutoPortUrl(id, v)) {
+            recompUrls[id] = v.replace(/\/$/, '')
+          }
+        }
         return {
           ownedPlatforms: state.ownedPlatforms.filter((p) => known.has(p)),
           activeTheme:
@@ -117,7 +137,7 @@ export const useSettingsStore = create<SettingsState>()(
               ? state.activeTheme
               : null,
           libraryBaseUrl: state.libraryBaseUrl,
-          recompUrls: state.recompUrls,
+          recompUrls,
           reducedMotion: state.reducedMotion,
         }
       },
@@ -143,10 +163,13 @@ export const useSettingsStore = create<SettingsState>()(
         )
         const activeTheme =
           p.activeTheme && known.has(p.activeTheme) ? p.activeTheme : null
-        const defaults = defaultRecompUrls()
-        const recompUrls: Record<RecompGameId, string> = {
-          ...defaults,
-          ...(p.recompUrls as RecompUrlMap | undefined),
+        const recompUrls = emptyRecompUrls()
+        const saved = (p.recompUrls as RecompUrlMap | undefined) ?? {}
+        for (const id of Object.keys(recompUrls) as RecompGameId[]) {
+          const prev = saved[id]?.trim()
+          if (prev && !isAutoPortUrl(id, prev)) {
+            recompUrls[id] = prev.replace(/\/$/, '')
+          }
         }
         return {
           ...current,
