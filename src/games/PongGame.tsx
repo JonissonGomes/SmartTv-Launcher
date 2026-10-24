@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { pongParams, type Difficulty } from '@/games/difficulty'
 import type { PadInput } from '@/games/types'
 
 interface PongGameProps {
@@ -6,6 +7,7 @@ interface PongGameProps {
   playerIds: [string, string]
   colors: [string, string]
   running: boolean
+  difficulty: Difficulty
   onScore: (scores: [number, number]) => void
 }
 
@@ -14,15 +16,18 @@ export function PongGame({
   playerIds,
   colors,
   running,
+  difficulty,
   onScore,
 }: PongGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const inputsRef = useRef(inputs)
   const runningRef = useRef(running)
   const onScoreRef = useRef(onScore)
+  const paramsRef = useRef(pongParams(difficulty))
   inputsRef.current = inputs
   runningRef.current = running
   onScoreRef.current = onScore
+  paramsRef.current = pongParams(difficulty)
 
   const stateRef = useRef({
     ballX: 0.5,
@@ -34,6 +39,17 @@ export function PongGame({
     s1: 0,
     s2: 0,
   })
+
+  useEffect(() => {
+    const s = stateRef.current
+    const p = pongParams(difficulty)
+    s.ballX = 0.5
+    s.ballY = 0.5
+    s.vx = 0.35 * p.ballSpeed
+    s.vy = 0.22 * p.ballSpeed
+    s.s1 = 0
+    s.s2 = 0
+  }, [difficulty])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -50,13 +66,22 @@ export function PongGame({
       const w = canvas.width
       const h = canvas.height
       const s = stateRef.current
+      const params = paramsRef.current
       const currentInputs = inputsRef.current
 
       if (runningRef.current) {
         const i1 = currentInputs[playerIds[0]]
         const i2 = currentInputs[playerIds[1]]
-        s.p1 = clamp(s.p1 + (i1?.y ?? 0) * dt * 1.4, 0.12, 0.88)
-        s.p2 = clamp(s.p2 + (i2?.y ?? 0) * dt * 1.4, 0.12, 0.88)
+        s.p1 = clamp(
+          s.p1 + (i1?.y ?? 0) * dt * params.paddleSpeed,
+          0.12,
+          0.88,
+        )
+        s.p2 = clamp(
+          s.p2 + (i2?.y ?? 0) * dt * params.paddleSpeed,
+          0.12,
+          0.88,
+        )
 
         s.ballX += s.vx * dt
         s.ballY += s.vy * dt
@@ -74,12 +99,12 @@ export function PongGame({
 
         if (s.ballX < 0) {
           s.s2 += 1
-          resetBall(s, 1)
+          resetBall(s, 1, params.ballSpeed)
           onScoreRef.current([s.s1, s.s2])
         }
         if (s.ballX > 1) {
           s.s1 += 1
-          resetBall(s, -1)
+          resetBall(s, -1, params.ballSpeed)
           onScoreRef.current([s.s1, s.s2])
         }
       }
@@ -131,9 +156,10 @@ function clamp(n: number, min: number, max: number): number {
 function resetBall(
   s: { ballX: number; ballY: number; vx: number; vy: number },
   dir: number,
+  speedMul: number,
 ): void {
   s.ballX = 0.5
   s.ballY = 0.5
-  s.vx = 0.35 * dir
-  s.vy = Math.random() * 0.4 - 0.2 || 0.15
+  s.vx = 0.35 * dir * speedMul
+  s.vy = (Math.random() * 0.4 - 0.2 || 0.15) * speedMul
 }

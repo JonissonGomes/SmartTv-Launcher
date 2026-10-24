@@ -1,6 +1,6 @@
 import { buildAppQueryUrl } from '@/services/publicOrigin'
 
-export type GameId = 'pong' | 'reaction' | 'quiz'
+export type GameId = 'airhockey' | 'pong' | 'reaction' | 'quiz'
 
 export interface GamePlayer {
   playerId: string
@@ -10,9 +10,9 @@ export interface GamePlayer {
 }
 
 export interface PadInput {
-  /** -1 | 0 | 1 */
+  /** Eixo contínuo em [-1, 1] (stick / D-pad). */
   x: number
-  /** -1 | 0 | 1 */
+  /** Eixo contínuo em [-1, 1] (stick / D-pad). */
   y: number
   action: boolean
   choice?: 'A' | 'B' | 'C' | 'D'
@@ -58,27 +58,39 @@ export const GAME_CATALOG: Array<{
   id: GameId
   title: string
   blurb: string
+  meta: string
   minPlayers: number
   maxPlayers: number
 }> = [
   {
+    id: 'airhockey',
+    title: 'Air Hockey',
+    blurb: 'Discos, puck e física na mesa',
+    meta: '2P · celular · arenas',
+    minPlayers: 2,
+    maxPlayers: 2,
+  },
+  {
     id: 'pong',
     title: 'Pong Duelo',
-    blurb: '2 jogadores · raquetes na vertical',
+    blurb: 'Raquetes na vertical, clássico rápido',
+    meta: '2P · celular',
     minPlayers: 2,
     maxPlayers: 2,
   },
   {
     id: 'reaction',
     title: 'Reação Relâmpago',
-    blurb: '2–4 jogadores · quem tocar primeiro vence',
+    blurb: 'Espere o verde e toque primeiro',
+    meta: '2–4P · celular',
     minPlayers: 2,
     maxPlayers: 4,
   },
   {
     id: 'quiz',
     title: 'Quiz Relâmpago',
-    blurb: '2–4 jogadores · perguntas rápidas A/B/C/D',
+    blurb: 'Perguntas rápidas A/B/C/D',
+    meta: '2–4P · celular',
     minPlayers: 2,
     maxPlayers: 4,
   },

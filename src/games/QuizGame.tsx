@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { quizParams, type Difficulty } from '@/games/difficulty'
 import { QUIZ_BANK } from '@/games/quizData'
 import type { PadInput } from '@/games/types'
 import styles from './GameShared.module.css'
@@ -9,6 +10,7 @@ interface QuizGameProps {
   colors: string[]
   names: string[]
   running: boolean
+  difficulty: Difficulty
   onScore: (scores: number[]) => void
 }
 
@@ -18,6 +20,7 @@ export function QuizGame({
   colors,
   names,
   running,
+  difficulty,
   onScore,
 }: QuizGameProps) {
   const order = useMemo(
@@ -29,6 +32,7 @@ export function QuizGame({
   const [locked, setLocked] = useState(false)
   const [feedback, setFeedback] = useState('')
   const question = order[index]
+  const params = quizParams(difficulty)
 
   useEffect(() => {
     if (!running || !question || locked) return
@@ -55,10 +59,20 @@ export function QuizGame({
         setLocked(false)
         setFeedback('')
         setIndex((n) => (n + 1) % order.length)
-      }, 1800)
+      }, params.feedbackMs)
       break
     }
-  }, [inputs, locked, names, onScore, order.length, playerIds, question, running])
+  }, [
+    inputs,
+    locked,
+    names,
+    onScore,
+    order.length,
+    params.feedbackMs,
+    playerIds,
+    question,
+    running,
+  ])
 
   if (!question) return null
 
@@ -73,7 +87,7 @@ export function QuizGame({
           const letter = (['A', 'B', 'C', 'D'] as const)[i]
           return (
             <div key={letter} className={styles.quizOpt}>
-              <strong>{letter}</strong>
+              <span className={styles.quizBadge}>{letter}</span>
               <span>{opt}</span>
             </div>
           )
@@ -82,8 +96,14 @@ export function QuizGame({
       {feedback ? <p className={styles.quizFeedback}>{feedback}</p> : null}
       <div className={styles.scoreRow}>
         {playerIds.map((id, i) => (
-          <div key={id} className={styles.scoreChip} style={{ borderColor: colors[i] }}>
-            <strong style={{ color: colors[i] }}>{names[i] ?? `P${String(i + 1)}`}</strong>
+          <div
+            key={id}
+            className={styles.scoreChip}
+            style={{ borderColor: colors[i] }}
+          >
+            <strong style={{ color: colors[i] }}>
+              {names[i] ?? `P${String(i + 1)}`}
+            </strong>
             <span>{String(scores[i] ?? 0)}</span>
           </div>
         ))}

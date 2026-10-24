@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { reactionParams, type Difficulty } from '@/games/difficulty'
 import type { PadInput } from '@/games/types'
 import styles from './GameShared.module.css'
 
@@ -8,6 +9,7 @@ interface ReactionGameProps {
   colors: string[]
   names: string[]
   running: boolean
+  difficulty: Difficulty
   onScore: (scores: number[]) => void
 }
 
@@ -19,6 +21,7 @@ export function ReactionGame({
   colors,
   names,
   running,
+  difficulty,
   onScore,
 }: ReactionGameProps) {
   const [phase, setPhase] = useState<Phase>('wait')
@@ -28,12 +31,13 @@ export function ReactionGame({
   const armedAt = useRef(0)
   const onScoreRef = useRef(onScore)
   onScoreRef.current = onScore
+  const params = reactionParams(difficulty)
 
   useEffect(() => {
     if (!running) return
     setPhase('wait')
     setWinner(null)
-    const delay = 1200 + Math.random() * 2800
+    const delay = params.waitMinMs + Math.random() * params.waitSpanMs
     const t = window.setTimeout(() => {
       armedAt.current = performance.now()
       setPhase('go')
@@ -41,7 +45,7 @@ export function ReactionGame({
     return () => {
       window.clearTimeout(t)
     }
-  }, [running, round])
+  }, [running, round, params.waitMinMs, params.waitSpanMs])
 
   useEffect(() => {
     if (phase !== 'go' || !running) return
@@ -60,11 +64,11 @@ export function ReactionGame({
         })
         window.setTimeout(() => {
           setRound((r) => r + 1)
-        }, 1400)
+        }, params.resultMs)
         break
       }
     }
-  }, [inputs, phase, playerIds, running])
+  }, [inputs, phase, playerIds, running, params.resultMs])
 
   return (
     <div

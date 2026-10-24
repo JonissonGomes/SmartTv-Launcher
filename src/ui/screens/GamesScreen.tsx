@@ -1,5 +1,12 @@
 import { setFocus } from '@noriginmedia/norigin-spatial-navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AirHockeyGame } from '@/games/AirHockeyGame'
+import { AIR_HOCKEY_ARENAS, type ArenaId } from '@/games/airHockeyArenas'
+import {
+  DIFFICULTY_OPTIONS,
+  difficultyLabel,
+  type Difficulty,
+} from '@/games/difficulty'
 import { PongGame } from '@/games/PongGame'
 import { QuizGame } from '@/games/QuizGame'
 import { ReactionGame } from '@/games/ReactionGame'
@@ -26,7 +33,9 @@ type Phase = 'lobby' | 'play'
 export function GamesScreen() {
   const hostId = useMemo(() => createPlayerId(), [])
   const [phase, setPhase] = useState<Phase>('lobby')
-  const [gameId, setGameId] = useState<GameId>('pong')
+  const [gameId, setGameId] = useState<GameId>('airhockey')
+  const [difficulty, setDifficulty] = useState<Difficulty>('normal')
+  const [arenaId, setArenaId] = useState<ArenaId>('classic')
   const [roomId] = useState(() => createRoomCode())
   const [players, setPlayers] = useState<GamePlayer[]>([
     {
@@ -138,6 +147,7 @@ export function GamesScreen() {
 
   const pads = players.filter((p) => p.role === 'pad')
   const catalog = GAME_CATALOG.find((g) => g.id === gameId)
+  const arena = AIR_HOCKEY_ARENAS.find((a) => a.id === arenaId)
   const canStart = pads.length >= (catalog?.minPlayers ?? 2) - 1
 
   const start = () => {
@@ -176,6 +186,14 @@ export function GamesScreen() {
     void setFocus('GAME_START')
   }
 
+  const playMeta = [
+    difficultyLabel(difficulty),
+    gameId === 'airhockey' ? arena?.name : null,
+    scoreLabel || null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
     <Focusable focusKey="VIEW_games" className={styles.screen} saveLastFocusedChild>
       {phase === 'lobby' ? (
@@ -193,65 +211,124 @@ export function GamesScreen() {
           </header>
 
           <div className={styles.lobby}>
-            <section className={styles.gamesList}>
-              {GAME_CATALOG.map((game) => (
-                <Focusable
-                  key={game.id}
-                  focusKey={`GAME_PICK_${game.id}`}
-                  className={cx(
-                    styles.gameCard,
-                    gameId === game.id && styles.gameCardActive,
-                  )}
-                  onEnterPress={() => {
-                    setGameId(game.id)
-                  }}
-                >
-                  <h2>{game.title}</h2>
-                  <p>{game.blurb}</p>
-                </Focusable>
-              ))}
-            </section>
+            <div className={styles.lobbyMain}>
+              <section className={styles.gamesList}>
+                {GAME_CATALOG.map((game) => (
+                  <Focusable
+                    key={game.id}
+                    focusKey={`GAME_PICK_${game.id}`}
+                    className={cx(
+                      styles.gameCard,
+                      gameId === game.id && styles.gameCardActive,
+                    )}
+                    onEnterPress={() => {
+                      setGameId(game.id)
+                    }}
+                  >
+                    <div className={styles.gameCardTop}>
+                      <h2>{game.title}</h2>
+                      <span className={styles.meta}>{game.meta}</span>
+                    </div>
+                    <p>{game.blurb}</p>
+                  </Focusable>
+                ))}
+              </section>
+
+              <section className={styles.options}>
+                <h3 className={styles.optionsTitle}>Dificuldade</h3>
+                <div className={styles.chipRow}>
+                  {DIFFICULTY_OPTIONS.map((d) => (
+                    <Focusable
+                      key={d.id}
+                      focusKey={`GAME_DIFF_${d.id}`}
+                      className={cx(
+                        styles.chip,
+                        difficulty === d.id && styles.chipOn,
+                      )}
+                      onEnterPress={() => {
+                        setDifficulty(d.id)
+                      }}
+                    >
+                      {d.label}
+                    </Focusable>
+                  ))}
+                </div>
+
+                {gameId === 'airhockey' ? (
+                  <>
+                    <h3 className={styles.optionsTitle}>Arena</h3>
+                    <div className={styles.arenaRow}>
+                      {AIR_HOCKEY_ARENAS.map((a) => (
+                        <Focusable
+                          key={a.id}
+                          focusKey={`GAME_ARENA_${a.id}`}
+                          className={cx(
+                            styles.arenaCard,
+                            arenaId === a.id && styles.arenaCardOn,
+                          )}
+                          onEnterPress={() => {
+                            setArenaId(a.id)
+                          }}
+                        >
+                          <strong>{a.name}</strong>
+                          <span>{a.blurb}</span>
+                        </Focusable>
+                      ))}
+                    </div>
+                  </>
+                ) : null}
+              </section>
+            </div>
 
             <section className={styles.invite}>
               <img className={styles.qr} src={qrSrc} alt="QR do controle" />
-              <div>
+              <div className={styles.inviteBody}>
                 <h2>Controle no celular</h2>
                 <p>
-                  Escaneie o QR na mesma Wi‑Fi (com <code>npm run dev</code> ou{' '}
-                  <code>npm run preview</code>).
+                  Escaneie o QR na mesma Wi‑Fi. Stick no celular para Air Hockey /
+                  Pong; aba A–D para Quiz e Reação.
                 </p>
                 {loopbackWarn ? (
                   <p className={styles.warn}>
-                    Abra o launcher pelo IP da rede (URL Network do Vite), não por
-                    localhost — senão o celular não carrega o controle.
+                    Abra pelo IP da rede (URL Network do Vite), não por localhost.
                   </p>
                 ) : null}
                 <p className={styles.url}>{inviteUrl}</p>
                 <p className={styles.players}>
-                  Conectados: {String(pads.length)} /{' '}
+                  Pads: {String(pads.length)} /{' '}
                   {String((catalog?.maxPlayers ?? 4) - 1)}
                 </p>
                 <ul className={styles.playerList}>
                   {players.map((p) => (
-                    <li key={p.playerId} style={{ color: p.color }}>
-                      {p.name} {p.role === 'host' ? '(TV)' : ''}
+                    <li key={p.playerId}>
+                      <span
+                        className={styles.playerDot}
+                        style={{ background: p.color }}
+                      />
+                      {p.name}
+                      {p.role === 'host' ? ' (TV)' : ''}
                     </li>
                   ))}
                 </ul>
-                <Focusable
-                  focusKey="GAME_START"
-                  className={cx(styles.startBtn, !canStart && styles.startDisabled)}
-                  onEnterPress={start}
-                >
-                  Iniciar com celulares
-                </Focusable>
-                <Focusable
-                  focusKey="GAME_LOCAL"
-                  className={styles.localBtn}
-                  onEnterPress={startLocalDuo}
-                >
-                  Demo local 2P (teclado)
-                </Focusable>
+                <div className={styles.ctaRow}>
+                  <Focusable
+                    focusKey="GAME_START"
+                    className={cx(
+                      styles.startBtn,
+                      !canStart && styles.startDisabled,
+                    )}
+                    onEnterPress={start}
+                  >
+                    Iniciar
+                  </Focusable>
+                  <Focusable
+                    focusKey="GAME_LOCAL"
+                    className={styles.localBtn}
+                    onEnterPress={startLocalDuo}
+                  >
+                    Demo 2P teclado
+                  </Focusable>
+                </div>
               </div>
             </section>
           </div>
@@ -267,12 +344,26 @@ export function GamesScreen() {
               ← Lobby
             </Focusable>
             <h2>{catalog?.title}</h2>
-            <span>{scoreLabel}</span>
+            <span className={styles.playMeta}>{playMeta}</span>
           </div>
           <div className={styles.stage}>
+            {gameId === 'airhockey' && pads[0] ? (
+              <AirHockeyGame
+                running={running}
+                difficulty={difficulty}
+                arenaId={arenaId}
+                playerIds={[hostId, pads[0].playerId]}
+                colors={[playerColor(0), pads[0].color]}
+                inputs={inputs}
+                onScore={(s) => {
+                  setScoreLabel(`${String(s[0])} × ${String(s[1])}`)
+                }}
+              />
+            ) : null}
             {gameId === 'pong' && pads[0] ? (
               <PongGame
                 running={running}
+                difficulty={difficulty}
                 playerIds={[hostId, pads[0].playerId]}
                 colors={[playerColor(0), pads[0].color]}
                 inputs={inputs}
@@ -284,6 +375,7 @@ export function GamesScreen() {
             {gameId === 'reaction' ? (
               <ReactionGame
                 running={running}
+                difficulty={difficulty}
                 playerIds={players.map((p) => p.playerId)}
                 colors={players.map((p) => p.color)}
                 names={players.map((p) => p.name)}
@@ -296,6 +388,7 @@ export function GamesScreen() {
             {gameId === 'quiz' ? (
               <QuizGame
                 running={running}
+                difficulty={difficulty}
                 playerIds={players.map((p) => p.playerId)}
                 colors={players.map((p) => p.color)}
                 names={players.map((p) => p.name)}
