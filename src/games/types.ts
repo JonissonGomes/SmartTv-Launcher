@@ -1,4 +1,4 @@
-import { buildAppQueryUrl } from '@/services/publicOrigin'
+import { buildAppQueryUrl, wsUrlFromOrigin } from '@/services/publicOrigin'
 
 export type GameId = 'airhockey' | 'pong' | 'reaction' | 'quiz'
 
@@ -110,17 +110,20 @@ export function createPlayerId(): string {
 }
 
 export function controllerUrl(roomId: string, origin?: string): string {
-  return buildAppQueryUrl(origin ?? window.location.origin, {
-    controller: '1',
-    room: roomId,
-  })
+  return buildAppQueryUrl(
+    origin ?? window.location.origin,
+    {
+      controller: '1',
+      room: roomId,
+    },
+    '/',
+  )
 }
 
 export function qrImageUrl(data: string): string {
   return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(data)}`
 }
 
-export function wsGamesUrl(): string {
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${proto}//${window.location.host}/ws/games`
+export function wsGamesUrl(origin?: string): string | null {
+  return wsUrlFromOrigin(origin ?? window.location.origin, '/ws/games')
 }

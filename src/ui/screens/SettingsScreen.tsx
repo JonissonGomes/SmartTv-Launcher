@@ -10,6 +10,7 @@ import {
   listInstalledApps,
   type WebOsInstalledApp,
 } from '@/services/webos'
+import { normalizeRelayOrigin } from '@/services/publicOrigin'
 import { normalizeHttpsUrl } from '@/services/urlSafety'
 import {
   probeGraphicsApis,
@@ -27,13 +28,20 @@ export function SettingsScreen() {
   const togglePlatform = useSettingsStore((s) => s.togglePlatform)
   const libraryBaseUrl = useSettingsStore((s) => s.libraryBaseUrl)
   const setLibraryBaseUrl = useSettingsStore((s) => s.setLibraryBaseUrl)
+  const relayOrigin = useSettingsStore((s) => s.relayOrigin)
+  const setRelayOrigin = useSettingsStore((s) => s.setRelayOrigin)
   const importEntries = useHistoryStore((s) => s.importEntries)
   const clearHistory = useHistoryStore((s) => s.clear)
   const [libraryDraft, setLibraryDraft] = useState(libraryBaseUrl)
+  const [relayDraft, setRelayDraft] = useState(relayOrigin)
 
   useEffect(() => {
     setLibraryDraft(libraryBaseUrl)
   }, [libraryBaseUrl])
+
+  useEffect(() => {
+    setRelayDraft(relayOrigin)
+  }, [relayOrigin])
 
   const [apps, setApps] = useState<WebOsInstalledApp[]>([])
   const [csvText, setCsvText] = useState(
@@ -84,6 +92,39 @@ export function SettingsScreen() {
             )
           })}
         </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Relay celular (Jogos / Espelhar)</h2>
+        <p>
+          Padrão: servidor Render (<code>VITE_AUTH_API_URL</code>) — QR +
+          WebSocket sem PC. Override só se precisar apontar outro host.
+        </p>
+        <TvTextField
+          focusKey="SETTINGS_RELAY_URL"
+          label="Override do relay (opcional)"
+          value={relayDraft}
+          onChange={setRelayDraft}
+          placeholder="https://seu-servico.onrender.com"
+          inputType="url"
+          maxLength={120}
+        />
+        <Focusable
+          focusKey="SETTINGS_RELAY_SAVE"
+          className={styles.btn}
+          onEnterPress={() => {
+            const next = normalizeRelayOrigin(relayDraft)
+            if (!next) {
+              setMessage('URL inválida. Use https://…')
+              return
+            }
+            setRelayOrigin(next)
+            setRelayDraft(next)
+            setMessage(`Relay: ${next}`)
+          }}
+        >
+          Salvar override
+        </Focusable>
       </section>
 
       <section className={styles.section}>

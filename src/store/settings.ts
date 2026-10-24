@@ -22,6 +22,10 @@ interface SettingsState {
   /** Site próprio (biblioteca web) — https obrigatório em prod. */
   libraryBaseUrl: string
   /**
+   * Override do relay (QR/WS). Vazio = VITE_AUTH_API_URL (Render).
+   */
+  relayOrigin: string
+  /**
    * Overrides manuais de URL recomp (vazio = host LAN dinâmico + porta do catálogo).
    */
   recompUrls: Record<RecompGameId, string>
@@ -33,6 +37,7 @@ interface SettingsState {
   openPlatformCatalog: (platform: Platform) => void
   togglePlatform: (platform: Platform) => void
   setLibraryBaseUrl: (url: string) => void
+  setRelayOrigin: (url: string) => void
   setRecompUrl: (id: RecompGameId, url: string) => void
   clearRecompUrl: (id: RecompGameId) => void
   setReducedMotion: (value: boolean) => void
@@ -47,6 +52,7 @@ export const useSettingsStore = create<SettingsState>()(
       activeTheme: null,
       catalogPlatform: null,
       libraryBaseUrl: 'https://animefire.one',
+      relayOrigin: '',
       recompUrls: emptyRecompUrls(),
       reducedMotion: false,
 
@@ -102,6 +108,9 @@ export const useSettingsStore = create<SettingsState>()(
 
       setLibraryBaseUrl: (url) => set({ libraryBaseUrl: url }),
 
+      setRelayOrigin: (url) =>
+        set({ relayOrigin: url.trim().replace(/\/$/, '') }),
+
       setRecompUrl: (id, url) =>
         set((state) => ({
           recompUrls: {
@@ -137,6 +146,7 @@ export const useSettingsStore = create<SettingsState>()(
               ? state.activeTheme
               : null,
           libraryBaseUrl: state.libraryBaseUrl,
+          relayOrigin: state.relayOrigin,
           recompUrls,
           reducedMotion: state.reducedMotion,
         }
@@ -171,10 +181,14 @@ export const useSettingsStore = create<SettingsState>()(
             recompUrls[id] = prev.replace(/\/$/, '')
           }
         }
+        const relayOrigin = (p.relayOrigin ?? current.relayOrigin ?? '')
+          .trim()
+          .replace(/\/$/, '')
         return {
           ...current,
           ...p,
           libraryBaseUrl,
+          relayOrigin,
           recompUrls,
           ownedPlatforms:
             ownedPlatforms.length > 0 ? ownedPlatforms : [...PLATFORM_ORDER],

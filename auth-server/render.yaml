@@ -1,10 +1,12 @@
-# Blueprint opcional. No painel Render também pode apontar Root Directory = auth-server.
+# Deploy a partir da raiz do monorepo (não use Root Directory = auth-server).
+# Build gera a SPA em auth-server/public para o QR do celular.
 services:
   - type: web
     name: smarttv-auth
     runtime: node
-    buildCommand: npm install
-    startCommand: npm start
+    rootDir: .
+    buildCommand: npm ci && npm run build && node scripts/copyRelayAssets.mjs && npm ci --prefix auth-server
+    startCommand: npm start --prefix auth-server
     healthCheckPath: /health
     envVars:
       - key: NODE_VERSION

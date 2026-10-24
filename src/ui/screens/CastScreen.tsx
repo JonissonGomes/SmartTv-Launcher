@@ -7,25 +7,40 @@ import {
   qrImageUrl,
 } from '@/cast/types'
 import { useCastTvSession } from '@/cast/useCastSession'
-import { isLoopbackHost, resolvePublicOrigin } from '@/services/publicOrigin'
+import {
+  isLoopbackHost,
+  isUsablePublicOrigin,
+  normalizeRelayOrigin,
+  resolvePublicOrigin,
+} from '@/services/publicOrigin'
+import { useSettingsStore } from '@/store/settings'
 import { Focusable } from '@/ui/focus/Focusable'
+import { TvTextField } from '@/ui/input/TvTextField'
 import styles from './CastScreen.module.css'
 
 export function CastScreen() {
   const tvId = useMemo(() => createPlayerId(), [])
   const [roomId] = useState(() => createRoomCode())
-  const [publicOrigin, setPublicOrigin] = useState(window.location.origin)
+  const relayOriginSaved = useSettingsStore((s) => s.relayOrigin)
+  const setRelayOrigin = useSettingsStore((s) => s.setRelayOrigin)
+  const [publicOrigin, setPublicOrigin] = useState(
+    () => relayOriginSaved || window.location.origin,
+  )
+  const [relayDraft, setRelayDraft] = useState(relayOriginSaved)
   const videoRef = useRef<HTMLVideoElement>(null)
 
+  const originOk = isUsablePublicOrigin(publicOrigin)
   const inviteUrl = castPhoneUrl(roomId, publicOrigin)
-  const qrSrc = qrImageUrl(inviteUrl)
-  const loopbackWarn = isLoopbackHost(new URL(publicOrigin).hostname)
+  const qrSrc = originOk ? qrImageUrl(inviteUrl) : ''
+  const loopbackWarn =
+    originOk && isLoopbackHost(new URL(publicOrigin).hostname)
 
   const { connected, error, status, statusText, phonePresent, hangup } =
     useCastTvSession({
       roomId,
       playerId: tvId,
       videoRef,
+      relayOrigin: originOk ? publicOrigin : undefined,
     })
 
   useEffect(() => {
@@ -33,14 +48,18 @@ export function CastScreen() {
   }, [])
 
   useEffect(() => {
+    setRelayDraft(relayOriginSaved)
+  }, [relayOriginSaved])
+
+  useEffect(() => {
     let cancelled = false
-    void resolvePublicOrigin().then((origin) => {
+    void resolvePublicOrigin({ preferred: relayOriginSaved }).then((origin) => {
       if (!cancelled) setPublicOrigin(origin)
     })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [relayOriginSaved])
 
   return (
     <Focusable focusKey="VIEW_cast" className={styles.screen} saveLastFocusedChild>
@@ -60,21 +79,54 @@ export function CastScreen() {
 
       <div className={styles.layout}>
         <section className={styles.invite}>
-          <img className={styles.qr} src={qrSrc} alt="QR para espelhar" />
+          {qrSrc ? (
+            <img className={styles.qr} src={qrSrc} alt="QR para espelhar" />
+          ) : (
+            <div className={styles.qr} aria-hidden />
+          )}
           <div>
             <h2>No celular</h2>
             <ol className={styles.steps}>
-              <li>Mesma Wi‑Fi do PC que roda <code>npm run dev</code></li>
-              <li>Escaneie o QR (ou abra o link)</li>
+              <li>Mesma Wi‑Fi / internet (relay no servidor)</li>
+              <li>Escaneie o QR (abre a página no celular)</li>
               <li>Toque em Compartilhar tela</li>
             </ol>
-            {loopbackWarn ? (
+            {!originOk ? (
               <p className={styles.warn}>
-                Abra o launcher pelo IP da rede (URL Network do Vite), não por
-                localhost.
+                Sem servidor público (VITE_AUTH_API_URL). Rebuild com Render ou
+                override abaixo.
               </p>
             ) : null}
-            <p className={styles.url}>{inviteUrl}</p>
+            {loopbackWarn ? (
+              <p className={styles.warn}>
+                Host é localhost — o celular não alcança.
+              </p>
+            ) : null}
+            <TvTextField
+              focusKey="CAST_RELAY_URL"
+              label="Override do relay (opcional)"
+              value={relayDraft}
+              onChange={setRelayDraft}
+              placeholder="https://seu-servico.onrender.com"
+              inputType="url"
+              maxLength={120}
+            />
+            <Focusable
+              focusKey="CAST_RELAY_SAVE"
+              className={styles.hangup}
+              onEnterPress={() => {
+                const next = normalizeRelayOrigin(relayDraft)
+                if (!next) return
+                setRelayOrigin(next)
+                setPublicOrigin(next)
+                setRelayDraft(next)
+              }}
+            >
+              Salvar override
+            </Focusable>
+            <p className={styles.url}>
+              {originOk ? inviteUrl : 'QR indisponível — configure o relay'}
+            </p>
             <p className={styles.status}>{statusText}</p>
             <Focusable
               focusKey="CAST_HANGUP"

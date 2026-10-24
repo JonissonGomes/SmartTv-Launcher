@@ -23,11 +23,18 @@ import {
   type RelayInbound,
 } from '@/games/types'
 import { useGameSocket } from '@/games/useGameSocket'
-import { isLoopbackHost, resolvePublicOrigin } from '@/services/publicOrigin'
+import {
+  isLoopbackHost,
+  isUsablePublicOrigin,
+  normalizeRelayOrigin,
+  resolvePublicOrigin,
+} from '@/services/publicOrigin'
+import { useSettingsStore } from '@/store/settings'
 import { useUiSessionStore } from '@/store/uiSession'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import { pushBackHandler } from '@/ui/input/backStack'
+import { TvTextField } from '@/ui/input/TvTextField'
 import styles from './GamesScreen.module.css'
 
 const PLAY_KEYS = new Set([
@@ -81,21 +88,34 @@ export function GamesScreen() {
   const [running, setRunning] = useState(false)
   const [scoreLabel, setScoreLabel] = useState('')
   const setGamePlayOpen = useUiSessionStore((s) => s.setGamePlayOpen)
+  const relayOriginSaved = useSettingsStore((s) => s.relayOrigin)
+  const setRelayOrigin = useSettingsStore((s) => s.setRelayOrigin)
 
-  const [publicOrigin, setPublicOrigin] = useState(window.location.origin)
+  const [publicOrigin, setPublicOrigin] = useState(
+    () => relayOriginSaved || window.location.origin,
+  )
+  const [relayDraft, setRelayDraft] = useState(relayOriginSaved)
   const inviteUrl = controllerUrl(roomId, publicOrigin)
-  const qrSrc = qrImageUrl(inviteUrl)
-  const loopbackWarn = isLoopbackHost(new URL(publicOrigin).hostname)
+  const qrSrc = isUsablePublicOrigin(publicOrigin)
+    ? qrImageUrl(inviteUrl)
+    : ''
+  const originOk = isUsablePublicOrigin(publicOrigin)
+  const loopbackWarn =
+    originOk && isLoopbackHost(new URL(publicOrigin).hostname)
+
+  useEffect(() => {
+    setRelayDraft(relayOriginSaved)
+  }, [relayOriginSaved])
 
   useEffect(() => {
     let cancelled = false
-    void resolvePublicOrigin().then((origin) => {
+    void resolvePublicOrigin({ preferred: relayOriginSaved }).then((origin) => {
       if (!cancelled) setPublicOrigin(origin)
     })
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [relayOriginSaved])
 
   const onMessage = useCallback((msg: RelayInbound) => {
     if (msg.type === 'presence') {
@@ -125,6 +145,7 @@ export function GamesScreen() {
     playerId: hostId,
     name: 'TV',
     role: 'host',
+    relayOrigin: originOk ? publicOrigin : undefined,
     onMessage,
   })
 
@@ -344,19 +365,53 @@ export function GamesScreen() {
             </div>
 
             <section className={styles.invite}>
-              <img className={styles.qr} src={qrSrc} alt="QR do controle" />
+              {qrSrc ? (
+                <img className={styles.qr} src={qrSrc} alt="QR do controle" />
+              ) : (
+                <div className={styles.qr} aria-hidden />
+              )}
               <div className={styles.inviteBody}>
                 <h2>Controle no celular</h2>
                 <p>
                   Escaneie o QR na mesma Wi‑Fi. Stick no celular para Air Hockey /
                   Pong; aba A–D para Quiz e Reação.
                 </p>
-                {loopbackWarn ? (
+                {!originOk ? (
                   <p className={styles.warn}>
-                    Abra pelo IP da rede (URL Network do Vite), não por localhost.
+                    Sem servidor público (VITE_AUTH_API_URL). Faça rebuild com a
+                    URL do Render ou informe um override abaixo.
                   </p>
                 ) : null}
-                <p className={styles.url}>{inviteUrl}</p>
+                {loopbackWarn ? (
+                  <p className={styles.warn}>
+                    Host é localhost — o celular na rede não alcança.
+                  </p>
+                ) : null}
+                <TvTextField
+                  focusKey="GAME_RELAY_URL"
+                  label="Override do relay (opcional)"
+                  value={relayDraft}
+                  onChange={setRelayDraft}
+                  placeholder="https://seu-servico.onrender.com"
+                  inputType="url"
+                  maxLength={120}
+                />
+                <Focusable
+                  focusKey="GAME_RELAY_SAVE"
+                  className={styles.chip}
+                  onEnterPress={() => {
+                    const next = normalizeRelayOrigin(relayDraft)
+                    if (!next) return
+                    setRelayOrigin(next)
+                    setPublicOrigin(next)
+                    setRelayDraft(next)
+                  }}
+                >
+                  Salvar override
+                </Focusable>
+                <p className={styles.url}>
+                  {originOk ? inviteUrl : 'QR indisponível — configure o relay'}
+                </p>
                 <p className={styles.players}>
                   Pads: {String(pads.length)} /{' '}
                   {String((catalog?.maxPlayers ?? 4) - 1)}

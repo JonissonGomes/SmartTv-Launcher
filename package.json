@@ -16,6 +16,7 @@
     "deploy": "bash scripts/deploy.sh",
     "catalog:refresh": "node scripts/refreshAnimeCatalog.mjs",
     "package:ipk": "npm run build && ares-package dist",
+    "relay:assets": "npm run build && node scripts/copyRelayAssets.mjs",
     "auth:install": "npm install --prefix auth-server",
     "auth:dev": "npm run dev --prefix auth-server",
     "auth:start": "npm start --prefix auth-server",

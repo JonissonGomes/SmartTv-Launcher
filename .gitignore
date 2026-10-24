@@ -11,6 +11,8 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+auth-server/public
+!auth-server/public/.gitkeep
 *.local
 *.ipk
 *.tgz

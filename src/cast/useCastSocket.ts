@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CastInbound, CastRole } from '@/cast/types'
 import { wsCastUrl } from '@/cast/types'
+import { isUsablePublicOrigin } from '@/services/publicOrigin'
 
 interface UseCastSocketOptions {
   roomId: string
   playerId: string
   name: string
   role: CastRole
+  /** Origem HTTP(S) do relay (cloud Render ou LAN). */
+  relayOrigin?: string
   onMessage?: (msg: CastInbound) => void
   enabled?: boolean
 }
@@ -16,6 +19,7 @@ export function useCastSocket({
   playerId,
   name,
   role,
+  relayOrigin,
   onMessage,
   enabled = true,
 }: UseCastSocketOptions) {
@@ -28,11 +32,21 @@ export function useCastSocket({
   useEffect(() => {
     if (!enabled || !roomId) return
 
+    const origin = relayOrigin?.trim() || window.location.origin
+    const url = wsCastUrl(origin)
+    if (!url || !isUsablePublicOrigin(origin)) {
+      setConnected(false)
+      setError(
+        'Relay indisponível — confira VITE_AUTH_API_URL no build ou Configurações.',
+      )
+      return
+    }
+
     let closed = false
     let retry: number | undefined
     const connect = () => {
       try {
-        const ws = new WebSocket(wsCastUrl())
+        const ws = new WebSocket(url)
         wsRef.current = ws
 
         ws.onopen = () => {
@@ -67,7 +81,7 @@ export function useCastSocket({
         }
 
         ws.onerror = () => {
-          setError('Relay indisponível (use npm run dev na mesma rede)')
+          setError('Relay indisponível (servidor / rede)')
         }
       } catch {
         setError('WebSocket não suportado neste ambiente')
@@ -82,7 +96,7 @@ export function useCastSocket({
       wsRef.current?.close()
       wsRef.current = null
     }
-  }, [enabled, name, playerId, role, roomId])
+  }, [enabled, name, playerId, relayOrigin, role, roomId])
 
   const sendSignal = useCallback(
     (

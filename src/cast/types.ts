@@ -1,4 +1,4 @@
-import { buildAppQueryUrl } from '@/services/publicOrigin'
+import { buildAppQueryUrl, wsUrlFromOrigin } from '@/services/publicOrigin'
 import { createPlayerId, createRoomCode, qrImageUrl } from '@/games/types'
 
 export type CastRole = 'tv' | 'phone'
@@ -29,13 +29,16 @@ export type CastInbound = CastPresenceMessage | CastSignalMessage
 export { createPlayerId, createRoomCode, qrImageUrl }
 
 export function castPhoneUrl(roomId: string, origin?: string): string {
-  return buildAppQueryUrl(origin ?? window.location.origin, {
-    cast: '1',
-    room: roomId,
-  })
+  return buildAppQueryUrl(
+    origin ?? window.location.origin,
+    {
+      cast: '1',
+      room: roomId,
+    },
+    '/',
+  )
 }
 
-export function wsCastUrl(): string {
-  const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  return `${proto}//${window.location.host}/ws/cast`
+export function wsCastUrl(origin?: string): string | null {
+  return wsUrlFromOrigin(origin ?? window.location.origin, '/ws/cast')
 }

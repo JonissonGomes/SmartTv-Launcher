@@ -19,6 +19,7 @@ interface UseCastTvOptions {
   roomId: string
   playerId: string
   videoRef: RefObject<HTMLVideoElement | null>
+  relayOrigin?: string
 }
 
 interface UseCastPhoneOptions {
@@ -31,6 +32,7 @@ export function useCastTvSession({
   roomId,
   playerId,
   videoRef,
+  relayOrigin,
 }: UseCastTvOptions) {
   const pcRef = useRef<RTCPeerConnection | null>(null)
   const sendSignalRef = useRef<SignalFn>(() => undefined)
@@ -135,6 +137,7 @@ export function useCastTvSession({
     playerId,
     name: 'TV',
     role: 'tv',
+    relayOrigin,
     onMessage,
   })
 

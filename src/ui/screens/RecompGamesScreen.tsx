@@ -23,8 +23,9 @@ export function RecompGamesScreen() {
   const recompUrls = useSettingsStore((s) => s.recompUrls)
   const setRecompUrl = useSettingsStore((s) => s.setRecompUrl)
   const clearRecompUrl = useSettingsStore((s) => s.clearRecompUrl)
+  const relayOrigin = useSettingsStore((s) => s.relayOrigin)
   const [lanHost, setLanHost] = useState(() =>
-    hostFromOrigin(window.location.origin),
+    hostFromOrigin(relayOrigin || window.location.origin),
   )
   const [drafts, setDrafts] = useState(recompUrls)
   const [message, setMessage] = useState<string>()
@@ -40,10 +41,10 @@ export function RecompGamesScreen() {
   }, [recompUrls])
 
   useEffect(() => {
-    void resolvePublicOrigin().then((origin) => {
+    void resolvePublicOrigin({ preferred: relayOrigin }).then((origin) => {
       setLanHost(hostFromOrigin(origin))
     })
-  }, [])
+  }, [relayOrigin])
 
   useEffect(() => {
     void probeGraphicsApis().then(setGfx)
