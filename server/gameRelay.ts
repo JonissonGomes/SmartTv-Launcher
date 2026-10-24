@@ -4,24 +4,55 @@ import type { Plugin, PreviewServer, ViteDevServer } from 'vite'
 import { WebSocketServer, type WebSocket } from 'ws'
 import { isSafeGameRoomId } from '../src/services/launchSafety'
 
-interface ClientMeta {
+type GameRole = 'host' | 'pad'
+type CastRole = 'tv' | 'phone'
+
+interface GameClientMeta {
+  kind: 'games'
   roomId: string
-  role: 'host' | 'pad'
+  role: GameRole
   playerId: string
   name: string
 }
+
+interface CastClientMeta {
+  kind: 'cast'
+  roomId: string
+  role: CastRole
+  playerId: string
+  name: string
+}
+
+type ClientMeta = GameClientMeta | CastClientMeta
 
 interface RelayMessage {
   type: string
   roomId?: string
   playerId?: string
   name?: string
-  role?: 'host' | 'pad'
+  role?: string
   payload?: unknown
 }
 
-function attachGameRelay(
+function parseMessage(buf: Buffer | ArrayBuffer | Buffer[] | string): RelayMessage | null {
+  try {
+    const text =
+      typeof buf === 'string'
+        ? buf
+        : Buffer.isBuffer(buf)
+          ? buf.toString('utf8')
+          : Array.isArray(buf)
+            ? Buffer.concat(buf).toString('utf8')
+            : new TextDecoder().decode(buf as ArrayBuffer)
+    return JSON.parse(text) as RelayMessage
+  } catch {
+    return null
+  }
+}
+
+function attachPathRelay(
   httpServer: NonNullable<ViteDevServer['httpServer']>,
+  pathname: '/ws/games' | '/ws/cast',
 ): void {
   const rooms = new Map<string, Set<WebSocket>>()
   const meta = new WeakMap<WebSocket, ClientMeta>()
@@ -36,9 +67,38 @@ function attachGameRelay(
     }
   }
 
+  const presencePayload = (roomId: string, set: Set<WebSocket>) => {
+    if (pathname === '/ws/games') {
+      return {
+        type: 'presence',
+        roomId,
+        players: [...set]
+          .map((c) => meta.get(c))
+          .filter((m): m is GameClientMeta => m?.kind === 'games')
+          .map((m) => ({
+            playerId: m.playerId,
+            name: m.name,
+            role: m.role,
+          })),
+      }
+    }
+    return {
+      type: 'presence',
+      roomId,
+      peers: [...set]
+        .map((c) => meta.get(c))
+        .filter((m): m is CastClientMeta => m?.kind === 'cast')
+        .map((m) => ({
+          playerId: m.playerId,
+          name: m.name,
+          role: m.role,
+        })),
+    }
+  }
+
   httpServer.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     const url = new URL(req.url ?? '/', 'http://localhost')
-    if (url.pathname !== '/ws/games') return
+    if (url.pathname !== pathname) return
 
     wss.handleUpgrade(req, socket, head, (ws) => {
       wss.emit('connection', ws, req)
@@ -47,25 +107,33 @@ function attachGameRelay(
 
   wss.on('connection', (ws) => {
     ws.on('message', (buf) => {
-      let msg: RelayMessage
-      try {
-        const text =
-          typeof buf === 'string'
-            ? buf
-            : Buffer.isBuffer(buf)
-              ? buf.toString('utf8')
-              : Array.isArray(buf)
-                ? Buffer.concat(buf).toString('utf8')
-                : new TextDecoder().decode(buf as ArrayBuffer)
-        msg = JSON.parse(text) as RelayMessage
-      } catch {
-        return
-      }
+      const msg = parseMessage(buf)
+      if (!msg) return
 
       if (msg.type === 'join' && msg.roomId && msg.playerId && msg.role) {
         if (!isSafeGameRoomId(msg.roomId)) return
-        if (msg.role !== 'host' && msg.role !== 'pad') return
         const roomId = msg.roomId.trim().toUpperCase()
+
+        if (pathname === '/ws/games') {
+          if (msg.role !== 'host' && msg.role !== 'pad') return
+          let set = rooms.get(roomId)
+          if (!set) {
+            set = new Set()
+            rooms.set(roomId, set)
+          }
+          set.add(ws)
+          meta.set(ws, {
+            kind: 'games',
+            roomId,
+            role: msg.role,
+            playerId: msg.playerId,
+            name: msg.name ?? msg.playerId,
+          })
+          broadcast(roomId, presencePayload(roomId, set))
+          return
+        }
+
+        if (msg.role !== 'tv' && msg.role !== 'phone') return
         let set = rooms.get(roomId)
         if (!set) {
           set = new Set()
@@ -73,38 +141,52 @@ function attachGameRelay(
         }
         set.add(ws)
         meta.set(ws, {
+          kind: 'cast',
           roomId,
           role: msg.role,
           playerId: msg.playerId,
           name: msg.name ?? msg.playerId,
         })
-
-        broadcast(roomId, {
-          type: 'presence',
-          roomId,
-          players: [...set]
-            .map((c) => meta.get(c))
-            .filter((m): m is ClientMeta => Boolean(m))
-            .map((m) => ({
-              playerId: m.playerId,
-              name: m.name,
-              role: m.role,
-            })),
-        })
+        broadcast(roomId, presencePayload(roomId, set))
         return
       }
 
       const info = meta.get(ws)
       if (!info) return
 
-      if (msg.type === 'input' || msg.type === 'host_state') {
-        broadcast(info.roomId, {
-          type: msg.type,
-          roomId: info.roomId,
-          playerId: info.playerId,
-          name: info.name,
-          payload: msg.payload,
-        })
+      if (pathname === '/ws/games' && info.kind === 'games') {
+        if (msg.type === 'input' || msg.type === 'host_state') {
+          broadcast(info.roomId, {
+            type: msg.type,
+            roomId: info.roomId,
+            playerId: info.playerId,
+            name: info.name,
+            payload: msg.payload,
+          })
+        }
+        return
+      }
+
+      if (pathname === '/ws/cast' && info.kind === 'cast') {
+        if (
+          msg.type === 'webrtc_offer' ||
+          msg.type === 'webrtc_answer' ||
+          msg.type === 'ice_candidate' ||
+          msg.type === 'hangup'
+        ) {
+          broadcast(
+            info.roomId,
+            {
+              type: msg.type,
+              roomId: info.roomId,
+              playerId: info.playerId,
+              name: info.name,
+              role: info.role,
+              payload: msg.payload,
+            },
+            ws,
+          )
+        }
       }
     })
 
@@ -114,33 +196,25 @@ function attachGameRelay(
       const set = rooms.get(info.roomId)
       set?.delete(ws)
       if (set && set.size === 0) rooms.delete(info.roomId)
-      else if (set) {
-        broadcast(info.roomId, {
-          type: 'presence',
-          roomId: info.roomId,
-          players: [...set]
-            .map((c) => meta.get(c))
-            .filter((m): m is ClientMeta => Boolean(m))
-            .map((m) => ({
-              playerId: m.playerId,
-              name: m.name,
-              role: m.role,
-            })),
-        })
-      }
+      else if (set) broadcast(info.roomId, presencePayload(info.roomId, set))
     })
   })
 }
 
-/** Relay WebSocket TV↔celular em /ws/games (dev + preview). */
+function attachRelays(httpServer: NonNullable<ViteDevServer['httpServer']>): void {
+  attachPathRelay(httpServer, '/ws/games')
+  attachPathRelay(httpServer, '/ws/cast')
+}
+
+/** Relay WebSocket TV↔celular em /ws/games e /ws/cast (dev + preview). */
 export function gameRelayPlugin(): Plugin {
   return {
     name: 'game-relay',
     configureServer(server: ViteDevServer) {
-      if (server.httpServer) attachGameRelay(server.httpServer)
+      if (server.httpServer) attachRelays(server.httpServer)
     },
     configurePreviewServer(server: PreviewServer) {
-      if (server.httpServer) attachGameRelay(server.httpServer)
+      if (server.httpServer) attachRelays(server.httpServer)
     },
   }
 }

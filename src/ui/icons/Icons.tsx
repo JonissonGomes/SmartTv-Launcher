@@ -119,6 +119,12 @@ export function NavIcon({ view, size = 24 }: { view: AppView; size?: number }) {
           <path d="M6 8h12a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4zm2 3v2h2v-2H8zm8.5-.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM15 14.5a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0z" />
         </Svg>
       )
+    case 'cast':
+      return (
+        <Svg size={size}>
+          <path d="M3 5h18a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-7v2h2v2H8v-2h2v-2H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 2v8h16V7H4zm1 10a3 3 0 0 0 3 3v-2a1 1 0 0 1-1-1H5zm0-3a6 6 0 0 0 6 6v-2a4 4 0 0 1-4-4H5zm0-3a9 9 0 0 0 9 9v-2a7 7 0 0 1-7-7H5z" />
+        </Svg>
+      )
     case 'history':
       return (
         <Svg size={size}>

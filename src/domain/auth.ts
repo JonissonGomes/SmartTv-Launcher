@@ -1,4 +1,4 @@
-/** Usuário autenticado na API do launcher (não é sessão Youcine). */
+/** Usuário autenticado na API do launcher. */
 export interface AuthUser {
   id: string
   email: string

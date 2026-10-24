@@ -81,3 +81,19 @@ img {
   background: var(--color-surface-2);
   border-radius: var(--radius-md);
 }
+
+/* Rotas mobile (?controller=1 / ?cast=1): UI touch, sem escala de TV */
+html.is-mobile-companion {
+  font-size: 16px;
+}
+
+body.is-mobile-companion {
+  overflow: auto;
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body.is-mobile-companion .theme-root {
+  height: auto;
+  min-height: 100dvh;
+}

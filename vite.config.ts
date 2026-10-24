@@ -5,6 +5,7 @@ import { defineConfig } from 'vitest/config'
 import { authProxyPlugin } from './server/authProxy'
 import { gameRelayPlugin } from './server/gameRelay'
 import { jevProxyPlugin } from './server/jevProxy'
+import { lanOriginPlugin } from './server/lanOrigin'
 import { libraryProxyPlugin } from './server/libraryProxy'
 
 function copyWebOsAssets() {
@@ -35,8 +36,17 @@ export default defineConfig({
     libraryProxyPlugin(),
     authProxyPlugin(),
     gameRelayPlugin(),
+    lanOriginPlugin(),
   ],
   base: './',
+  server: {
+    host: true,
+    port: 5173,
+  },
+  preview: {
+    host: true,
+    port: 4173,
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

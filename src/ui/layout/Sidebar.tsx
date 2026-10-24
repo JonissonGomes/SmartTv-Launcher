@@ -26,6 +26,7 @@ const MENU_ITEMS: Array<{ view: AppView; label: string }> = [
   { view: 'history', label: 'Histórico' },
   { view: 'surprise', label: 'Surpreenda-me' },
   { view: 'games', label: 'Jogos' },
+  { view: 'cast', label: 'Espelhar' },
 ]
 
 const GENERAL_ITEMS: Array<{ view: AppView; label: string }> = [

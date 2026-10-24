@@ -19,6 +19,8 @@ export type AppView =
   | 'categories'
   | 'surprise'
   | 'games'
+  /** Espelhamento WebRTC do celular (dev/LAN). */
+  | 'cast'
   /** Player de animes (catálogo nativo + vídeo). */
   | 'anime'
   /** @deprecated use anime */

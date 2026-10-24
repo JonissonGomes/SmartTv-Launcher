@@ -24,6 +24,8 @@ import {
 import { ProfilePicker } from '@/ui/modals/ProfilePicker'
 import { TitleDetails } from '@/ui/modals/TitleDetails'
 import { CategoriesScreen } from '@/ui/screens/CategoriesScreen'
+import { CastPhoneScreen } from '@/ui/screens/CastPhoneScreen'
+import { CastScreen } from '@/ui/screens/CastScreen'
 import { ControllerScreen } from '@/ui/screens/ControllerScreen'
 import { GamesScreen } from '@/ui/screens/GamesScreen'
 import { HistoryScreen } from '@/ui/screens/HistoryScreen'
@@ -49,6 +51,29 @@ function readControllerRoom(): string | null {
   } catch {
     return null
   }
+}
+
+function readCastRoom(): string | null {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('cast') !== '1') return null
+    const room = params.get('room')?.trim().toUpperCase()
+    return room && room.length >= 3 ? room : null
+  } catch {
+    return null
+  }
+}
+
+function useMobileCompanionMode(active: boolean): void {
+  useEffect(() => {
+    if (!active) return
+    document.documentElement.classList.add('is-mobile-companion')
+    document.body.classList.add('is-mobile-companion')
+    return () => {
+      document.documentElement.classList.remove('is-mobile-companion')
+      document.body.classList.remove('is-mobile-companion')
+    }
+  }, [active])
 }
 
 init({
@@ -112,6 +137,8 @@ function entryToCatalog(entry: WatchEntry): CatalogItem {
 
 export default function App() {
   const controllerRoom = readControllerRoom()
+  const castRoom = readCastRoom()
+  useMobileCompanionMode(Boolean(controllerRoom || castRoom))
   const view = useSettingsStore((s) => s.view)
   const goBackView = useSettingsStore((s) => s.goBackView)
   const setView = useSettingsStore((s) => s.setView)
@@ -429,6 +456,14 @@ export default function App() {
     )
   }
 
+  if (castRoom) {
+    return (
+      <ThemeRoot>
+        <CastPhoneScreen roomId={castRoom} />
+      </ThemeRoot>
+    )
+  }
+
   return (
     <ThemeRoot>
       <Shell
@@ -462,6 +497,7 @@ export default function App() {
           <SurpriseScreen onOpenItem={openDetails} onWatch={watchFromDetails} />
         ) : null}
         {view === 'games' ? <GamesScreen /> : null}
+        {view === 'cast' ? <CastScreen /> : null}
         {view === 'history' ? (
           <HistoryScreen onContinueId={continueById} />
         ) : null}

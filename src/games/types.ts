@@ -1,3 +1,5 @@
+import { buildAppQueryUrl } from '@/services/publicOrigin'
+
 export type GameId = 'pong' | 'reaction' | 'quiz'
 
 export interface GamePlayer {
@@ -95,10 +97,11 @@ export function createPlayerId(): string {
   return `p_${Math.random().toString(36).slice(2, 9)}`
 }
 
-export function controllerUrl(roomId: string): string {
-  const origin = window.location.origin
-  const base = window.location.pathname.replace(/\/[^/]*$/, '/') || '/'
-  return `${origin}${base}?controller=1&room=${encodeURIComponent(roomId)}`
+export function controllerUrl(roomId: string, origin?: string): string {
+  return buildAppQueryUrl(origin ?? window.location.origin, {
+    controller: '1',
+    room: roomId,
+  })
 }
 
 export function qrImageUrl(data: string): string {

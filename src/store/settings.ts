@@ -94,12 +94,18 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'launcher-settings',
       storage: createJSONStorage(() => idbStorage),
-      partialize: (state) => ({
-        ownedPlatforms: state.ownedPlatforms,
-        activeTheme: state.activeTheme,
-        libraryBaseUrl: state.libraryBaseUrl,
-        reducedMotion: state.reducedMotion,
-      }),
+      partialize: (state) => {
+        const known = new Set<string>([...PLATFORM_ORDER, 'animefire'])
+        return {
+          ownedPlatforms: state.ownedPlatforms.filter((p) => known.has(p)),
+          activeTheme:
+            state.activeTheme && known.has(state.activeTheme)
+              ? state.activeTheme
+              : null,
+          libraryBaseUrl: state.libraryBaseUrl,
+          reducedMotion: state.reducedMotion,
+        }
+      },
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<SettingsState>
         let libraryBaseUrl =
@@ -113,10 +119,22 @@ export const useSettingsStore = create<SettingsState>()(
         ) {
           libraryBaseUrl = 'https://animefire.one'
         }
+        const known = new Set<string>([
+          ...PLATFORM_ORDER,
+          'animefire',
+        ])
+        const ownedPlatforms = (p.ownedPlatforms ?? current.ownedPlatforms).filter(
+          (plat) => known.has(plat),
+        )
+        const activeTheme =
+          p.activeTheme && known.has(p.activeTheme) ? p.activeTheme : null
         return {
           ...current,
           ...p,
           libraryBaseUrl,
+          ownedPlatforms:
+            ownedPlatforms.length > 0 ? ownedPlatforms : [...PLATFORM_ORDER],
+          activeTheme,
           view:
             p.view === 'library' || current.view === 'library'
               ? 'anime'

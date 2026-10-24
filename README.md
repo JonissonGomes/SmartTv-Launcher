@@ -66,7 +66,7 @@ npx ares-novacom --device minhatv --getkey
 
 ## Conta / login Google (launcher)
 
-Sessão **do SmartTv Launcher** (não é Youcine). Fluxo OAuth Device Code + API em `auth-server/` (Render).
+Sessão **do SmartTv Launcher**. Fluxo OAuth Device Code + API em `auth-server/` (Render).
 
 ```bash
 # Terminal 1 — API

@@ -245,6 +245,9 @@ export async function launchApp(
   platform: Platform,
   params?: Record<string, unknown>,
 ): Promise<void> {
+  if (platform === 'animefire') {
+    throw new Error('AnimeFire é in-app — use o menu Animes')
+  }
   await launchWithCandidateFallback(platform, params)
 }
 

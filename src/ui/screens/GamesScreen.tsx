@@ -16,6 +16,7 @@ import {
   type RelayInbound,
 } from '@/games/types'
 import { useGameSocket } from '@/games/useGameSocket'
+import { isLoopbackHost, resolvePublicOrigin } from '@/services/publicOrigin'
 import { cx } from '@/ui/cx'
 import { Focusable } from '@/ui/focus/Focusable'
 import styles from './GamesScreen.module.css'
@@ -39,8 +40,20 @@ export function GamesScreen() {
   const [running, setRunning] = useState(false)
   const [scoreLabel, setScoreLabel] = useState('')
 
-  const inviteUrl = controllerUrl(roomId)
+  const [publicOrigin, setPublicOrigin] = useState(window.location.origin)
+  const inviteUrl = controllerUrl(roomId, publicOrigin)
   const qrSrc = qrImageUrl(inviteUrl)
+  const loopbackWarn = isLoopbackHost(new URL(publicOrigin).hostname)
+
+  useEffect(() => {
+    let cancelled = false
+    void resolvePublicOrigin().then((origin) => {
+      if (!cancelled) setPublicOrigin(origin)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const onMessage = useCallback((msg: RelayInbound) => {
     if (msg.type === 'presence') {
@@ -207,6 +220,12 @@ export function GamesScreen() {
                   Escaneie o QR na mesma Wi‑Fi (com <code>npm run dev</code> ou{' '}
                   <code>npm run preview</code>).
                 </p>
+                {loopbackWarn ? (
+                  <p className={styles.warn}>
+                    Abra o launcher pelo IP da rede (URL Network do Vite), não por
+                    localhost — senão o celular não carrega o controle.
+                  </p>
+                ) : null}
                 <p className={styles.url}>{inviteUrl}</p>
                 <p className={styles.players}>
                   Conectados: {String(pads.length)} /{' '}

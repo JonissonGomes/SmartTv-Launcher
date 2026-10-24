@@ -23,6 +23,7 @@ const NAV: Array<{ view: AppView; label: string }> = [
   { view: 'search', label: 'Busca' },
   { view: 'surprise', label: 'Surpresa' },
   { view: 'games', label: 'Jogos' },
+  { view: 'cast', label: 'Espelhar' },
   { view: 'account', label: 'Conta' },
   { view: 'settings', label: 'Configurações' },
 ]
