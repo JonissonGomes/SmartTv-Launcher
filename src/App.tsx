@@ -13,6 +13,7 @@ import {
   useHistoryStore,
   watchEntryFromLaunch,
 } from '@/store/history'
+import { useAuthStore } from '@/store/auth'
 import { useProfilesStore } from '@/store/profiles'
 import { useSettingsStore } from '@/store/settings'
 import { Shell } from '@/ui/layout/Shell'
@@ -30,6 +31,7 @@ import { HomeScreen } from '@/ui/screens/HomeScreen'
 import { LibraryScreen } from '@/ui/screens/LibraryScreen'
 import { PlatformScreen } from '@/ui/screens/PlatformScreen'
 import { SearchScreen } from '@/ui/screens/SearchScreen'
+import { AccountScreen } from '@/ui/screens/AccountScreen'
 import { SettingsScreen } from '@/ui/screens/SettingsScreen'
 import { SurpriseScreen } from '@/ui/screens/SurpriseScreen'
 import { installImageCacheLifecycle } from '@/services/imageCache'
@@ -128,8 +130,15 @@ export default function App() {
   const [pending, setPending] = useState<PendingLaunch | null>(null)
   const [details, setDetails] = useState<CatalogItem | null>(null)
   const [showProfiles, setShowProfiles] = useState(false)
+  const restoreSession = useAuthStore((s) => s.restoreSession)
+  const authHydrated = useAuthStore((s) => s.hydrated)
 
   const needsProfileSetup = profilesHydrated && profiles.length === 0
+
+  useEffect(() => {
+    if (!authHydrated) return
+    void restoreSession()
+  }, [authHydrated, restoreSession])
 
   const profileEntries = useMemo(
     () =>
@@ -458,6 +467,7 @@ export default function App() {
         ) : null}
         {view === 'search' ? <SearchScreen onSelect={openDetails} /> : null}
         {view === 'anime' || view === 'library' ? <LibraryScreen /> : null}
+        {view === 'account' ? <AccountScreen /> : null}
         {view === 'settings' ? <SettingsScreen /> : null}
       </Shell>
 

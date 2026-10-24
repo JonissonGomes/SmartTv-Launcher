@@ -13,6 +13,7 @@ export type AppView =
   | 'home'
   | 'search'
   | 'settings'
+  | 'account'
   | 'history'
   | 'platform'
   | 'categories'

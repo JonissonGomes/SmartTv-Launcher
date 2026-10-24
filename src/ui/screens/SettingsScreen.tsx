@@ -41,8 +41,24 @@ export function SettingsScreen() {
     void listInstalledApps().then(setApps)
   }, [])
 
+  const setView = useSettingsStore((s) => s.setView)
+
   return (
     <Focusable focusKey="VIEW_settings" className={styles.screen} saveLastFocusedChild>
+      <section className={styles.section}>
+        <h2>Conta</h2>
+        <p>Login Google do launcher (Device Code) — independente do AnimeFire.</p>
+        <Focusable
+          focusKey="SETTINGS_OPEN_ACCOUNT"
+          className={styles.btn}
+          onEnterPress={() => {
+            setView('account')
+          }}
+        >
+          Abrir tela Conta
+        </Focusable>
+      </section>
+
       <section className={styles.section}>
         <h2>Suas plataformas</h2>
         <p>Usadas para bônus nas recomendações.</p>

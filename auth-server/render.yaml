@@ -1,0 +1,25 @@
+# Blueprint opcional. No painel Render também pode apontar Root Directory = auth-server.
+services:
+  - type: web
+    name: smarttv-auth
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ISSUER
+        value: smarttv-launcher
+      - key: JWT_AUDIENCE
+        value: smarttv-launcher
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: AUTH_DEV_BYPASS
+        value: "0"
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false

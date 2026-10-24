@@ -29,6 +29,7 @@ const MENU_ITEMS: Array<{ view: AppView; label: string }> = [
 ]
 
 const GENERAL_ITEMS: Array<{ view: AppView; label: string }> = [
+  { view: 'account', label: 'Conta' },
   { view: 'settings', label: 'Configurações' },
 ]
 

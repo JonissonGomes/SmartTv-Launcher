@@ -64,12 +64,33 @@ npx ares-novacom --device minhatv --getkey
 
 4. Deploy: `make deploy` (ou `npm run deploy`)
 
+## Conta / login Google (launcher)
+
+Sessão **do SmartTv Launcher** (não é Youcine). Fluxo OAuth Device Code + API em `auth-server/` (Render).
+
+```bash
+# Terminal 1 — API
+cp auth-server/.env.example auth-server/.env
+# AUTH_DEV_BYPASS=1 e JWT_SECRET=... para testar sem Google
+npm run auth:install
+npm run auth:dev
+
+# Terminal 2 — launcher
+npm run dev
+# Menu Conta → Entrar com Google
+```
+
+Produção: publique `auth-server` no Render e defina `VITE_AUTH_API_URL=https://seu-servico.onrender.com` antes do `npm run build`. Detalhes em [auth-server/README.md](auth-server/README.md).
+
 ## Estrutura
 
 - `src/config/apps.ts` — IDs webOS e deep links (validar na TV)
 - `src/services/webos.ts` — launch/listApps (mock no browser)
 - `src/services/tmdb.ts` — catálogo + cache 24h
 - `src/store/history.ts` — histórico em IndexedDB
+- `src/store/auth.ts` — sessão Google do launcher
+- `src/ui/screens/AccountScreen.tsx` — Device Code + QR
+- `auth-server/` — API JWT + Google Device Code (Render)
 - `src/domain/recommend.ts` — recomendações pelos últimos 5 títulos
 
 Plano: `PLANO_LAUNCHER_WEBOS.md`.

@@ -2,6 +2,7 @@ import { copyFileSync, cpSync, existsSync, mkdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
+import { authProxyPlugin } from './server/authProxy'
 import { gameRelayPlugin } from './server/gameRelay'
 import { jevProxyPlugin } from './server/jevProxy'
 import { libraryProxyPlugin } from './server/libraryProxy'
@@ -32,6 +33,7 @@ export default defineConfig({
     copyWebOsAssets(),
     jevProxyPlugin(),
     libraryProxyPlugin(),
+    authProxyPlugin(),
     gameRelayPlugin(),
   ],
   base: './',
